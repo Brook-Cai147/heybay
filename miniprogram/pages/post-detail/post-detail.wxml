@@ -1,0 +1,6 @@
+<view class="post-detail">
+  <view class="post-content">
+    <text class="post-title">帖子详情页</text>
+    <text class="post-info">功能开发中...</text>
+  </view>
+</view>

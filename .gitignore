@@ -1,0 +1,42 @@
+# ---- 密钥与私有配置（永不入库）----
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.json
+config.local.*
+# 微信开发者工具的本地私有配置（含个人设备与账号相关设置）
+**/project.private.config.json
+# 云函数本地环境变量
+**/cloudfunctions/**/.env
+**/cloudfunctions/**/config.local.json
+
+# ---- 依赖与构建产物 ----
+node_modules/
+miniprogram_npm/
+dist/
+build/
+.tmp/
+*.log
+npm-debug.log*
+
+# ---- 编辑器与系统 ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- 运营与用户数据（不入库）----
+data/exports/
+data/user/
+*.sqlite
+*.db
+
+# ---- 大文件与临时产物 ----
+*.rar
+*.zip
+!docs/v1-assets/**
+*.mp4
+~$*

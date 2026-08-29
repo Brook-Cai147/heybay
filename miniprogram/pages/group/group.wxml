@@ -1,0 +1,103 @@
+<view class="group-container">
+  <!-- 顶部城市选择器 -->
+  <view class="city-selector">
+    <view class="city-info" bindtap="showCityPicker">
+      <text class="city-name">{{currentCity}}</text>
+      <text class="dropdown-arrow">▼</text>
+    </view>
+    <view class="search-box" bindtap="goToSearch">
+      <icon class="search-icon" type="search" size="20"></icon>
+      <text class="search-placeholder">搜索小组、话题</text>
+    </view>
+  </view>
+
+  <!-- 我的组聊 -->
+  <view class="my-groups">
+    <view class="section-header">
+      <text class="section-title">我的组聊</text>
+      <view class="more-btn" bindtap="goToAllGroups">
+        <text class="more-text">全部</text>
+        <text class="more-arrow">›</text>
+      </view>
+    </view>
+    <view class="groups-grid">
+      <!-- 发现小组 -->
+      <view class="group-item discover-item" bindtap="discoverGroups">
+        <view class="discover-avatar">
+          <image src="/images/Discovery Group.png" mode="aspectFill"></image>
+        </view>
+        <text class="group-name">发现小组</text>
+      </view>
+      <!-- 已加入的小组 -->
+      <view class="group-item" bindtap="enterGroup" wx:for="{{myGroups}}" wx:key="index">
+        <view class="group-avatar">
+          <image src="/images/group profile.png" mode="aspectFill"></image>
+          <text class="unread-badge" wx:if="item.unread > 0">{{item.unread}}</text>
+        </view>
+        <text class="group-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 当前城市小组热帖 -->
+  <view class="hot-posts">
+    <view class="section-header">
+      <text class="section-title">{{currentCity}}出游小组</text>
+    </view>
+    
+    <!-- 专栏标签栏 -->
+    <scroll-view class="column-tabs" scroll-x="true" enable-flex="true">
+      <view class="tab-item {{activeTab === index ? 'active' : ''}}" wx:for="{{columnTabs}}" wx:key="index" data-index="{{index}}" bindtap="switchTab">
+        <text class="tab-text">{{item}}</text>
+      </view>
+    </scroll-view>
+    
+    <!-- 排序切换栏 -->
+    <view class="sort-switch">
+      <view class="group-search-box" bindtap="goToGroupSearch">
+        <icon class="search-icon-small" type="search" size="16"></icon>
+      </view>
+      <view class="sort-item {{activeSort === 'new' ? 'active' : ''}}" bindtap="switchSort" data-sort="new">
+        <text>最新</text>
+      </view>
+      <view class="sort-item {{activeSort === 'hot' ? 'active' : ''}}" bindtap="switchSort" data-sort="hot">
+        <text>热门</text>
+      </view>
+    </view>
+    
+    <!-- 热帖信息流 -->
+    <view class="posts-list" bindscrolltolower="loadMore">
+      <view class="post-card" wx:for="{{hotPosts}}" wx:key="index" bindtap="goToPostDetail">
+        <view class="post-header">
+          <image src="/images/profile.png" class="post-avatar"></image>
+          <view class="post-author">
+            <text class="post-nickname">{{item.author.name}}</text>
+            <text class="post-tag">{{item.author.tag}}</text>
+          </view>
+        </view>
+        <text class="post-content">{{item.content}}</text>
+        <view class="post-images" wx:if="item.images.length > 0">
+          <image src="{{item.images[0]}}" class="post-image" wx:if="{{item.images.length >= 1}}" mode="aspectFill"></image>
+          <image src="{{item.images[1]}}" class="post-image" wx:if="{{item.images.length >= 2}}" mode="aspectFill"></image>
+        </view>
+        <view class="post-footer">
+          <view class="post-action" bindtap="toggleLike" data-index="{{index}}">
+            <image src="{{item.liked ? '/images/like_yes.png' : '/images/like_no.png'}}" class="action-icon"></image>
+            <text class="action-text">{{item.likes}}</text>
+          </view>
+          <view class="post-action">
+            <image src="/images/Comment.png" class="action-icon"></image>
+            <text class="action-text">{{item.comments}}</text>
+          </view>
+          <view class="post-action" bindtap="toggleFavorite" data-index="{{index}}">
+            <image src="{{item.favorited ? '/images/Collect_yes.png' : '/images/Collect_no.png'}}" class="action-icon"></image>
+            <text class="action-text">{{item.favorites}}</text>
+          </view>
+          <view class="post-action">
+            <icon class="action-icon" type="share" size="20"></icon>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

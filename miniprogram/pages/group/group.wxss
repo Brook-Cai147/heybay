@@ -1,0 +1,486 @@
+/* 全局样式 */
+.group-container {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f0f7ff 0%, #f8f9fa 100%);
+  padding-bottom: 120rpx; /* 为TabBar留出空间 */
+}
+
+/* 顶部城市选择器 */
+.city-selector {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  padding: 15rpx 20rpx;
+  border-bottom: 1rpx solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  box-shadow: 0 2rpx 12rpx rgba(18, 150, 219, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.city-info {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8rpx 12rpx;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%);
+  border-radius: 20rpx;
+  border: 1rpx solid rgba(18, 150, 219, 0.1);
+}
+
+.city-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-right: 5rpx;
+}
+
+.dropdown-arrow {
+  font-size: 16rpx;
+  color: #1296db;
+}
+
+.search-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%);
+  border-radius: 30rpx;
+  padding: 12rpx 20rpx;
+  cursor: pointer;
+  border: 1rpx solid rgba(18, 150, 219, 0.1);
+}
+
+.search-icon {
+  color: #1296db;
+  margin-right: 10rpx;
+}
+
+.search-placeholder {
+  flex: 1;
+  font-size: 24rpx;
+  color: #7a8ba0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 我的组聊 */
+.my-groups {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  margin: 20rpx;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(18, 150, 219, 0.1);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #2c3e50;
+  position: relative;
+  padding-left: 16rpx;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6rpx;
+  height: 24rpx;
+  background: linear-gradient(180deg, #1296db 0%, #4db8e8 100%);
+  border-radius: 3rpx;
+}
+
+.more-btn {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8rpx 12rpx;
+  border-radius: 16rpx;
+  transition: all 0.3s ease;
+}
+
+.more-btn:hover {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%);
+}
+
+.more-text {
+  font-size: 24rpx;
+  color: #5a6c7d;
+  margin-right: 5rpx;
+}
+
+.more-arrow {
+  font-size: 28rpx;
+  color: #1296db;
+  font-weight: bold;
+}
+
+/* 小组宫格 */
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15rpx;
+}
+
+.group-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 10rpx 0;
+  border-radius: 12rpx;
+}
+
+.group-item:hover {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%);
+  transform: translateY(-2rpx);
+}
+
+.group-avatar {
+  position: relative;
+  margin-bottom: 10rpx;
+}
+
+.group-avatar image {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(18, 150, 219, 0.2);
+  box-shadow: 0 2rpx 8rpx rgba(18, 150, 219, 0.1);
+}
+
+/* 发现小组样式 */
+.discover-item {
+  /* 保持与其他小组项一致的样式 */
+}
+
+.discover-avatar {
+  margin-bottom: 10rpx;
+}
+
+.discover-avatar image {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 8rpx;
+  box-shadow: 0 2rpx 8rpx rgba(18, 150, 219, 0.1);
+}
+
+.unread-badge {
+  position: absolute;
+  top: -5rpx;
+  right: -5rpx;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+  color: #ffffff;
+  font-size: 18rpx;
+  font-weight: bold;
+  padding: 2rpx 8rpx;
+  border-radius: 12rpx;
+  min-width: 24rpx;
+  text-align: center;
+  box-shadow: 0 2rpx 8rpx rgba(255, 107, 107, 0.3);
+}
+
+.group-name {
+  font-size: 20rpx;
+  color: #5a6c7d;
+  text-align: center;
+  font-weight: 500;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 当前城市小组热帖 */
+.hot-posts {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  margin: 20rpx;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(18, 150, 219, 0.1);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+}
+
+/* 专栏标签栏 */
+.column-tabs {
+  display: flex;
+  margin-bottom: 20rpx;
+  padding-bottom: 10rpx;
+  border-bottom: 1rpx solid rgba(18, 150, 219, 0.1);
+}
+
+.column-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-item {
+  padding: 10rpx 20rpx;
+  margin-right: 15rpx;
+  border-radius: 20rpx;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%);
+  border: 1rpx solid rgba(18, 150, 219, 0.1);
+}
+
+.tab-item.active {
+  background: linear-gradient(135deg, #1296db 0%, #4db8e8 100%);
+  border-color: #1296db;
+}
+
+.tab-text {
+  font-size: 24rpx;
+  color: #5a6c7d;
+  font-weight: 500;
+}
+
+.tab-item.active .tab-text {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* 排序切换栏 */
+.sort-switch {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+  margin-bottom: 20rpx;
+  padding: 10rpx 0;
+}
+
+.group-search-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60rpx;
+  height: 60rpx;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%);
+  border-radius: 30rpx;
+  cursor: pointer;
+  border: 1rpx solid rgba(18, 150, 219, 0.1);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.group-search-box:hover {
+  background: linear-gradient(135deg, #e8f0fe 0%, #d4e4fd 100%);
+  box-shadow: 0 2rpx 8rpx rgba(18, 150, 219, 0.15);
+}
+
+.search-icon-small {
+  color: #1296db;
+}
+
+.sort-item {
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%);
+  border: 1rpx solid rgba(18, 150, 219, 0.1);
+  flex: 1;
+  text-align: center;
+}
+
+.sort-item.active {
+  background: linear-gradient(135deg, #1296db 0%, #4db8e8 100%);
+  border-color: #1296db;
+}
+
+.sort-item text {
+  font-size: 24rpx;
+  color: #5a6c7d;
+  font-weight: 500;
+}
+
+.sort-item.active text {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* 热帖信息流 */
+.posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.post-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 12rpx;
+  padding: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(18, 150, 219, 0.05);
+  border: 1rpx solid rgba(18, 150, 219, 0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.post-card:hover {
+  box-shadow: 0 4rpx 16rpx rgba(18, 150, 219, 0.12);
+  transform: translateY(-2rpx);
+  border-color: rgba(18, 150, 219, 0.15);
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15rpx;
+}
+
+.post-avatar {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  margin-right: 15rpx;
+  border: 2rpx solid rgba(18, 150, 219, 0.2);
+}
+
+.post-author {
+  flex: 1;
+}
+
+.post-nickname {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #2c3e50;
+  margin-bottom: 4rpx;
+}
+
+.post-tag {
+  font-size: 18rpx;
+  color: #1296db;
+  background: linear-gradient(135deg, #e8f0fe 0%, #d4e4fd 100%);
+  padding: 2rpx 8rpx;
+  border-radius: 10rpx;
+  font-weight: 500;
+}
+
+.post-content {
+  font-size: 24rpx;
+  color: #333333;
+  line-height: 1.5;
+  margin-bottom: 15rpx;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.post-images {
+  display: flex;
+  gap: 10rpx;
+  margin-bottom: 15rpx;
+}
+
+.post-image {
+  width: 48%;
+  aspect-ratio: 1;
+  border-radius: 8rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.post-image:first-child:last-child {
+  width: 100%;
+}
+
+.post-footer {
+  display: flex;
+  align-items: center;
+  gap: 30rpx;
+  padding-top: 15rpx;
+  border-top: 1rpx solid rgba(18, 150, 219, 0.08);
+}
+
+.post-action {
+  display: flex;
+  align-items: center;
+  gap: 5rpx;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 5rpx 10rpx;
+  border-radius: 16rpx;
+}
+
+.post-action:hover {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%);
+}
+
+.action-icon {
+  width: 24rpx;
+  height: 24rpx;
+  color: #7a8ba0;
+}
+
+.action-text {
+  font-size: 22rpx;
+  color: #5a6c7d;
+  font-weight: 500;
+}
+
+/* 适配不同屏幕尺寸 */
+@media (max-width: 375px) {
+  .groups-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .group-avatar image {
+    width: 70rpx;
+    height: 70rpx;
+  }
+  
+  .group-name {
+    font-size: 18rpx;
+  }
+  
+  .post-images {
+    display: flex;
+  }
+  
+  .post-image {
+    width: 48%;
+  }
+  
+  .post-footer {
+    gap: 20rpx;
+  }
+  
+  .city-name {
+    font-size: 24rpx;
+  }
+  
+  .search-placeholder {
+    font-size: 22rpx;
+  }
+}
+
+@media (min-width: 768px) {
+  .groups-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  
+  .post-images {
+    display: flex;
+  }
+  
+  .post-image {
+    width: 48%;
+  }
+}

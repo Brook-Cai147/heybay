@@ -1,0 +1,39 @@
+<view class="search-page">
+  <!-- 搜索头部 -->
+  <view class="search-header">
+    <view class="search-input-container">
+      <icon class="search-icon" type="search" size="20"></icon>
+      <input class="search-input" placeholder="搜索帖子、小组、标签、搭子、地陪、二手" focus="true"></input>
+      <text class="cancel-btn" bindtap="cancelSearch">取消</text>
+    </view>
+  </view>
+
+  <!-- 搜索内容区 -->
+  <view class="search-content">
+    <!-- 热搜词条区 -->
+    <view class="hot-search-section">
+      <view class="section-header">
+        <text class="section-title">热搜</text>
+      </view>
+      <view class="hot-tags">
+        <view class="hot-tag" wx:for="{{hotSearchList}}" wx:key="index" bindtap="searchTag">
+          <text class="hot-tag-rank">{{index + 1}}</text>
+          <text class="hot-tag-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 历史搜索区 -->
+    <view class="history-section">
+      <view class="section-header">
+        <text class="section-title">历史搜索</text>
+        <text class="clear-history" bindtap="clearHistory">清除</text>
+      </view>
+      <view class="history-tags">
+        <view class="history-tag" wx:for="{{historyList}}" wx:key="index" bindtap="searchTag">
+          <text class="history-tag-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

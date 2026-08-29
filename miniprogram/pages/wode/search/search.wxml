@@ -1,0 +1,50 @@
+<view class="search-container">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-container">
+      <image src="/images/search.png" class="search-icon"></image>
+      <input type="text" placeholder="搜索帖子、标签、关键词" class="search-input" bindinput="onInput" bindconfirm="onSearch"/>
+      <text class="cancel-btn" bindtap="cancelSearch">取消</text>
+    </view>
+  </view>
+
+  <!-- 搜索记录 -->
+  <view class="search-history" wx:if="searchHistory.length > 0">
+    <view class="history-header">
+      <text class="history-title">搜索记录</text>
+      <text class="clear-btn" bindtap="clearHistory">清空</text>
+    </view>
+    <view class="history-tags">
+      <view class="history-tag" wx:for="{{searchHistory}}" wx:key="index" bindtap="searchTag" data-tag="{{item}}">
+        {{item}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 热门搜索 -->
+  <view class="hot-search">
+    <text class="hot-title">热门搜索</text>
+    <view class="hot-tags">
+      <view class="hot-tag" wx:for="{{hotKeywords}}" wx:key="index" bindtap="searchTag" data-tag="{{item}}">
+        {{item}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 搜索结果 -->
+  <view class="search-results" wx:if="showResults">
+    <view class="results-header">
+      <text class="results-title">搜索结果</text>
+      <text class="results-count">({{searchResults.length}} 条)</text>
+    </view>
+    <view class="result-item" wx:for="{{searchResults}}" wx:key="index">
+      <view class="result-content">
+        <text class="result-title">{{item.title}}</text>
+        <text class="result-preview">{{item.preview}}</text>
+      </view>
+      <view class="result-meta">
+        <text class="result-time">{{item.time}}</text>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,98 @@
+<view class="message-container">
+
+  <!-- 互动消息区 -->
+  <view class="interaction-area">
+    <view class="interaction-grid">
+      <!-- 赞 -->
+      <view class="interaction-item" bindtap="goToLikes">
+        <view class="interaction-icon">
+          <image src="/images/like_yes.png" class="icon-img"></image>
+          <view class="unread-badge" wx:if="{{interactionData.likes.unread > 0}}">
+            <text>{{interactionData.likes.unread}}</text>
+          </view>
+        </view>
+        <text class="interaction-text">{{interactionData.likes.text}}</text>
+      </view>
+      
+      <!-- 评论 -->
+      <view class="interaction-item" bindtap="goToComments">
+        <view class="interaction-icon">
+          <image src="/images/Comment.png" class="icon-img"></image>
+          <view class="unread-badge" wx:if="{{interactionData.comments.unread > 0}}">
+            <text>{{interactionData.comments.unread}}</text>
+          </view>
+        </view>
+        <text class="interaction-text">{{interactionData.comments.text}}</text>
+      </view>
+      
+      <!-- 关注 -->
+      <view class="interaction-item" bindtap="goToFollows">
+        <view class="interaction-icon">
+          <image src="/images/wode_yes.png" class="icon-img"></image>
+          <view class="unread-badge" wx:if="{{interactionData.follows.unread > 0}}">
+            <text>{{interactionData.follows.unread}}</text>
+          </view>
+        </view>
+        <text class="interaction-text">{{interactionData.follows.text}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 私信列表区 -->
+  <view class="message-list">
+    <!-- 系统类消息 -->
+    <view class="message-section">
+      <view class="message-section-title">系统通知</view>
+      
+      <!-- @我的 -->
+      <view class="message-item system-item" bindtap="goToAtMe">
+        <view class="message-avatar">
+          <view class="system-avatar at-avatar">
+            <text class="at-icon">@</text>
+          </view>
+        </view>
+        <view class="message-content">
+          <text class="message-title">@我的</text>
+          <text class="message-preview">有人在帖子中@你</text>
+        </view>
+        <view class="message-right">
+          <text class="message-time">今天</text>
+        </view>
+      </view>
+      
+      <!-- 系统通知 -->
+      <view class="message-item system-item" bindtap="goToSystem">
+        <view class="message-avatar">
+          <view class="system-avatar system-avatar">
+            <text class="system-icon">📢</text>
+          </view>
+        </view>
+        <view class="message-content">
+          <text class="message-title">系统通知</text>
+          <text class="message-preview">发帖审核通过</text>
+        </view>
+        <view class="message-right">
+          <text class="message-time">昨天</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 聊天类消息 -->
+    <view class="message-section">
+      <view class="message-section-title">私信</view>
+      
+      <view class="message-item chat-item" wx:for="{{chatMessages}}" wx:key="index" bindtap="goToChat">
+        <view class="message-avatar">
+          <image src="/images/profile.png" class="avatar-img"></image>
+        </view>
+        <view class="message-content">
+          <text class="message-title">{{item.name}}</text>
+          <text class="message-preview">{{item.preview}}</text>
+        </view>
+        <view class="message-right">
+          <text class="message-time">{{item.time}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

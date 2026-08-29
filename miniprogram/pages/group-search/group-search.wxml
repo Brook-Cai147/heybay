@@ -1,0 +1,66 @@
+<view class="group-search-container">
+  <!-- 搜索框区域 -->
+  <view class="search-header">
+    <view class="search-input-box">
+      <icon class="search-icon" type="search" size="20"></icon>
+      <input class="search-input" type="text" placeholder="搜索本组内容" bindinput="onInput" bindconfirm="onSearch" value="{{searchText}}" focus="{{true}}"/>
+      <text class="cancel-btn" bindtap="goBack">取消</text>
+    </view>
+  </view>
+
+  <!-- 搜索历史 -->
+  <view class="search-history" wx:if="{{!searchText && searchHistory.length > 0}}">
+    <view class="history-header">
+      <text class="history-title">历史</text>
+      <text class="clear-btn" bindtap="clearHistory">清除</text>
+    </view>
+    <view class="history-list">
+      <view class="history-item" wx:for="{{searchHistory}}" wx:key="index" bindtap="onHistoryClick" data-text="{{item}}">
+        <text>{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 本组热点内容 -->
+  <view class="group-hot-content" wx:if="{{!searchText}}">
+    <view class="section-title">本组</view>
+    <view class="hot-list">
+      <view class="hot-item" wx:for="{{groupHotContent}}" wx:key="index" bindtap="goToPostDetail" data-id="{{item.id}}">
+        <text class="hot-text">{{item.title}}</text>
+        <image wx:if="{{item.icon}}" src="{{item.icon}}" class="hot-icon"></image>
+      </view>
+    </view>
+  </view>
+
+  <!-- 全组热搜榜 -->
+  <view class="hot-search-rank" wx:if="{{!searchText}}">
+    <view class="rank-header">
+      <image src="/images/hot.png" class="rank-icon"></image>
+      <text class="rank-title">实时讨论榜</text>
+    </view>
+    <view class="rank-list">
+      <view class="rank-item" wx:for="{{hotSearchList}}" wx:key="index" bindtap="onHotSearchClick" data-text="{{item.keyword}}">
+        <text class="rank-number {{index < 3 ? 'top-three' : ''}}">{{index + 1}}</text>
+        <text class="rank-keyword">{{item.keyword}}</text>
+        <text class="rank-heat">{{item.heat}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 搜索结果 -->
+  <view class="search-results" wx:if="{{searchText && searchResults.length > 0}}">
+    <view class="result-item" wx:for="{{searchResults}}" wx:key="index" bindtap="goToPostDetail" data-id="{{item.id}}">
+      <view class="result-header">
+        <image src="/images/profile.png" class="result-avatar"></image>
+        <text class="result-nickname">{{item.author.name}}</text>
+      </view>
+      <text class="result-title">{{item.title}}</text>
+      <text class="result-content">{{item.content}}</text>
+    </view>
+  </view>
+
+  <!-- 无搜索结果 -->
+  <view class="no-result" wx:if="{{searchText && searchResults.length === 0}}">
+    <text class="no-result-text">暂无搜索结果</text>
+  </view>
+</view>

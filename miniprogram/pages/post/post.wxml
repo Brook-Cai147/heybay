@@ -1,0 +1,163 @@
+<view class="post-container">
+  <!-- 顶部导航区 -->
+  <view class="nav-header">
+    <!-- 蓝色提示条 -->
+    <view class="tips-bar" wx:if="{{showTips}}">
+      <view class="tips-content">
+        <text class="tips-label">TIPS</text>
+        <text class="tips-text">更多新功能开发中</text>
+      </view>
+      <text class="tips-close" bindtap="closeTips">×</text>
+    </view>
+  </view>
+
+  <!-- 内容发布区 -->
+  <view class="content-area">
+    <!-- 图片/视频上传入口 -->
+    <view class="upload-section">
+      <view class="upload-box" bindtap="chooseImage">
+        <text class="upload-icon">+</text>
+        <text class="upload-text">添加优质图片/视频</text>
+      </view>
+      <!-- 已上传图片预览 -->
+      <view class="image-preview" wx:if="{{images.length > 0}}">
+        <image wx:for="{{images}}" wx:key="index" src="{{item}}" class="preview-img" mode="aspectFill"></image>
+      </view>
+    </view>
+
+    <!-- 标题输入框 -->
+    <view class="input-section">
+      <input class="title-input" type="text" placeholder="填写清晰的活动标题（必填 20字内）" maxlength="20" value="{{title}}" bindinput="onTitleInput"/>
+    </view>
+
+    <!-- 描述输入框 -->
+    <view class="input-section">
+      <textarea class="desc-input" placeholder="描述一下行程亮点、行程计划、推荐的人群、贴心tips等，和搭子一起出游吧～" maxlength="500" value="{{description}}" bindinput="onDescInput"></textarea>
+    </view>
+
+    <!-- Tag标签 -->
+    <view class="tag-section">
+      <view class="tag-item" wx:for="{{hotTags}}" wx:key="index" bindtap="selectTag" data-tag="{{item}}">
+        <text class="tag-text">#{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 核心信息选择区 -->
+  <view class="info-select-area">
+    <!-- 行1：地点、时间、人数 -->
+    <view class="info-row">
+      <view class="info-item" bindtap="selectLocation">
+        <image src="/images/Place.png" class="info-icon"></image>
+        <text class="info-text">{{location || '选择会面地点'}}</text>
+      </view>
+      <view class="info-item" bindtap="selectTime">
+        <image src="/images/timetable.png" class="info-icon"></image>
+        <text class="info-text">{{time || '选择会面时间'}}</text>
+      </view>
+      <view class="info-item" bindtap="selectNumber">
+        <image src="/images/number.png" class="info-icon"></image>
+        <text class="info-text">{{number || '选择活动人数'}}</text>
+      </view>
+    </view>
+
+    <!-- 行2：公开、同步至小红书 -->
+    <view class="info-row">
+      <view class="info-item visibility-item" bindtap="togglePublic">
+        <image src="/images/public.png" class="info-icon"></image>
+        <text class="info-text">{{visibility === 'private' ? '私密' : '公开'}}</text>
+        <text class="dropdown-arrow">▼</text>
+      </view>
+      <!-- 公开/私密选项 -->
+      <view class="visibility-options" wx:if="{{showVisibilityOptions}}">
+        <view class="option-item {{visibility === 'public' ? 'active' : ''}}" bindtap="setVisibility" data-type="public">
+          <text>公开</text>
+        </view>
+        <view class="option-item {{visibility === 'private' ? 'active' : ''}}" bindtap="setVisibility" data-type="private">
+          <text>私密</text>
+        </view>
+      </view>
+      <view class="info-item xhs-item" bindtap="toggleXHS">
+        <text class="info-text">同步至</text>
+        <view class="xhs-switch {{syncXHS ? 'active' : ''}}">
+          <image src="{{syncXHS ? '/images/xhs_yes.png' : '/images/xhs_no.png'}}" class="xhs-icon"></image>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 必填项选择区 -->
+  <view class="required-area">
+    <!-- 内容分类 -->
+    <view class="required-item" bindtap="selectCategory">
+      <text class="required-label">*内容分类</text>
+      <view class="required-value">
+        <text class="value-text {{category ? 'selected' : ''}}">{{category || '请选择活动类型'}}</text>
+        <text class="arrow-icon">›</text>
+      </view>
+    </view>
+
+    <!-- 发布小组 -->
+    <view class="required-item" bindtap="selectGroup">
+      <text class="required-label">发布小组</text>
+      <view class="required-value group-tags-area">
+        <view class="group-tags" wx:if="{{selectedGroups.length > 0}}">
+          <view class="group-tag" wx:for="{{selectedGroups}}" wx:key="index" catchtap="removeGroup" data-group="{{item}}">
+            <text>{{item}}</text>
+            <text class="tag-close">×</text>
+          </view>
+        </view>
+        <view class="placeholder-area" wx:if="{{selectedGroups.length === 0}}">
+          <text class="value-text">请选择发布小组</text>
+          <text class="arrow-icon">›</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 分类选择弹窗 -->
+  <view class="modal" wx:if="{{showCategoryModal}}">
+    <view class="modal-mask" bindtap="closeCategoryModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">选择活动类型</text>
+        <text class="modal-close" bindtap="closeCategoryModal">×</text>
+      </view>
+      <scroll-view scroll-y="true" class="modal-body">
+        <view class="category-item {{category === item ? 'active' : ''}}" wx:for="{{categoryList}}" wx:key="index" bindtap="confirmCategory" data-category="{{item}}">
+          <text>{{item}}</text>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 小组选择弹窗 -->
+  <view class="modal" wx:if="{{showGroupModal}}">
+    <view class="modal-mask" bindtap="confirmGroupSelection"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">选择发布小组（可多选）</text>
+        <text class="modal-close" bindtap="confirmGroupSelection">×</text>
+      </view>
+      <scroll-view scroll-y="true" class="modal-body">
+        <view class="group-item {{selectedGroups.indexOf(item) > -1 ? 'active' : ''}}" wx:for="{{myGroups}}" wx:key="index" bindtap="toggleGroup" data-group="{{item}}">
+          <text>{{item}}</text>
+          <text class="check-icon" wx:if="{{selectedGroups.indexOf(item) > -1}}">✓</text>
+        </view>
+      </scroll-view>
+      <view class="modal-footer">
+        <view class="confirm-btn" bindtap="confirmGroupSelection">确定（已选{{selectedGroups.length}}个）</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作区 -->
+  <view class="bottom-actions">
+    <view class="action-btn draft-btn" bindtap="saveDraft">
+      <text>存草稿</text>
+    </view>
+    <view class="action-btn publish-btn {{canPublish ? 'active' : ''}}" bindtap="publishPost">
+      <text>发布</text>
+    </view>
+  </view>
+</view>

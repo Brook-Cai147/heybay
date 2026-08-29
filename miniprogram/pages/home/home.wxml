@@ -1,0 +1,121 @@
+<view class="home-container">
+  <!-- 顶部区域 -->
+  <view class="top-area">
+    <view class="top-content">
+      <view class="search-hot-container">
+        <view class="search-box" bindtap="goToSearch">
+          <icon class="search-icon" type="search" size="20"></icon>
+          <text class="search-placeholder">搜索帖子、小组、标签、搭子、地陪、二手</text>
+          <icon class="hot-icon" type="warn" size="16"></icon>
+        </view>
+        <view class="hot-search" bindtap="goToHotSearch">
+          <image src="/images/hot.png" class="hot-icon-small"></image>
+          <text class="hot-text">热搜</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 轮播/信息展示区 -->
+  <view class="banner-area">
+    <swiper class="banner-swiper" indicator-dots="true" autoplay="true" interval="3000" duration="500">
+      <swiper-item bindtap="goToBannerDetail">
+        <image src="/images/lunbo/lunbo1.png" mode="aspectFill" class="banner-image"></image>
+      </swiper-item>
+      <swiper-item bindtap="goToBannerDetail">
+        <image src="/images/lunbo/lunbo2.jpg" mode="aspectFill" class="banner-image"></image>
+      </swiper-item>
+      <swiper-item bindtap="goToBannerDetail">
+        <image src="/images/lunbo/lunbo3.jpg" mode="aspectFill" class="banner-image"></image>
+      </swiper-item>
+    </swiper>
+  </view>
+
+  <!-- 宫格导航区 -->
+  <view class="grid-nav-area">
+    <!-- 一级分类导航 -->
+    <view class="nav-level1">
+      <view class="nav-level1-item {{activeNav === 0 ? 'active' : ''}}" data-index="0" bindtap="switchNav">
+        <image src="/images/area group.png" class="nav-level1-icon"></image>
+        <text class="nav-level1-text">地域群组</text>
+      </view>
+      <view class="nav-level1-item {{activeNav === 1 ? 'active' : ''}}" data-index="1" bindtap="switchNav">
+        <image src="/images/others group.png" class="nav-level1-icon"></image>
+        <text class="nav-level1-text">其他群组</text>
+      </view>
+      <view class="nav-level1-item {{activeNav === 2 ? 'active' : ''}}" data-index="2" bindtap="switchNav">
+        <image src="/images/planning route.png" class="nav-level1-icon"></image>
+        <text class="nav-level1-text">路线规划</text>
+      </view>
+      <view class="nav-level1-item {{activeNav === 3 ? 'active' : ''}}" data-index="3" bindtap="switchNav">
+        <image src="/images/travel product.png" class="nav-level1-icon"></image>
+        <text class="nav-level1-text">旅游产品</text>
+      </view>
+    </view>
+
+    <!-- 二级分类导航 -->
+    <scroll-view class="nav-level2" scroll-x="true" enable-flex="true">
+      <view class="nav-level2-item" wx:for="{{navLevel2List}}" wx:key="index" bindtap="navigateToDetail">
+        <text class="nav-level2-text">{{item}}</text>
+      </view>
+      <view class="nav-level2-item more-item" bindtap="navigateToDetail">
+        <text class="nav-level2-text">更多</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 推荐内容信息流 -->
+  <view class="recommend-area">
+    <view class="recommend-header">
+      <text class="recommend-title">推荐内容</text>
+    </view>
+    
+    <!-- 筛选选项 -->
+    <view class="filter-options">
+      <view class="filter-item" bindtap="showLocationPicker">
+        <text class="filter-text">海外</text>
+        <text class="dropdown-arrow">▼</text>
+      </view>
+      <view class="filter-item" bindtap="showDatePicker">
+        <text class="filter-text">时间</text>
+        <text class="dropdown-arrow">▼</text>
+      </view>
+      <view class="filter-item" bindtap="showSortPicker">
+        <text class="filter-text">排序</text>
+        <text class="dropdown-arrow">▼</text>
+      </view>
+    </view>
+
+    <!-- 排序下拉框 -->
+    <view class="sort-dropdown" wx:if="{{showSortDropdown}}">
+      <view class="sort-option {{activeSort === 'hot' ? 'active' : ''}}" bindtap="selectSort" data-sort="hot">
+        <text>最热</text>
+      </view>
+      <view class="sort-option {{activeSort === 'new' ? 'active' : ''}}" bindtap="selectSort" data-sort="new">
+        <text>最新</text>
+      </view>
+      <view class="sort-option {{activeSort === 'discover' ? 'active' : ''}}" bindtap="selectSort" data-sort="discover">
+        <text>发现</text>
+      </view>
+    </view>
+
+    <view class="post-list" bindscrolltolower="loadMore">
+      <view class="post-item" wx:for="{{posts}}" wx:key="index" bindtap="goToPostDetail">
+        <view class="post-header">
+          <image src="/images/profile.png" class="post-avatar"></image>
+          <view class="post-author">
+            <text class="post-nickname">{{item.nickname}}</text>
+          </view>
+        </view>
+        <text class="post-title">{{item.title}}</text>
+        <image src="{{item.image}}" class="post-image" mode="aspectFill"></image>
+        <view class="post-footer">
+          <view class="post-like" bindtap="toggleLike" data-index="{{index}}">
+            <image src="{{item.liked ? '/images/like_yes.png' : '/images/like_no.png'}}" class="like-icon"></image>
+            <text class="post-like-count">{{item.likes}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

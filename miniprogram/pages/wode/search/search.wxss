@@ -1,0 +1,266 @@
+/* 搜索页面样式 */
+.search-container {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f0f7ff 0%, #f8f9fa 100%);
+  padding-bottom: 160rpx;
+}
+
+/* 搜索栏 */
+.search-bar {
+  padding: 20rpx 30rpx;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-bottom: 1rpx solid rgba(18, 150, 219, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.search-input-container {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%);
+  border-radius: 24rpx;
+  padding: 12rpx 20rpx;
+  border: 2rpx solid rgba(18, 150, 219, 0.2);
+}
+
+.search-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 12rpx;
+  opacity: 0.6;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #2c3e50;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.cancel-btn {
+  font-size: 28rpx;
+  color: #1296db;
+  font-weight: 500;
+  margin-left: 20rpx;
+  cursor: pointer;
+}
+
+/* 搜索记录 */
+.search-history {
+  padding: 30rpx;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  margin: 20rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(18, 150, 219, 0.1);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.history-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.clear-btn {
+  font-size: 24rpx;
+  color: #7a8ba0;
+  cursor: pointer;
+}
+
+.history-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.history-tag {
+  padding: 10rpx 20rpx;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%);
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: #5a6c7d;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1rpx solid rgba(18, 150, 219, 0.2);
+}
+
+.history-tag:hover {
+  background: linear-gradient(135deg, #e8f0fe 0%, #d1e5ff 100%);
+  transform: translateY(-2rpx);
+}
+
+/* 热门搜索 */
+.hot-search {
+  padding: 30rpx;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  margin: 0 20rpx 20rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(18, 150, 219, 0.1);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+}
+
+.hot-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 20rpx;
+  display: block;
+}
+
+.hot-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.hot-tag {
+  padding: 10rpx 20rpx;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8f0fe 100%);
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: #5a6c7d;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1rpx solid rgba(18, 150, 219, 0.2);
+}
+
+.hot-tag:hover {
+  background: linear-gradient(135deg, #e8f0fe 0%, #d1e5ff 100%);
+  transform: translateY(-2rpx);
+}
+
+/* 搜索结果 */
+.search-results {
+  padding: 30rpx;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  margin: 20rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(18, 150, 219, 0.1);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.results-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-right: 10rpx;
+}
+
+.results-count {
+  font-size: 24rpx;
+  color: #7a8ba0;
+}
+
+.result-item {
+  padding: 20rpx;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(18, 150, 219, 0.1);
+  border: 1rpx solid rgba(18, 150, 219, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.result-item:hover {
+  transform: translateY(-2rpx);
+  box-shadow: 0 4rpx 16rpx rgba(18, 150, 219, 0.15);
+}
+
+.result-content {
+  margin-bottom: 12rpx;
+}
+
+.result-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8rpx;
+  display: block;
+}
+
+.result-preview {
+  font-size: 24rpx;
+  color: #7a8ba0;
+  line-height: 1.5;
+  display: block;
+}
+
+.result-meta {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.result-time {
+  font-size: 22rpx;
+  color: #a4b0be;
+}
+
+/* 响应式调整 */
+@media (max-width: 375px) {
+  .search-bar {
+    padding: 15rpx 20rpx;
+  }
+  
+  .search-input-container {
+    padding: 10rpx 16rpx;
+  }
+  
+  .search-input {
+    font-size: 24rpx;
+  }
+  
+  .search-history,
+  .hot-search,
+  .search-results {
+    padding: 20rpx;
+    margin: 15rpx;
+  }
+  
+  .history-title,
+  .hot-title,
+  .results-title {
+    font-size: 24rpx;
+  }
+  
+  .history-tag,
+  .hot-tag {
+    font-size: 22rpx;
+    padding: 8rpx 16rpx;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.search-results {
+  animation: fadeIn 0.3s ease;
+}

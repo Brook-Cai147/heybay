@@ -1,0 +1,64 @@
+<view class="settings-container">
+  <!-- 设置列表 -->
+  <view class="settings-list">
+    <!-- 邀请好友 -->
+    <view class="settings-item" bindtap="inviteFriends">
+      <view class="item-left">
+        <image src="/images/wode_yes.png" class="item-icon"></image>
+        <text class="item-text">邀请好友</text>
+      </view>
+      <view class="item-right">
+        <text class="item-desc">分享小程序，邀请新用户</text>
+        <text class="arrow-icon">›</text>
+      </view>
+    </view>
+
+    <!-- 推送设置 -->
+    <view class="settings-item" bindtap="pushSettings">
+      <view class="item-left">
+        <image src="/images/comment.png" class="item-icon"></image>
+        <text class="item-text">推送设置</text>
+      </view>
+      <view class="item-right">
+        <text class="item-desc">开启/关闭微信服务通知</text>
+        <text class="arrow-icon">›</text>
+      </view>
+    </view>
+
+    <!-- 建议反馈 -->
+    <view class="settings-item" bindtap="feedback">
+      <view class="item-left">
+        <image src="/images/like_yes.png" class="item-icon"></image>
+        <text class="item-text">建议反馈</text>
+      </view>
+      <view class="item-right">
+        <text class="item-desc">提交使用问题/建议</text>
+        <text class="arrow-icon">›</text>
+      </view>
+    </view>
+
+    <!-- 关于我们 -->
+    <view class="settings-item" bindtap="aboutUs">
+      <view class="item-left">
+        <image src="/images/Collect_yes.png" class="item-icon"></image>
+        <text class="item-text">关于我们</text>
+      </view>
+      <view class="item-right">
+        <text class="item-desc">产品介绍、联系方式</text>
+        <text class="arrow-icon">›</text>
+      </view>
+    </view>
+
+    <!-- 退出登录 -->
+    <view class="settings-item logout-item" bindtap="logout">
+      <view class="item-left">
+        <image src="/images/xhs_no.png" class="item-icon"></image>
+        <text class="item-text logout-text">退出登录</text>
+      </view>
+      <view class="item-right">
+        <text class="item-desc">退出当前微信账号</text>
+        <text class="arrow-icon">›</text>
+      </view>
+    </view>
+  </view>
+</view>

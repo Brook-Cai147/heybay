@@ -1,0 +1,62 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/group/group",
+    "pages/post/post",
+    "pages/message/message",
+    "pages/wode/wode",
+    "pages/wode/search/search",
+    "pages/wode/settings/settings",
+    "pages/search/search",
+    "pages/post-detail/post-detail",
+    "pages/hot-search/hot-search",
+    "pages/group-search/group-search"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "同路人",
+    "navigationBarBackgroundColor": "#ffffff"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#999999",
+    "selectedColor": "#1296db",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页",
+        "iconPath": "images/home_no.png",
+        "selectedIconPath": "images/home_yes.png"
+      },
+      {
+        "pagePath": "pages/group/group",
+        "text": "组聊",
+        "iconPath": "images/group_no.png",
+        "selectedIconPath": "images/group_yes.png"
+      },
+      {
+        "pagePath": "pages/post/post",
+        "text": "发帖",
+        "iconPath": "images/post_no.png",
+        "selectedIconPath": "images/post_yes.png"
+      },
+      {
+        "pagePath": "pages/message/message",
+        "text": "消息",
+        "iconPath": "images/message_no.png",
+        "selectedIconPath": "images/message_yes.png"
+      },
+      {
+        "pagePath": "pages/wode/wode",
+        "text": "我的",
+        "iconPath": "images/wode_no.png",
+        "selectedIconPath": "images/wode_yes.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

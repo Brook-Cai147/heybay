@@ -1,0 +1,17 @@
+<view class="hot-search-page">
+  <view class="hot-search-header">
+    <text class="hot-search-title">热搜榜</text>
+    <text class="refresh-btn" bindtap="refreshHotSearch">刷新</text>
+  </view>
+  
+  <view class="hot-search-list">
+    <view class="hot-search-item" wx:for="{{hotSearchList}}" wx:key="index" bindtap="searchItem" data-index="{{index}}">
+      <view class="hot-rank {{index < 3 ? 'top-rank' : ''}}">{{index + 1}}</view>
+      <view class="hot-content">
+        <text class="hot-title">{{item.title}}</text>
+        <text class="hot-count">{{item.count}}讨论</text>
+      </view>
+      <image src="/images/hot.png" class="hot-icon"></image>
+    </view>
+  </view>
+</view>
