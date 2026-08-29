@@ -73,6 +73,15 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 - `cloudfunctions/_shared/service/requestExpiry.js` — 过期判定 `computeExpireAt` / `isExpired`（预约型 +24h、即时型 1h/3h、「今天内」按城市当地日期算到 23:59:59.999）与在架上限 `checkActiveLimit`（默认免费 3 / 会员 10，显式 limit 优先，来源为 `configs`）。**当前时间必须显式传入**，不取系统时间、不查库 — `constants/enums.js` — `cron` 过期扫描（M1-18）、`requestService` 的发布前置校验（M1-09） — `tests/requestExpiry.test.js` 18 个用例
 - 时区处理：用 `Intl` 取当地墙上时间（夏令时自动正确），并用「2026-07-01 伦敦必须是 UTC+1」自检运行时 ICU；不支持则抛 `MISSING_TIMEZONE` 并要求改传 `utcOffsetMinutes`，**绝不静默回落到服务器本地时区**
 
+**M1-06**
+
+- `project.config.json`（**已从 `miniprogram/` 移到仓库根**） — 开发者工具项目配置；`miniprogramRoot: "miniprogram/"` + `cloudfunctionRoot: "cloudfunctions/"`。项目根必须上提，因为 `cloudfunctionRoot` 只能指向项目根内部的子目录 — 无 — 开发者工具
+- `miniprogram/config/env.js` — 云环境 ID 的**唯一落点**（入库，理由见 D 前提第 6 条）与 `IS_TEST_DATA` 联调开关 — 无 — `app.js`、后续 `services/`
+- `miniprogram/app.js` — `onLaunch` 里初始化云能力；基础库不支持或环境 ID 未填时只在控制台报可操作的错，不抛错、不阻断渲染；`globalData.cloudReady` 供页面调云函数前判断 — `config/env.js` — 全部页面
+- `cloudfunctions/ping/` — 临时探针：返回 openid / appid / env / 服务端时间 / Node 版本 / ICU 自检结果。不碰数据库、不依赖 `_shared`。**M1-19 删除** — `wx-server-sdk` — 无
+
+> **云函数运行时事实（2026-08-29 实测）**：Node `v16.13.1`，`process.env.TZ` 为空，**ICU 完整、`Intl` 的 IANA 时区可用**（伦敦夏令时偏移实测 +60 分钟）。因此云函数代码**不得使用 Node 18+ 的 API**（如 `structuredClone`、`Array.prototype.findLast`、内置 `fetch`）。
+
 ## 关键决策的代码落点
 
 | 设计决策 | 代码落点 | 出处 |
