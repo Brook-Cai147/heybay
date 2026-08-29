@@ -14,20 +14,20 @@
 
 ## 先读这三份文档
 
-1. `docs/design-document.md` — V2.0 完整 PRD（定位、需求单机制、信任与安全、AI 设计、指标、合规、商业化、Roadmap）
-2. `docs/tech-stack.md` — 技术栈选型与理由，含"明确不用的技术"和技术风险
-3. `docs/decision-log.md` — 25 条过程性决策，记录被否决的方案与否决理由
+1. `memory-bank/design-document.md` — V2.0 完整 PRD（定位、需求单机制、信任与安全、AI 设计、指标、合规、商业化、Roadmap）
+2. `memory-bank/tech-stack.md` — 技术栈选型与理由，含"明确不用的技术"和技术风险
+3. `memory-bank/decision-log.md` — 25 条过程性决策，记录被否决的方案与否决理由
 
 **在提出方案前先查 `decision-log.md`。** 如果你的建议与其中某条决策冲突，先说明冲突的是哪条、为什么现在情况不同，再提。不要重新论证已经定过的事。
 
 ## 强制规则（vibe coding 流程约定）
 
-`docs/` 目录就是本项目的 memory bank。以下五条是硬性要求：
+`memory-bank/` 是本项目的文档基座（memory bank），AI 需要读写的文档全在里面。以下五条是硬性要求：
 
-1. **写任何代码前，必须完整阅读 `docs/architecture.md`。** 它规定了每个文件的职责和分层边界。
-2. **写任何代码前，必须完整阅读 `docs/design-document.md` 中与本次任务相关的章节。**
-3. **动手前先读 `docs/progress.md`**，确认上次停在哪一步、有哪些已知欠债。
-4. **每完成 `docs/implementation-plan.md` 中的一步，必须同时做三件事**：更新 `docs/architecture.md`（新增/变更的文件职责）、在 `docs/progress.md` 追加完成记录、执行一次 git commit（提交信息带步骤编号）。三件事缺一不可。
+1. **写任何代码前，必须完整阅读 `memory-bank/architecture.md`。** 它规定了每个文件的职责和分层边界。
+2. **写任何代码前，必须完整阅读 `memory-bank/design-document.md` 中与本次任务相关的章节。**
+3. **动手前先读 `memory-bank/progress.md`**，确认上次停在哪一步、有哪些已知欠债。
+4. **每完成 `memory-bank/implementation-plan.md` 中的一步，必须同时做三件事**：更新 `memory-bank/architecture.md`（新增/变更的文件职责）、在 `memory-bank/progress.md` 追加完成记录、执行一次 git commit（提交信息带步骤编号）。三件事缺一不可。
 5. **一次只推进一步。** 不要因为"顺手"就多做下一步。每一步都要能独立验证。
 
 ## 验证方式（不要一律写单元测试）
@@ -41,12 +41,12 @@
 
 | 文件 | 作用 | 谁维护 |
 |---|---|---|
-| `docs/design-document.md` | V2.0 完整 PRD，产品的唯一依据 | 人（需求变更时） |
-| `docs/tech-stack.md` | 技术选型与理由 | 人（选型变更时） |
-| `docs/decision-log.md` | 过程性决策与被否决方案 | 人 + AI（有新决策时追加） |
-| `docs/implementation-plan.md` | 分步实施计划，每步小而具体、可验证、不含代码 | AI 生成，人确认 |
-| `docs/architecture.md` | 每个文件的职责与分层边界（活文档） | AI，每步必更 |
-| `docs/progress.md` | 完成记录、已知欠债、待核实事项进度（活文档） | AI，每步必更 |
+| `memory-bank/design-document.md` | V2.0 完整 PRD，产品的唯一依据 | 人（需求变更时） |
+| `memory-bank/tech-stack.md` | 技术选型与理由 | 人（选型变更时） |
+| `memory-bank/decision-log.md` | 过程性决策与被否决方案 | 人 + AI（有新决策时追加） |
+| `memory-bank/implementation-plan.md` | 分步实施计划，每步小而具体、可验证、不含代码 | AI 生成，人确认 |
+| `memory-bank/architecture.md` | 每个文件的职责与分层边界（活文档） | AI，每步必更 |
+| `memory-bank/progress.md` | 完成记录、已知欠债、待核实事项进度（活文档） | AI，每步必更 |
 | `docs/v1-assets/` | V1.0「同路人」历史资产，**只读，不要删改** | 冻结 |
 | `CHANGELOG.md` | 版本变更记录 | AI，发版时 |
 
@@ -84,6 +84,15 @@
 - 输出注意错别字。
 - 文档与代码统一用 喊呗 / HeyBay / 小螺，不要出现其他英文名变体。
 
-## 版本管理
+## 版本管理与并行开发
 
-`main` 分支 + tag（`v1.0` = 同路人代码基线，`v2.0-design` = V2.0 设计完成）+ `CHANGELOG.md`。目录与仓库名不带版本号。
+- `main` 是干净的主干，**不在 main 上直接开发**。tag：`v1.0` = 同路人代码基线，`v2.0-design` = V2.0 设计完成。
+- 每个实施步骤在自己的分支上做：分支名 `step/M1-01-<简短描述>`，从最新 `main` 切出。
+- 本项目会**并行开发**：多个会话可能同时在不同 git worktree 里推进不同步骤。因此：
+  1. **动手前先看 `memory-bank/implementation-plan.md` 里本步骤的「涉及文件」和「并行冲突」字段。** 如果与其他进行中的步骤有文件交集，停下来问我，不要硬做。
+  2. **`architecture.md` 只追加、不重写整节。** 在对应目录的小节末尾追加条目，减少合并冲突面。
+  3. **`progress.md` 的「完成记录」只追加到末尾**，不要插入中间、不要重排既有条目。
+  4. 分支合回 `main` 前，先 `git fetch && git rebase origin/main`，自己解决活文档的合并冲突，不要让冲突流到 main。
+  5. 一个 worktree 对应一个会话。不要在一个会话里跨 worktree 操作文件。
+- 提交信息格式：`feat(M1-01): 做了什么` / `test(M1-03): ...` / `docs(M1-05): ...`。步骤编号必须出现在括号里，方便 `git log --oneline | Select-String M1-0` 反查。
+

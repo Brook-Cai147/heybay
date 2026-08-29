@@ -9,13 +9,25 @@
 
 ```
 heybay/
-├── docs/
+├── memory-bank/                # AI 协作的文档基座，写代码前必读
 │   ├── design-document.md      # V2.0 完整 PRD（产品定位、机制、AI、合规、商业化）
 │   ├── tech-stack.md           # 技术栈选型与理由
-│   └── v1-assets/              # V1.0「同路人」原始设计资产
+│   ├── decision-log.md         # 过程性决策与被否决方案
+│   ├── implementation-plan.md  # 分步实施计划（待生成）
+│   ├── architecture.md         # 每个文件的职责与分层边界（活文档）
+│   └── progress.md             # 完成记录、已知欠债、待核实事项（活文档）
+├── docs/
+│   └── v1-assets/              # V1.0「同路人」原始设计资产（只读，不删改）
 ├── miniprogram/                # 微信小程序端（V1.0 代码为起点）
+├── CLAUDE.md                   # 项目上下文与强制规则，会话自动加载
+├── CHANGELOG.md
+├── .env.example
 └── .gitignore
 ```
+
+## 工作流
+
+采用文档驱动的 vibe coding 流程：`design-document.md` → `tech-stack.md` → `implementation-plan.md` → 按步实现，每步更新 `architecture.md` 与 `progress.md` 并提交。规则见 `CLAUDE.md`。
 
 ## 版本管理
 
@@ -28,7 +40,7 @@ heybay/
 
 ## 当前状态
 
-产品设计完成（见 `docs/design-document.md`），V2.0 开发未启动。V1.0 代码为原生微信小程序，含 5 Tab 自定义 tabBar 与 11 个页面，无后端。
+产品设计完成（见 `memory-bank/design-document.md`），V2.0 开发未启动。V1.0 代码为原生微信小程序，含 5 Tab 自定义 tabBar 与 11 个页面，无后端。
 
 ## 关键约束
 

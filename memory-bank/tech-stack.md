@@ -1,6 +1,6 @@
 # 喊呗 HeyBay 技术栈选型
 
-> 配套文档：`docs/design-document.md`（V2.0 完整 PRD）
+> 配套文档：`memory-bank/design-document.md`（V2.0 完整 PRD）
 > 选型约束：个人开发者、业余时间、资金投入近 0、需真实可用、需作为作品集展示。
 > 选型原则：**简单优先，健壮靠边界而非靠框架。** 每一项技术都要能用"它替我省掉了什么必须自己做对的事"来解释；省不掉的就不引入。
 
@@ -280,13 +280,19 @@ heybay/
 │   ├── admin/                    # 管理端操作（独立校验管理员身份）
 │   ├── cron/                     # 定时任务集合
 │   └── _shared/                  # service / dao / 工具，被各云函数复用
-├── docs/
+├── memory-bank/                  # AI 协作文档基座，写代码前必读
 │   ├── design-document.md
 │   ├── tech-stack.md
-│   └── v1-assets/
+│   ├── decision-log.md
+│   ├── implementation-plan.md
+│   ├── architecture.md           # 活文档，每步必更
+│   └── progress.md               # 活文档，每步必更
+├── docs/
+│   └── v1-assets/                # V1.0 历史资产，只读
 ├── tests/                        # node:test，只覆盖第 10 节三块逻辑
 ├── .env.example                  # 环境变量样例（真实 .env 不入库）
 ├── .gitignore
+├── CLAUDE.md                     # 项目上下文与强制规则
 ├── README.md
 └── CHANGELOG.md                  # 自 v2.0 起维护
 ```

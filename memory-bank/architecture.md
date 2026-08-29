@@ -26,7 +26,8 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 | `miniprogram/services/` | 云函数调用封装，一处一个方法 | 未创建 |
 | `miniprogram/components/` | 复用组件（需求卡片、信任徽章、响应列表项） | 未创建 |
 | `cloudfunctions/` | 云函数 | 未创建 |
-| `docs/` | 项目文档，即 memory bank | 就绪 |
+| `memory-bank/` | AI 协作的文档基座（PRD、选型、决策、计划、架构、进度） | 就绪 |
+| `docs/v1-assets/` | V1.0「同路人」历史资产，只读不删改 | 冻结 |
 | `tests/` | `node:test` 单测，只覆盖状态机 / AI 额度 / 分发频控 | 未创建 |
 
 ## 文件清单
