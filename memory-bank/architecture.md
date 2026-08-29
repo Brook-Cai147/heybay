@@ -22,7 +22,7 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 | `miniprogram/` | 微信小程序端（V1.0 代码为起点，待按 PRD 6.1/6.2 重构） | V1.0 原样 |
 | `miniprogram/pages/` | 页面。V1.0 为 11 个旧页面，需按 PRD 6.2 的 P0 清单重做 | 待重构 |
 | `miniprogram/custom-tab-bar/` | 自定义底部 Tab，需改为 PRD 6.1 的新五 Tab | 待重构 |
-| `miniprogram/models/` | 枚举与字段校验，禁止业务代码写字符串字面量 | 未创建 |
+| `miniprogram/models/` | 枚举与字段校验，禁止业务代码写字符串字面量 | 已就绪（M1-03） |
 | `miniprogram/services/` | 云函数调用封装，一处一个方法 | 未创建 |
 | `miniprogram/components/` | 复用组件（需求卡片、信任徽章、响应列表项） | 未创建 |
 | `cloudfunctions/` | 云函数 | 未创建 |
@@ -50,6 +50,15 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 - `tests/requestStateMachine.permissions.test.js` — 权限矩阵单测：权限表与转移表键集一致、四角色允许集逐条、14 条越权用例、错误码可区分、48 个格子全覆盖 — 上述两者 — 无
 
 > 权限矩阵的三条细化（比 PRD 更严，已确认）：未选定阶段只有需求方能取消；admin 只能下架、不能代做发布/选定/完成/取消；`done → rated` 已登记 owner+responder 但 M1 不调用。
+
+**M1-03**
+
+- `cloudfunctions/_shared/constants/enums.js`（扩展） — 补齐品类白名单 8 类 + 中文展示名、时效类型、即时时长、报酬类型、可见范围、性别、偏好开关；中文展示名同时供 UI 与 M2 的 AI prompt 使用 — 无 — 全部 service、dao、schema
+- `miniprogram/models/enums.js` — 端侧枚举**手抄副本**，除云侧独有的 `ACTOR_ROLE` 外与云侧完全一致；页面禁止写枚举字面量 — 无（不 require 云侧，物理上做不到） — 端侧全部页面与 `models/schema.js`
+- `miniprogram/models/schema.js` — 需求单草稿的端侧字段校验，**只为体验不为安全**；返回 `{valid, errors[], hints[]}`，不抛异常；地点写细只给 hint 不拦截；异性偏好键报 `FORBIDDEN_FIELD` — `models/enums.js` — 发布页（M1-15）
+- `tests/enumsParity.test.js` — 端云枚举一致性断言 + D-09/D-26 的结构防线（品类恰好 8 类、无交友语义、偏好无异性项、性别含 unset） — 两份 enums — 无
+
+> `schema.js` 不含任何 `wx.*` 调用，因此能在 node 里直接跑；端侧纯逻辑模块一律遵守这一点。
 
 ## 关键决策的代码落点
 
