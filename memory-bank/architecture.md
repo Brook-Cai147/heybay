@@ -43,6 +43,14 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 - `cloudfunctions/_shared/service/requestStateMachine.js` — 需求单状态转移表与合法性判定（纯逻辑，不接触数据库）；`canTransition` 返回布尔，`assertTransition` 非法即抛（带 `code`/`from`/`to`） — `constants/enums.js` — `transitionRequest`（M1-09 起）、角色权限矩阵（M1-02）
 - `tests/requestStateMachine.transitions.test.js` — 转移表单测：12 条合法边逐条、69 条非法组合、终态无出边、未知状态被拒、转移表冻结 — 上述两者 — 无
 
+**M1-02**
+
+- `cloudfunctions/_shared/constants/enums.js`（扩展） — 新增 `ACTOR_ROLE` 四角色（owner / responder / system / admin），**云侧独有**，端侧副本不需要 — 无 — 权限矩阵、后续 handler 的鉴权
+- `cloudfunctions/_shared/service/requestStateMachine.js`（扩展） — 新增 `PERMISSIONS` 权限矩阵（12 条边逐条标注允许角色）与 `assertTransitionByActor`；错误码分四种：UNKNOWN_STATUS / UNKNOWN_ACTOR / ILLEGAL_TRANSITION / TRANSITION_FORBIDDEN — `constants/enums.js` — `transitionRequest`（M1-09 起）
+- `tests/requestStateMachine.permissions.test.js` — 权限矩阵单测：权限表与转移表键集一致、四角色允许集逐条、14 条越权用例、错误码可区分、48 个格子全覆盖 — 上述两者 — 无
+
+> 权限矩阵的三条细化（比 PRD 更严，已确认）：未选定阶段只有需求方能取消；admin 只能下架、不能代做发布/选定/完成/取消；`done → rated` 已登记 owner+responder 但 M1 不调用。
+
 ## 关键决策的代码落点
 
 | 设计决策 | 代码落点 | 出处 |

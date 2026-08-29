@@ -7,8 +7,8 @@
 ## 当前状态
 
 - **阶段**：M1 进行中
-- **下一步**：M1-02（状态机的角色权限矩阵）
-- **当前分支**：`step/M1-01-request-state-machine`（M1-01 已完成待合回 main）
+- **下一步**：M1-03（端侧枚举与字段校验，并锁定两份枚举一致）
+- **当前分支**：`step/M1-02-actor-permission-matrix`（M1-02 已完成待合回 main）
 - **最新 tag**：`v2.0-design`
 
 ## 里程碑
@@ -30,6 +30,10 @@
 - **M1-01 | 2026-08-29 | 需求单状态转移表与 node:test 测试骨架 | `npm test` 10 个用例全绿（12 条合法边逐条、69 条非法组合、四个终态无出边、未知状态被拒、转移表冻结）；另做破坏性验证：给 matched 加一条 responded 出边后测试变红，撤销后恢复全绿 | `cf358a0`**
   - 偏差记录：计划里写的 `node --test tests/` 在 Node 26 下会把目录当模块加载并报 `Cannot find module`，实际用 `node --test "tests/**/*.test.js"`，计划文档已同步修正。
   - 遗留给 M1-02：`assertTransition` 目前只判转移合法性，不判权限，所以此刻 `open → removed` 会通过（下架本身合法，但应只有管理员能做）。
+
+- **M1-02 | 2026-08-29 | 状态机的角色权限矩阵（四角色 × 12 条边）| `npm test` 22 个用例全绿（新增 12）；破坏性验证：给 `responded → matched` 加 responder 后三条断言变红，撤销后恢复；手工核对三种错误码的报错文案 | 待填**
+  - 比 PRD 更严的三处细化（已与人确认）：① 未选定阶段（open / responded）只有需求方能取消，responder 与该单无绑定关系；② admin 只能下架，不能代做发布/选定/完成/取消，理由同 D-14 的责任归属；③ `done → rated` 已登记 owner+responder 权限但 M1 不调用（评价属 M3）。
+  - 错误码分工：`ILLEGAL_TRANSITION`（转移本身不成立）与 `TRANSITION_FORBIDDEN`（转移合法但越权）必须分开，前端提示文案不同。
 
 ## 已知问题与欠债
 

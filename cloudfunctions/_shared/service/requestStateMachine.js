@@ -4,11 +4,16 @@
  * 本文件是全产品最容易出隐蔽 bug 的地方：状态错乱会直接导致用户纠纷（例如已被选定
  * 的单又被别人接走），所以转移表必须显式、必须有单测（tech-stack 第 3 节 / D-20）。
  *
- * 唯一的写入口是云函数侧的 transitionRequest，它在写库前必须先过这里。
- * 角色权限矩阵（谁有资格做这次转移）在 M1-02 补，本步只判断转移本身是否合法。
+ * 唯一的写入口是云函数侧的 transitionRequest，它在写库前必须先过这里：
+ * 先判转移是否合法（转移表），再判发起方是否有权（权限矩阵）。两者是独立的两道门。
  */
 
-const { REQUEST_STATUS, REQUEST_STATUS_VALUES } = require('../constants/enums')
+const {
+  REQUEST_STATUS,
+  REQUEST_STATUS_VALUES,
+  ACTOR_ROLE,
+  ACTOR_ROLE_VALUES
+} = require('../constants/enums')
 
 /**
  * 显式转移表：key 为当前状态，value 为允许转移到的状态列表。
@@ -36,10 +41,56 @@ const TRANSITIONS = Object.freeze({
   [REQUEST_STATUS.REMOVED]: Object.freeze([])
 })
 
-/** 错误码，供上层区分处理；M1-02 会补 TRANSITION_FORBIDDEN（转移合法但越权） */
+/** 错误码，供上层区分处理 */
 const TRANSITION_ERROR = Object.freeze({
   UNKNOWN_STATUS: 'UNKNOWN_STATUS',
-  ILLEGAL_TRANSITION: 'ILLEGAL_TRANSITION'
+  UNKNOWN_ACTOR: 'UNKNOWN_ACTOR',
+  ILLEGAL_TRANSITION: 'ILLEGAL_TRANSITION',
+  TRANSITION_FORBIDDEN: 'TRANSITION_FORBIDDEN'
+})
+
+/** 转移的唯一键，形如 `open>responded` */
+const edgeKey = (from, to) => `${from}>${to}`
+
+/**
+ * 权限矩阵：每条合法转移允许哪些角色发起。
+ *
+ * 设计要点（PRD 4.1 / 4.5，比转移表更严）：
+ *   - 发布、选定只能由需求方本人做，选定不可逆
+ *   - 被响应与过期只能由系统触发：前者是响应动作的连带结果，后者是定时任务
+ *   - 取消分两段：未选定前只有需求方能取消；已选定后双方都能取消（须记录取消方，计入信用）
+ *   - 下架只有管理员能做（违规处置）
+ *   - 完成与评价双方都能做（完成需双方各自确认，计数逻辑在 M1-12）
+ *
+ * 这张表的键必须与转移表的边一一对应，加了边忘了配权限会被单测拦下。
+ */
+const PERMISSIONS = Object.freeze({
+  [edgeKey(REQUEST_STATUS.DRAFT, REQUEST_STATUS.OPEN)]: Object.freeze([ACTOR_ROLE.OWNER]),
+
+  [edgeKey(REQUEST_STATUS.OPEN, REQUEST_STATUS.RESPONDED)]: Object.freeze([ACTOR_ROLE.SYSTEM]),
+  [edgeKey(REQUEST_STATUS.OPEN, REQUEST_STATUS.EXPIRED)]: Object.freeze([ACTOR_ROLE.SYSTEM]),
+  [edgeKey(REQUEST_STATUS.OPEN, REQUEST_STATUS.CANCELLED)]: Object.freeze([ACTOR_ROLE.OWNER]),
+  [edgeKey(REQUEST_STATUS.OPEN, REQUEST_STATUS.REMOVED)]: Object.freeze([ACTOR_ROLE.ADMIN]),
+
+  [edgeKey(REQUEST_STATUS.RESPONDED, REQUEST_STATUS.MATCHED)]: Object.freeze([ACTOR_ROLE.OWNER]),
+  [edgeKey(REQUEST_STATUS.RESPONDED, REQUEST_STATUS.EXPIRED)]: Object.freeze([ACTOR_ROLE.SYSTEM]),
+  [edgeKey(REQUEST_STATUS.RESPONDED, REQUEST_STATUS.CANCELLED)]: Object.freeze([ACTOR_ROLE.OWNER]),
+  [edgeKey(REQUEST_STATUS.RESPONDED, REQUEST_STATUS.REMOVED)]: Object.freeze([ACTOR_ROLE.ADMIN]),
+
+  [edgeKey(REQUEST_STATUS.MATCHED, REQUEST_STATUS.DONE)]: Object.freeze([
+    ACTOR_ROLE.OWNER,
+    ACTOR_ROLE.RESPONDER
+  ]),
+  [edgeKey(REQUEST_STATUS.MATCHED, REQUEST_STATUS.CANCELLED)]: Object.freeze([
+    ACTOR_ROLE.OWNER,
+    ACTOR_ROLE.RESPONDER
+  ]),
+
+  // done → rated 属 M3（评价），此处先登记权限，M1 不会调用
+  [edgeKey(REQUEST_STATUS.DONE, REQUEST_STATUS.RATED)]: Object.freeze([
+    ACTOR_ROLE.OWNER,
+    ACTOR_ROLE.RESPONDER
+  ])
 })
 
 /** 是否为已登记的状态 */
@@ -90,12 +141,72 @@ const assertTransition = (from, to) => {
   return true
 }
 
+/** 是否为已登记的角色 */
+const isKnownActor = actor => ACTOR_ROLE_VALUES.includes(actor)
+
+/** 某条转移允许的角色列表；转移非法或未配权限时返回空数组 */
+const allowedActors = (from, to) => PERMISSIONS[edgeKey(from, to)] || []
+
+/**
+ * 判断 actor 是否有权把 from 推到 to。转移非法也返回 false —— 需要区分两种失败原因时用
+ * assertTransitionByActor，它的错误码会告诉你是"转移非法"还是"你没权限"。
+ * @returns {boolean}
+ */
+const canActorTransition = (from, to, actor) => {
+  if (!canTransition(from, to)) return false
+  if (!isKnownActor(actor)) return false
+  return allowedActors(from, to).includes(actor)
+}
+
+/**
+ * 断言 actor 有权做这次转移。写库前调这个。
+ *
+ * 失败时的错误码分三种，前端要据此给不同提示：
+ *   UNKNOWN_STATUS / ILLEGAL_TRANSITION —— 转移本身不成立（"这个单子当前状态不能这么改"）
+ *   UNKNOWN_ACTOR                       —— 角色值本身不合法（调用方 bug）
+ *   TRANSITION_FORBIDDEN                —— 转移合法但你没资格（"只有需求方能选定"）
+ *
+ * @throws {Error} err.code / err.from / err.to / err.actor
+ */
+const assertTransitionByActor = (from, to, actor) => {
+  // 先判转移，再判权限：报错原因要指向根本问题，而不是笼统说"没权限"
+  assertTransition(from, to)
+
+  const fail = (code, message) => {
+    const err = new Error(message)
+    err.code = code
+    err.from = from
+    err.to = to
+    err.actor = actor
+    throw err
+  }
+
+  if (!isKnownActor(actor)) {
+    fail(TRANSITION_ERROR.UNKNOWN_ACTOR, `未知的转移发起方角色：${actor}`)
+  }
+
+  const actors = allowedActors(from, to)
+  if (!actors.includes(actor)) {
+    fail(
+      TRANSITION_ERROR.TRANSITION_FORBIDDEN,
+      `角色 ${actor} 无权执行状态转移 ${from} → ${to}。该转移只允许 ${actors.join(' / ')} 发起`
+    )
+  }
+  return true
+}
+
 module.exports = {
   TRANSITIONS,
+  PERMISSIONS,
   TRANSITION_ERROR,
+  edgeKey,
   isKnownStatus,
+  isKnownActor,
   isTerminalStatus,
   allowedTargets,
+  allowedActors,
   canTransition,
-  assertTransition
+  canActorTransition,
+  assertTransition,
+  assertTransitionByActor
 }

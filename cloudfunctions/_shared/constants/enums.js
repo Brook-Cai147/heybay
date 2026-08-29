@@ -24,7 +24,24 @@ const REQUEST_STATUS = {
 /** 需求单状态的全量取值，供校验与遍历用 */
 const REQUEST_STATUS_VALUES = Object.freeze(Object.values(REQUEST_STATUS))
 
+/**
+ * 状态转移的发起方角色（tech-stack 第 3 节）。
+ * 判断"是谁在做这次转移"，与"这次转移本身是否合法"是两件事，分别由权限矩阵与转移表负责。
+ */
+const ACTOR_ROLE = {
+  OWNER: 'owner',           // 需求方（发单人）
+  RESPONDER: 'responder',   // 被选定的响应者
+  SYSTEM: 'system',         // 系统：定时任务与由其他动作连带触发的状态变更
+  ADMIN: 'admin'            // 管理员（openid 白名单，云函数侧独立校验）
+}
+
+/** 角色的全量取值 */
+const ACTOR_ROLE_VALUES = Object.freeze(Object.values(ACTOR_ROLE))
+
 module.exports = {
   REQUEST_STATUS: Object.freeze(REQUEST_STATUS),
-  REQUEST_STATUS_VALUES
+  REQUEST_STATUS_VALUES,
+  ACTOR_ROLE: Object.freeze(ACTOR_ROLE),
+  ACTOR_ROLE_VALUES
 }
+
