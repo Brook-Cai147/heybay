@@ -60,6 +60,14 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 
 > `schema.js` 不含任何 `wx.*` 调用，因此能在 node 里直接跑；端侧纯逻辑模块一律遵守这一点。
 
+**M1-04**
+
+- `cloudfunctions/_shared/service/bucketing.js` — A/B 分桶纯函数：`bucketOf(openid, experimentKey)` 返回 0~99；手写 FNV-1a 哈希（零依赖、不用 crypto）；openid 非法返回 `null` 不抛错。`BUCKET_COUNT=100` 不可改，改则历史桶号失去可比性 — 无 — `track` 云函数（M1-13）、M2 起的 AI 实验
+- `cloudfunctions/_shared/constants/events.js` — 埋点事件字典（PRD 7.3 六类）：18 个事件，10 个 `active` / 8 个 `planned` 占位；`validateEvent` 校验必填参数；**事件名一旦上报即冻结** — 无 — `track` 云函数（M1-13）、各页面埋点
+- `tests/bucketing.test.js` — 分桶单测（桶号稳定、0~99、四分位均匀、100 桶无空桶、实验间不相关、非法输入返回 null）+ 事件字典结构性断言 — 上述两者 — 无
+
+> 分桶标识不是事件，而是每条事件的公共字段（`EVENT_COMMON_FIELDS` 里的 `bucket`）。M1 只用默认实验 key，实验配置与对比分析留 M5（D-31）。
+
 ## 关键决策的代码落点
 
 | 设计决策 | 代码落点 | 出处 |
