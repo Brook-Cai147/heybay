@@ -94,5 +94,7 @@
   3. **`progress.md` 的「完成记录」只追加到末尾**，不要插入中间、不要重排既有条目。
   4. 分支合回 `main` 前，先 `git fetch && git rebase origin/main`，自己解决活文档的合并冲突，不要让冲突流到 main。
   5. 一个 worktree 对应一个会话。不要在一个会话里跨 worktree 操作文件。
+  6. **worktree 的创建、合并、清理只在主目录（`F:\ai-products\heybay`）的会话里做。** worktree 会话只负责本步骤的代码与提交，禁止执行 `git worktree` / `git merge` / 删分支等命令——避免两个会话同时改仓库结构。
+  7. 新 worktree 里没有被 `.gitignore` 排除的本地文件（`.env`、`miniprogram/project.private.config.json`）。如果发现缺失，**先问我，不要重新生成或猜内容**。
 - 提交信息格式：`feat(M1-01): 做了什么` / `test(M1-03): ...` / `docs(M1-05): ...`。步骤编号必须出现在括号里，方便 `git log --oneline | Select-String M1-0` 反查。
 
