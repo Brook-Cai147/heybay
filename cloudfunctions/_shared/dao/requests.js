@@ -89,6 +89,31 @@ const listOpenByCity = async ({ city, category, nowMs, includeTest = false, limi
 }
 
 
+/**
+ * 待过期的需求单（M1-18 的定时扫描用）：仍在架、且 `expireAt` 已经过去。
+ *
+ * 单次处理条数必须有上限 —— 一次异常扫描把免费额度的调用次数吃光，比晚十分钟过期严重得多。
+ * 处理不完下一轮继续（本查询天然幂等：已改成 expired 的单不会再被选出来）。
+ *
+ * @param {string} [timing] 只扫某种时效类型（即时型 10 分钟一轮、预约型 1 小时一轮），空表示全部
+ */
+const listExpiredCandidates = async ({ timing, nowMs, limit = 50 }) => {
+  const _ = getCommand()
+  const where = {
+    status: _.in(ACTIVE_STATUSES),
+    expireAt: _.lte(new Date(nowMs)),
+    deletedAt: null
+  }
+  if (timing) where.timing = timing
+
+  const res = await collection()
+    .where(where)
+    .orderBy('expireAt', 'asc') // 先处理过期最久的
+    .limit(limit)
+    .get()
+  return res.data
+}
+
 module.exports = {
   ACTIVE_STATUSES,
   insert,
@@ -96,5 +121,6 @@ module.exports = {
   updateById,
   countActiveByOwnerCity,
   incResponseCount,
-  listOpenByCity
+  listOpenByCity,
+  listExpiredCandidates
 }

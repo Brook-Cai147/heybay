@@ -1,0 +1,10 @@
+{
+  "name": "cron",
+  "version": "1.0.0",
+  "private": true,
+  "description": "定时任务：需求单过期扫描（M1-18）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "2.6.3"
+  }
+}

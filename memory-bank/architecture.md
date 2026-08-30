@@ -173,7 +173,23 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 
 > **联调数据开关只有一处**：`requestService.INCLUDE_TEST_DATA`。M1-19 收尾前改成 `false`，之后广场与统计都不再看到 `_isTest` 数据。散落多处的开关等于没有开关。
 >
-> **导航栏标题**：首页不设页面级 `navigationBarTitleText`，回落到全局的「喊呗」（品牌位）；其余页面各自设功能名（城市 / 喊一声 / 消息 / 我的 / 需求详情）。
+> **导航栏标题**：五个 Tab 与详情页都不设页面级 `navigationBarTitleText`，统一回落到全局的「喊呗」。页面身份靠页面内的大标题表达，不靠导航栏。
+
+**M1-17**
+
+- `cloudfunctions/_shared/service/requestService.js`（扩展 `getDetail`）— 一次调用返回需求本体 + 视角 + 响应列表 + 双方确认状态；新增 `publicRequest` / `publicResponse` 两个裁剪函数，**响应对外不含 `responderOpenid`** — `dao/{requests,responses,users}.js` — 详情页
+- `cloudfunctions/_shared/service/requestService.js`（`confirmDone` 补 `doneCount`）+ `responseService`（响应时冗余存 `responderDoneCount` 快照）— 完成单数是 M1 唯一真实可得的"证据摘要"（PRD 6.4） — `dao/users.js` — 详情页的响应列表
+- `miniprogram/pages/request-detail/` — 三视角切换（需求方 / 被选定的响应者 / 其他人）；选定前**强制展示安全提示卡** + 二次确认弹窗；matched 后双方各自确认完成并显示对方状态；所有失败原样弹出云函数给的业务提示 — `services/{request,response}.js`、`models/labels.js`、`utils/track.js` — 无
+
+> 证据摘要按计划只显示"真实可得"的项：**完成单数显示、平均响应时长不显示**（M1 没有这个数据源），且不写"暂无"占位 —— 占位会让人以为功能坏了。信任分与徽章分级属 M2/M3，M1 徽章一律「新面孔」。
+
+**M1-18**
+
+- `cloudfunctions/_shared/dao/requests.js`（扩展 `listExpiredCandidates`）— 仍在架且 `expireAt` 已过去的单子，按 `expireAt` 升序（先处理过期最久的），**单次有条数上限** — `dao/db.js` — `expiryScan`
+- `cloudfunctions/_shared/service/expiryScan.js` — 扫一轮并把到期单置 expired；actor 固定 `system`；单条失败不中断整批；返回 `mayHaveMore` 供下一轮判断 — `requestService.applyTransition`、`trackService` — `cron`
+- `cloudfunctions/cron/` — 两个定时触发器（`config.json`）：`scanInstant` 每 10 分钟扫即时型、`scanScheduled` 每小时扫预约型。**本函数没有 openid**，所以不走 `createHandler` 的身份校验 — `_shared` — 无
+
+> 幂等是查询天然给的：只选在架单，已 expired 的选不出来，同一单不会被过期两次。M2 的"过期后 AI 兜底作答"与"归档进知识库"的调用点已在 `expiryScan` 的循环里用注释标出。
 
 ## 关键决策的代码落点
 

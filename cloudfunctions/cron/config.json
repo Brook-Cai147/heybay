@@ -1,0 +1,14 @@
+{
+  "triggers": [
+    {
+      "name": "scanInstant",
+      "type": "timer",
+      "config": "0 */10 * * * * *"
+    },
+    {
+      "name": "scanScheduled",
+      "type": "timer",
+      "config": "0 0 * * * * *"
+    }
+  ]
+}
