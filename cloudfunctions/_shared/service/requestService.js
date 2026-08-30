@@ -8,6 +8,7 @@
  */
 
 const requestsDao = require('../dao/requests')
+const responsesDao = require('../dao/responses')
 const statusLogsDao = require('../dao/statusLogs')
 const configsDao = require('../dao/configs')
 const { startTransaction } = require('../dao/tx')
@@ -16,6 +17,7 @@ const { ERROR, fail, ok } = require('../constants/errors')
 const { assertTransitionByActor } = require('./requestStateMachine')
 const { computeExpireAt, checkActiveLimit } = require('./requestExpiry')
 const { validateAndNormalize } = require('./requestValidator')
+const trackService = require('./trackService')
 const { publicUser } = require('./userService')
 const usersDao = require('../dao/users')
 
@@ -105,12 +107,27 @@ const create = async ({ openid, params = {}, isTest = false }) => {
       tx
     )
     await tx.commit()
+
+    // 「仅同性响应」的使用率要能观测（PRD 4.5 / 事件字典 ⑤ 安全组），上报失败不影响发布
+    if (draft.preference[PREFERENCE_FLAG.SAME_GENDER_ONLY] === true) {
+      await trackService.reportSafely({
+        openid,
+        name: 'same_gender_only_enabled',
+        params: { requestId },
+        isTest
+      })
+    }
     return ok({ requestId, status: REQUEST_STATUS.OPEN, expireAt, expireRule: rule })
   } catch (err) {
-    await tx.rollback()
+    try {
+      await tx.rollback()
+    } catch (rollbackErr) {
+      console.error('[create] rollback 失败', rollbackErr)
+    }
     throw err
   }
 }
+
 
 /**
  * 执行一次状态转移。所有状态变化的唯一出口。
@@ -144,6 +161,13 @@ const applyTransition = async ({ requestId, to, actorRole, actorOpenid, reason =
     )
     await tx.commit()
     committed = true
+    // 状态变更事件由服务端上报，不依赖端侧触发（M1-13）。**上报失败不能影响已提交的状态变更**
+    await trackService.reportSafely({
+      openid: actorOpenid,
+      name: 'request_status_changed',
+      params: { requestId, from, to, actor: actorRole },
+      isTest
+    })
     return { from, to, request }
   } catch (err) {
     if (!committed) {
@@ -213,6 +237,194 @@ const getDetail = async ({ openid, params = {} }) => {
   })
 }
 
+/**
+ * 选定响应者（M1-11）：responded → matched。**不可逆**。
+ *
+ * "不可逆"落成服务端约束而不是前端提示：已是 matched 的单再选别人会被状态机拒绝
+ * （matched 没有回到 responded 的边），并发的两次选定也只有一次能过（事务内读加锁）。
+ */
+const selectResponder = async ({ openid, params = {}, isTest = false }) => {
+  const { requestId, responseId } = params
+  if (!requestId || typeof requestId !== 'string') fail(ERROR.BAD_PARAMS, '缺 requestId')
+  if (!responseId || typeof responseId !== 'string') fail(ERROR.BAD_PARAMS, '缺 responseId')
+
+  const request = await requestsDao.findById(requestId)
+  if (!request) fail(ERROR.REQUEST_NOT_FOUND, '这条需求不存在或已被删除')
+  if (request.ownerOpenid !== openid) {
+    fail(ERROR.FORBIDDEN, '只有需求方本人能选定响应者')
+  }
+
+  // 幂等：重复选定同一人返回成功但不再转移、不再写日志；选定另一人则明确拒绝
+  if (request.status === REQUEST_STATUS.MATCHED) {
+    if (request.matchedResponseId === responseId) {
+      return ok({
+        requestId,
+        responseId,
+        status: REQUEST_STATUS.MATCHED,
+        alreadySelected: true,
+        matchedResponderOpenid: request.matchedResponderOpenid
+      })
+    }
+    fail(ERROR.FORBIDDEN, '这条需求已经选定了其他人，选定不可撤销')
+  }
+
+  const response = await responsesDao.findById(responseId)
+  if (!response) fail(ERROR.RESPONSE_NOT_FOUND, '这条响应不存在或已被删除')
+  if (response.requestId !== requestId) {
+    fail(ERROR.BAD_PARAMS, '这条响应不属于该需求单')
+  }
+  if (response.responderOpenid === openid) {
+    fail(ERROR.BAD_PARAMS, '不能选定自己')
+  }
+
+  const result = await applyTransition({
+    requestId,
+    to: REQUEST_STATUS.MATCHED,
+    actorRole: ACTOR_ROLE.OWNER,
+    actorOpenid: openid,
+    reason: 'select_responder',
+    patch: {
+      matchedResponseId: responseId,
+      matchedResponderOpenid: response.responderOpenid,
+      matchedAt: new Date()
+    },
+    isTest
+  })
+
+  // 状态已提交，再刷响应的选中标记：标记只影响列表展示，失败不该回滚状态
+  await responsesDao.markSelected(requestId, responseId)
+
+  await trackService.reportSafely({
+    openid,
+    name: 'responder_selected',
+    params: { requestId, responseId },
+    isTest
+  })
+
+  return ok({
+    requestId,
+    responseId,
+    from: result.from,
+    status: REQUEST_STATUS.MATCHED,
+    matchedResponderOpenid: response.responderOpenid,
+    responderNickName: response.responderNickName || ''
+  })
+}
+
+/** 双方确认完成的字段名：按角色分开记时间，才能还原"谁在什么时候确认的" */
+const DONE_FIELD = Object.freeze({
+  [ACTOR_ROLE.OWNER]: 'ownerDoneAt',
+  [ACTOR_ROLE.RESPONDER]: 'responderDoneAt'
+})
+
+/**
+ * 确认完成（M1-12）：matched → done，**双方各自确认才推进**。
+ * 单方重复确认幂等：返回成功但不写第二次时间、不推进状态。
+ */
+const confirmDone = async ({ openid, params = {}, isTest = false }) => {
+  const { requestId } = params
+  if (!requestId || typeof requestId !== 'string') fail(ERROR.BAD_PARAMS, '缺 requestId')
+
+  const request = await requestsDao.findById(requestId)
+  if (!request) fail(ERROR.REQUEST_NOT_FOUND, '这条需求不存在或已被删除')
+
+  if (request.status === REQUEST_STATUS.DONE || request.status === REQUEST_STATUS.RATED) {
+    return ok({ requestId, status: request.status, alreadyDone: true })
+  }
+  if (request.status !== REQUEST_STATUS.MATCHED) {
+    fail(ERROR.ILLEGAL_TRANSITION, '只有已选定的需求才能确认完成')
+  }
+
+  const actorRole = await resolveActorRole(request, openid)
+  if (actorRole !== ACTOR_ROLE.OWNER && actorRole !== ACTOR_ROLE.RESPONDER) {
+    fail(ERROR.FORBIDDEN, '只有需求方与被选定的响应者能确认完成')
+  }
+
+  const myField = DONE_FIELD[actorRole]
+  const otherField = actorRole === ACTOR_ROLE.OWNER ? DONE_FIELD[ACTOR_ROLE.RESPONDER] : DONE_FIELD[ACTOR_ROLE.OWNER]
+  const alreadyConfirmed = Boolean(request[myField])
+
+  if (!alreadyConfirmed) {
+    await requestsDao.updateById(requestId, { [myField]: new Date() })
+    await trackService.reportSafely({
+      openid,
+      name: 'request_done_confirmed',
+      params: { requestId, byRole: actorRole },
+      isTest
+    })
+  }
+
+  const bothConfirmed = Boolean(request[otherField])
+  if (!bothConfirmed) {
+    return ok({
+      requestId,
+      status: REQUEST_STATUS.MATCHED,
+      confirmedByMe: true,
+      waitingFor: actorRole === ACTOR_ROLE.OWNER ? ACTOR_ROLE.RESPONDER : ACTOR_ROLE.OWNER,
+      repeated: alreadyConfirmed
+    })
+  }
+
+  // 两边都确认了，由这一次调用触发唯一的 matched → done 转移
+  const result = await applyTransition({
+    requestId,
+    to: REQUEST_STATUS.DONE,
+    actorRole,
+    actorOpenid: openid,
+    reason: 'both_confirmed',
+    isTest
+  })
+
+  return ok({ requestId, from: result.from, status: REQUEST_STATUS.DONE, confirmedByMe: true })
+}
+
+/**
+ * 取消（M1-12）。owner 在 open/responded/matched 都能取消，被选定的 responder 只能在 matched 取消
+ * —— 这条限制由权限矩阵保证，本函数不重复实现。
+ *
+ * 必须记录取消方与取消次数（PRD 4.1 规则 3），为 M3 的信用分留数据。
+ */
+const cancel = async ({ openid, params = {}, isTest = false }) => {
+  const { requestId, reason } = params
+  if (!requestId || typeof requestId !== 'string') fail(ERROR.BAD_PARAMS, '缺 requestId')
+
+  const request = await requestsDao.findById(requestId)
+  if (!request) fail(ERROR.REQUEST_NOT_FOUND, '这条需求不存在或已被删除')
+  if (request.status === REQUEST_STATUS.CANCELLED) {
+    return ok({ requestId, status: REQUEST_STATUS.CANCELLED, alreadyCancelled: true })
+  }
+
+  const actorRole = await resolveActorRole(request, openid)
+  if (actorRole !== ACTOR_ROLE.OWNER && actorRole !== ACTOR_ROLE.RESPONDER) {
+    fail(ERROR.FORBIDDEN, '只有需求方或被选定的响应者能取消')
+  }
+
+  const cancelReason = typeof reason === 'string' ? reason.trim().slice(0, 200) : ''
+  const result = await applyTransition({
+    requestId,
+    to: REQUEST_STATUS.CANCELLED,
+    actorRole,
+    actorOpenid: openid,
+    reason: cancelReason || 'cancel',
+    patch: {
+      cancelledBy: actorRole,
+      cancelledByOpenid: openid,
+      cancelledAt: new Date(),
+      cancelReason
+    },
+    isTest
+  })
+
+  // 取消次数记在人身上：单子会被清理，人的行为记录要留下（M3 信用分的输入）
+  try {
+    await usersDao.incCounter(openid, 'cancelCount', 1)
+  } catch (err) {
+    console.warn('[cancel] 取消次数累加失败（不影响取消本身）', err && err.message)
+  }
+
+  return ok({ requestId, from: result.from, status: REQUEST_STATUS.CANCELLED, cancelledBy: actorRole })
+}
+
 module.exports = {
   cityConfigKey,
   loadCityConfig,
@@ -220,5 +432,8 @@ module.exports = {
   applyTransition,
   resolveActorRole,
   transitionRequest,
+  selectResponder,
+  confirmDone,
+  cancel,
   getDetail
 }

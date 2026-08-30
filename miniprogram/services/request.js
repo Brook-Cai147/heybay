@@ -6,7 +6,6 @@
  */
 
 const { callAction } = require('./cloud')
-const { REQUEST_STATUS } = require('../models/enums')
 
 const FUNCTION_NAME = 'requestFlow'
 
@@ -21,8 +20,15 @@ const create = draft => callAction(FUNCTION_NAME, 'create', draft)
 const transition = (requestId, to, reason) =>
   callAction(FUNCTION_NAME, 'transitionRequest', { requestId, to, reason })
 
-/** 取消自己的需求单 */
-const cancel = (requestId, reason) => transition(requestId, REQUEST_STATUS.CANCELLED, reason)
+/** 取消自己的需求单；服务端会记录取消方与取消次数 */
+const cancel = (requestId, reason) => callAction(FUNCTION_NAME, 'cancel', { requestId, reason })
+
+/** 选定响应者（不可逆，页面必须先做二次确认 + 展示安全提示卡） */
+const selectResponder = (requestId, responseId) =>
+  callAction(FUNCTION_NAME, 'selectResponder', { requestId, responseId })
+
+/** 确认完成；双方各自确认后才会真的进 done */
+const confirmDone = requestId => callAction(FUNCTION_NAME, 'confirmDone', { requestId })
 
 /** 需求单详情 */
 const getDetail = requestId => callAction(FUNCTION_NAME, 'getDetail', { requestId })
@@ -31,5 +37,7 @@ module.exports = {
   create,
   transition,
   cancel,
+  selectResponder,
+  confirmDone,
   getDetail
 }

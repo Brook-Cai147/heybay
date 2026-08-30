@@ -14,6 +14,17 @@ const insert = async (data, isTest, tx) => {
   return res._id || res.id
 }
 
+/** 按 _id 查；不存在或已软删除返回 null */
+const findById = async id => {
+  try {
+    const res = await collection().doc(id).get()
+    if (!res.data || res.data.deletedAt) return null
+    return res.data
+  } catch (err) {
+    return null
+  }
+}
+
 /** 同一人对同一单的响应；不存在返回 null */
 const findByRequestAndResponder = async (requestId, responderOpenid) => {
   const res = await collection()
@@ -45,10 +56,23 @@ const updateById = async (id, data, tx) => {
   return res.stats ? res.stats.updated : 1
 }
 
+/**
+ * 标记选定：先把该单所有响应置为未选中，再把指定那条置为选中。
+ * 两步顺序不能反 —— 反了会把刚选中的那条又刷回未选中。
+ */
+const markSelected = async (requestId, selectedId) => {
+  await collection()
+    .where({ requestId })
+    .update({ data: withUpdateStamps({ selected: false }) })
+  return updateById(selectedId, { selected: true })
+}
+
 module.exports = {
   insert,
+  findById,
   findByRequestAndResponder,
   listByRequest,
   countByRequest,
-  updateById
+  updateById,
+  markSelected
 }

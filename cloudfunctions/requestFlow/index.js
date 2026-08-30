@@ -21,5 +21,14 @@ exports.main = createHandler({
   transitionRequest: ({ openid, params }) =>
     requestService.transitionRequest({ openid, params, isTest: params.isTest === true }),
 
+  selectResponder: ({ openid, params }) =>
+    requestService.selectResponder({ openid, params, isTest: params.isTest === true }),
+
+  confirmDone: ({ openid, params }) =>
+    requestService.confirmDone({ openid, params, isTest: params.isTest === true }),
+
+  cancel: ({ openid, params }) =>
+    requestService.cancel({ openid, params, isTest: params.isTest === true }),
+
   getDetail: ({ openid, params }) => requestService.getDetail({ openid, params })
 })
