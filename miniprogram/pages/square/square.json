@@ -1,4 +1,6 @@
 {
-  "usingComponents": {},
-  "navigationBarTitleText": "需求广场"
+  "usingComponents": {
+    "request-card": "/components/request-card/request-card"
+  },
+  "enablePullDownRefresh": true
 }

@@ -30,5 +30,7 @@ exports.main = createHandler({
   cancel: ({ openid, params }) =>
     requestService.cancel({ openid, params, isTest: params.isTest === true }),
 
-  getDetail: ({ openid, params }) => requestService.getDetail({ openid, params })
+  getDetail: ({ openid, params }) => requestService.getDetail({ openid, params }),
+
+  list: ({ openid, params }) => requestService.listSquare({ openid, params })
 })

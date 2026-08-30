@@ -12,7 +12,6 @@
 
 const {
   REQUEST_CATEGORY_VALUES,
-  REQUEST_CATEGORY_LABEL,
   REQUEST_CATEGORY,
   TIMING_TYPE,
   INSTANT_DURATION,
@@ -23,31 +22,16 @@ const {
   VISIBILITY_VALUES,
   PREFERENCE_FLAG
 } = require('../../models/enums')
+const {
+  CATEGORY_LABEL,
+  TIMING_LABEL,
+  INSTANT_DURATION_LABEL,
+  REWARD_LABEL,
+  VISIBILITY_LABEL
+} = require('../../models/labels')
 const { validateRequestDraft } = require('../../models/schema')
 const requestService = require('../../services/request')
 const { track } = require('../../utils/track')
-
-/** 展示文案与枚举分开：文案改动不该牵动端云两份枚举（D-27） */
-const TIMING_LABEL = {
-  [TIMING_TYPE.INSTANT]: '即时型（马上要）',
-  [TIMING_TYPE.SCHEDULED]: '预约型（约好时间）'
-}
-const DURATION_LABEL = {
-  [INSTANT_DURATION.H1]: '1 小时内',
-  [INSTANT_DURATION.H3]: '3 小时内',
-  [INSTANT_DURATION.TODAY]: '今天内'
-}
-const REWARD_LABEL = {
-  [REWARD_TYPE.FREE]: '免费互助',
-  [REWARD_TYPE.MEAL]: '请一顿',
-  [REWARD_TYPE.PAID]: '付费',
-  [REWARD_TYPE.GOODS]: '以物换物'
-}
-const VISIBILITY_LABEL = {
-  [VISIBILITY.CITY]: '城市公开',
-  [VISIBILITY.GROUP]: '指定小组',
-  [VISIBILITY.INVITE]: '仅定向邀请'
-}
 
 const toOptions = (values, labels) => values.map(value => ({ value, label: labels[value] }))
 
@@ -58,9 +42,9 @@ Page({
     expanded: false,
 
     // 选项（都由枚举生成，页面模板里不出现枚举字面量）
-    categoryOptions: toOptions(REQUEST_CATEGORY_VALUES, REQUEST_CATEGORY_LABEL),
+    categoryOptions: toOptions(REQUEST_CATEGORY_VALUES, CATEGORY_LABEL),
     timingOptions: toOptions([TIMING_TYPE.INSTANT, TIMING_TYPE.SCHEDULED], TIMING_LABEL),
-    durationOptions: toOptions(INSTANT_DURATION_VALUES, DURATION_LABEL),
+    durationOptions: toOptions(INSTANT_DURATION_VALUES, INSTANT_DURATION_LABEL),
     rewardOptions: toOptions(REWARD_TYPE_VALUES, REWARD_LABEL),
     visibilityOptions: toOptions(VISIBILITY_VALUES, VISIBILITY_LABEL),
 

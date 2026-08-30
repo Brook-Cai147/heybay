@@ -163,6 +163,18 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 >
 > `fieldSources` 由发布页组装：M1 全部标 `user` / `empty`；M2 起 AI 给的字段标 `ai`，而金额 / 见面时间 / 见面地点 / 联系方式四项标了 `ai` 会被服务端直接拒绝（PRD 5.4）。
 
+**M1-16**
+
+- `cloudfunctions/_shared/dao/requests.js`（扩展 `listOpenByCity`）— where 条件按 `city + status + expireAt` 索引的字段顺序写；「未过期」用 `expireAt > now` 判断，**不依赖定时任务已经改过状态** — `dao/db.js` — `requestService.listSquare`
+- `cloudfunctions/_shared/service/requestService.js`（扩展 `listSquare`）— 只回传卡片需要的字段；多取一条判断 `hasMore`，省一次 count；未开城返回空列表而非报错（D-10） — `dao/{requests,configs}.js` — `requestFlow` 的 `list` action
+- `miniprogram/models/labels.js` — **UI 展示文案集中一处**。枚举是端云双份、靠 parity 单测锁住的契约，文案只影响界面，两者分开维护：键取自枚举、文案放这里 — `models/enums.js` — 广场页、卡片、详情页、发布页
+- `miniprogram/components/request-card/` — 需求卡片。只读冗余字段，**不联查 `users`**；倒计时由外部传入 `nowMs` 驱动，组件不自开定时器 — `models/{labels,enums}.js` — 广场页
+- `miniprogram/pages/square/` — 品类筛选 + 城市切换器 + 下拉刷新 + 触底翻页；每 30 秒推一次 `nowMs` 让所有卡片倒计时一起走 — `services/request.js`、`utils/track.js` — 详情页（跳转）
+
+> **联调数据开关只有一处**：`requestService.INCLUDE_TEST_DATA`。M1-19 收尾前改成 `false`，之后广场与统计都不再看到 `_isTest` 数据。散落多处的开关等于没有开关。
+>
+> **导航栏标题**：首页不设页面级 `navigationBarTitleText`，回落到全局的「喊呗」（品牌位）；其余页面各自设功能名（城市 / 喊一声 / 消息 / 我的 / 需求详情）。
+
 ## 关键决策的代码落点
 
 | 设计决策 | 代码落点 | 出处 |

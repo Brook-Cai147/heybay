@@ -1,0 +1,22 @@
+<view class="card" bindtap="onTap">
+  <view class="line1">
+    <text class="category">{{categoryLabel}}</text>
+    <text class="remain {{urgent ? 'urgent' : ''}}">{{remain}}</text>
+  </view>
+
+  <text class="title">{{item.title}}</text>
+
+  <view class="line2">
+    <text class="reward">{{rewardLabel}}</text>
+    <text class="area" wx:if="{{item.area}}">· {{item.area}}</text>
+    <text class="status">· {{statusLabel}}</text>
+  </view>
+
+  <view class="line3">
+    <text class="owner">{{item.ownerNickName || '匿名'}}</text>
+    <text class="trust">{{trustLabel}}</text>
+    <text class="mine" wx:if="{{item.isMine}}">我发的</text>
+    <text class="test" wx:if="{{item.isTest}}">联调</text>
+    <text class="count">已有 {{item.responseCount}} 人响应</text>
+  </view>
+</view>

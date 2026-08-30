@@ -52,11 +52,49 @@ const incResponseCount = async (id, delta, tx) => {
   return updateById(id, { responseCount: getCommand().inc(delta) }, tx)
 }
 
+/**
+ * 需求广场列表查询（M1-16）。
+ *
+ * where 条件的字段顺序刻意与 `city + status + expireAt` 索引一致，让查询能命中索引；
+ * 「未过期」用 `expireAt > now` 而不是靠定时任务已经把过期单改状态 —— 定时任务有最长 10 分钟
+ * 的延迟窗口，那段时间里过期单不该还挂在广场上。
+ *
+ * @param {object} options
+ * @param {string} options.city
+ * @param {string} [options.category]     品类筛选，空表示全部
+ * @param {number} options.nowMs          当前时间，由调用方显式传入
+ * @param {boolean} [options.includeTest] 是否包含 `_isTest` 数据（联调期为 true）
+ * @param {number} [options.limit]
+ * @param {number} [options.skip]
+ */
+const listOpenByCity = async ({ city, category, nowMs, includeTest = false, limit = 20, skip = 0 }) => {
+  const _ = getCommand()
+  const where = {
+    city,
+    status: _.in(ACTIVE_STATUSES),
+    expireAt: _.gt(new Date(nowMs)),
+    deletedAt: null
+  }
+  if (category) where.category = category
+  // 未包含测试数据时用 `_.neq(true)`：它同时匹配"字段为 false"与"字段不存在"，正是想要的语义
+  if (!includeTest) where._isTest = _.neq(true)
+
+  const res = await collection()
+    .where(where)
+    .orderBy('createdAt', 'desc')
+    .skip(skip)
+    .limit(limit)
+    .get()
+  return res.data
+}
+
+
 module.exports = {
   ACTIVE_STATUSES,
   insert,
   findById,
   updateById,
   countActiveByOwnerCity,
-  incResponseCount
+  incResponseCount,
+  listOpenByCity
 }

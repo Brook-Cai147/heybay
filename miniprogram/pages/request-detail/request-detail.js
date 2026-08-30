@@ -6,19 +6,8 @@
  */
 
 const requestService = require('../../services/request')
-
-/** 状态的中文展示。UI 文案不进枚举文件，避免端云两份枚举因文案而漂移 */
-const STATUS_LABEL = {
-  draft: '草稿',
-  open: '招募中',
-  responded: '待选定',
-  matched: '已确定',
-  done: '已完成',
-  rated: '已评价',
-  expired: '已过期',
-  cancelled: '已取消',
-  removed: '已下架'
-}
+const { STATUS_LABEL, CATEGORY_LABEL, REWARD_LABEL } = require('../../models/labels')
+const { REWARD_TYPE } = require('../../models/enums')
 
 Page({
   data: {
@@ -26,6 +15,8 @@ Page({
     error: '',
     request: null,
     statusLabel: '',
+    categoryLabel: '',
+    rewardLabel: '',
     expireText: '',
     isOwner: false
   },
@@ -48,6 +39,10 @@ Page({
         request,
         isOwner: res.isOwner,
         statusLabel: STATUS_LABEL[request.status] || request.status,
+        categoryLabel: CATEGORY_LABEL[request.category] || request.category,
+        rewardLabel: request.rewardType === REWARD_TYPE.PAID && request.amount
+          ? `${REWARD_LABEL[request.rewardType]} ${request.amount}`
+          : REWARD_LABEL[request.rewardType] || '',
         expireText: this.formatTime(request.expireAt)
       })
     } catch (err) {

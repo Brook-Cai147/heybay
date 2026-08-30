@@ -1,12 +1,56 @@
 <view class="page">
   <view class="header">
     <text class="title">需求广场</text>
-    <text class="city">伦敦</text>
+    <text class="city">{{cityLabel}}</text>
   </view>
 
-  <view class="empty">
-    <text class="empty-title">还没有需求</text>
-    <text class="empty-tip">{{tip}}</text>
-    <button class="cta" bindtap="goPublish">去喊一声</button>
+  <scroll-view class="filters" scroll-x show-scrollbar="{{false}}">
+    <view
+      class="chip {{city === item.value ? 'chip-on' : ''}}"
+      wx:for="{{cityOptions}}"
+      wx:key="value"
+      data-value="{{item.value}}"
+      data-open="{{item.open}}"
+      bindtap="onPickCity"
+    >{{item.label}}</view>
+  </scroll-view>
+
+  <scroll-view class="filters" scroll-x show-scrollbar="{{false}}">
+    <view
+      class="chip {{category === item.value ? 'chip-on' : ''}}"
+      wx:for="{{categoryFilters}}"
+      wx:key="value"
+      data-value="{{item.value}}"
+      bindtap="onPickCategory"
+    >{{item.label}}</view>
+  </scroll-view>
+
+  <view class="notice" wx:if="{{!cityOpen}}">
+    <text class="notice-title">{{cityLabel}} 尚未开城</text>
+    <text class="notice-tip">M1 只开伦敦。开城顺序按真实需求密度决定，不铺城市。</text>
   </view>
+
+  <view class="err" wx:if="{{error}}">{{error}}</view>
+
+  <view class="loading" wx:if="{{loading}}">加载中…</view>
+
+  <block wx:if="{{cityOpen && !loading}}">
+    <view class="empty" wx:if="{{items.length === 0}}">
+      <text class="empty-title">这座城市暂时没有在架需求</text>
+      <text class="empty-tip">在架的意思是「招募中」或「待选定」且还没过期</text>
+      <button class="cta" bindtap="goPublish">去喊一声</button>
+    </view>
+
+    <request-card
+      wx:for="{{items}}"
+      wx:key="_id"
+      item="{{item}}"
+      nowMs="{{nowMs}}"
+      data-index="{{index}}"
+      bindcardtap="onCardTap"
+    />
+
+    <view class="more" wx:if="{{hasMore}}">{{loadingMore ? '加载中…' : '上滑加载更多'}}</view>
+    <view class="more" wx:if="{{!hasMore && items.length > 0}}">没有更多了</view>
+  </block>
 </view>

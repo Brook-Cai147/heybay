@@ -26,6 +26,15 @@ const cityConfigKey = city => `city_${String(city).toLowerCase()}`
 
 const ADMIN_CONFIG_KEY = 'admin_openids'
 
+/**
+ * 广场列表是否包含 `_isTest` 数据。**联调期唯一的开关，就在这一处**。
+ * M1-19 收尾前改成 false，之后正式统计与展示都不会再看到联调数据。
+ */
+const INCLUDE_TEST_DATA = true
+
+/** 广场列表每页条数 */
+const SQUARE_PAGE_SIZE = 20
+
 /** 读城市配置；未配置即视为未开城（D-10：只开伦敦，其余显示"尚未开城"） */
 const loadCityConfig = async city => {
   const config = await configsDao.getValue(cityConfigKey(city))
@@ -425,9 +434,63 @@ const cancel = async ({ openid, params = {}, isTest = false }) => {
   return ok({ requestId, from: result.from, status: REQUEST_STATUS.CANCELLED, cancelledBy: actorRole })
 }
 
+/**
+ * 需求广场列表（M1-16）。端侧没有直读权限，列表只能走这里。
+ *
+ * 只回传卡片需要的字段：既省流量，也避免把 `ownerOpenid`、`cancelReason` 这类
+ * 与展示无关的信息发到端侧。
+ */
+const listSquare = async ({ openid, params = {} }) => {
+  const city = typeof params.city === 'string' && params.city.trim()
+    ? params.city.trim().toLowerCase()
+    : 'london'
+  const category = typeof params.category === 'string' && params.category ? params.category : ''
+  const page = Number.isInteger(params.page) && params.page > 0 ? params.page : 1
+
+  const cityConfig = await configsDao.getValue(cityConfigKey(city))
+  if (!cityConfig || cityConfig.isOpen !== true) {
+    // 未开城不是错误，是一个正常的空状态（D-10），端侧据此显示"尚未开城"
+    return ok({ city, cityOpen: false, items: [], page, hasMore: false })
+  }
+
+  const nowMs = Date.now()
+  const rows = await requestsDao.listOpenByCity({
+    city,
+    category,
+    nowMs,
+    includeTest: INCLUDE_TEST_DATA,
+    limit: SQUARE_PAGE_SIZE + 1, // 多取一条用来判断还有没有下一页，省一次 count 查询
+    skip: (page - 1) * SQUARE_PAGE_SIZE
+  })
+
+  const hasMore = rows.length > SQUARE_PAGE_SIZE
+  const items = rows.slice(0, SQUARE_PAGE_SIZE).map(row => ({
+    _id: row._id,
+    category: row.category,
+    title: row.title,
+    city: row.city,
+    area: row.area || '',
+    timing: row.timing,
+    instantDuration: row.instantDuration || null,
+    rewardType: row.rewardType,
+    amount: row.amount || null,
+    status: row.status,
+    expireAt: row.expireAt,
+    responseCount: row.responseCount || 0,
+    ownerNickName: row.ownerNickName || '',
+    ownerAvatarUrl: row.ownerAvatarUrl || '',
+    ownerTrustLevel: row.ownerTrustLevel || 'newcomer',
+    isMine: row.ownerOpenid === openid,
+    isTest: row._isTest === true
+  }))
+
+  return ok({ city, cityOpen: true, items, page, hasMore, serverTime: nowMs })
+}
+
 module.exports = {
   cityConfigKey,
   loadCityConfig,
+  SQUARE_PAGE_SIZE,
   create,
   applyTransition,
   resolveActorRole,
@@ -435,5 +498,6 @@ module.exports = {
   selectResponder,
   confirmDone,
   cancel,
-  getDetail
+  getDetail,
+  listSquare
 }

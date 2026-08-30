@@ -33,11 +33,18 @@ const confirmDone = requestId => callAction(FUNCTION_NAME, 'confirmDone', { requ
 /** 需求单详情 */
 const getDetail = requestId => callAction(FUNCTION_NAME, 'getDetail', { requestId })
 
+/**
+ * 需求广场列表（端侧无直读权限，只能走云函数）。
+ * @param {object} [query] `{ city, category, page }`
+ */
+const list = (query = {}) => callAction(FUNCTION_NAME, 'list', query)
+
 module.exports = {
   create,
   transition,
   cancel,
   selectResponder,
   confirmDone,
-  getDetail
+  getDetail,
+  list
 }

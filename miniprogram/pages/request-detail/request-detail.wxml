@@ -15,8 +15,9 @@
     </view>
 
     <view class="card">
+      <view class="row"><text class="label">品类</text><text class="value">{{categoryLabel}}</text></view>
       <view class="row"><text class="label">城市</text><text class="value">{{request.city}}</text></view>
-      <view class="row"><text class="label">报酬</text><text class="value">{{request.rewardType}}{{request.amount ? ' · ' + request.amount : ''}}</text></view>
+      <view class="row"><text class="label">报酬</text><text class="value">{{rewardLabel}}</text></view>
       <view class="row"><text class="label">地点</text><text class="value">{{request.area || '未填'}}</text></view>
       <view class="row"><text class="label">失效时间</text><text class="value">{{expireText}}</text></view>
       <view class="row"><text class="label">已有响应</text><text class="value">{{request.responseCount || 0}} 人</text></view>

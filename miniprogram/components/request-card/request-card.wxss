@@ -1,0 +1,97 @@
+.card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.line1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.category {
+  font-size: 22rpx;
+  color: #1296db;
+  background: #eaf6fd;
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+}
+
+.remain {
+  font-size: 22rpx;
+  color: #888;
+}
+
+.remain.urgent {
+  color: #e54d42;
+}
+
+.title {
+  margin-top: 16rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.4;
+}
+
+.line2 {
+  margin-top: 12rpx;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.reward {
+  font-size: 24rpx;
+  color: #f37b1d;
+}
+
+.area,
+.status {
+  font-size: 24rpx;
+  color: #999;
+  padding-left: 8rpx;
+}
+
+.line3 {
+  margin-top: 20rpx;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.owner {
+  font-size: 24rpx;
+  color: #555;
+}
+
+.trust,
+.mine,
+.test {
+  margin-left: 12rpx;
+  font-size: 20rpx;
+  color: #888;
+  background: #f2f3f5;
+  padding: 2rpx 12rpx;
+  border-radius: 6rpx;
+}
+
+.mine {
+  color: #1296db;
+  background: #eaf6fd;
+}
+
+.test {
+  color: #b26a00;
+  background: #fff8e6;
+}
+
+.count {
+  margin-left: auto;
+  font-size: 22rpx;
+  color: #999;
+}
