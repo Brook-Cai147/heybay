@@ -15,6 +15,8 @@ config.local.*
 # ---- 依赖与构建产物 ----
 node_modules/
 miniprogram_npm/
+# 各云函数目录下的 _shared 副本由 npm run sync 生成，真源只有 cloudfunctions/_shared（M1-08）
+cloudfunctions/*/_shared/
 dist/
 build/
 .tmp/
