@@ -82,6 +82,13 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 
 > **云函数运行时事实（2026-08-29 实测）**：Node `v16.13.1`，`process.env.TZ` 为空，**ICU 完整、`Intl` 的 IANA 时区可用**（伦敦夏令时偏移实测 +60 分钟）。因此云函数代码**不得使用 Node 18+ 的 API**（如 `structuredClone`、`Array.prototype.findLast`、内置 `fetch`）。
 
+**M1-07**
+
+- `cloudfunctions/ping/index.js`（扩展） — 新增两个临时动作：`dbProbe` 逐集合「写→读回→删」验证云函数侧读写；`seedConfigs` 幂等写入 `configs` 的两条初始配置（按 key 查，有则更新无则新建）。探针文档带 `_isTest` 且写完立即删；两条配置**不带 `_isTest`**（配置不是联调数据，带了会在清理时被误删）。**M1-19 随 `ping` 一起删除，届时 `seedConfigs` 的逻辑需搬进正式的初始化脚本或 admin 云函数** — `wx-server-sdk` — 无
+- 无其他代码文件；本步产出是云端的集合、索引与权限配置，清单见下文「集合与索引清单」
+
+> **配置数据一律由云函数写入，不手工敲控制台。** 三个理由：`configs` 权限已收成端侧不可写，云函数是唯一合法写入方，手工写等于绕过自己立的纪律；管理员 openid 直接取调用上下文，避免人肉复制出错；换环境时能一键复现，不靠人记得当初敲了哪些字段。
+
 ## 关键决策的代码落点
 
 | 设计决策 | 代码落点 | 出处 |
@@ -95,7 +102,31 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 | A/B 分桶（M1 只埋字段，实验运营留 M5） | `cloudfunctions/track/` + `_shared/service/bucketing.js` | D-21 / D-31 |
 | 管理后台做进小程序 | `miniprogram/pages/admin/` + openid 白名单 | D-22 |
 | 端云枚举双份，云侧权威 | `cloudfunctions/_shared/constants/enums.js`（权威）+ `miniprogram/models/enums.js`（副本）+ parity 单测 | D-27 |
+| 用户标识统一用 openid，不立 userId | 集合字段 `openid` / `ownerOpenid` / `responderOpenid`；值只由云函数从 `cloud.getWXContext()` 取，永不接受端侧传入 | D-33 |
+| 城市配置暂存 configs，M3 迁 cities | `configs` 的 `city_london` 一条记录（含 `timeZone`，M1-05 过期判定要用）；`cities` 集合延后 | D-34 |
 | 仅同性响应靠自填性别校验 | `users.gender` + `_shared/service/responseService.js`（未填性别不能响应） | D-26 / D-09 |
 | M1 只收订阅授权不发送 | 已撤回：订阅消息整块归 M4，M1 无相关代码 | D-30 |
 | 云环境 ID 入库、密钥不入库 | `miniprogram/config/env.js`（环境 ID）｜密钥只在云函数环境变量 | tech-stack 6.1 |
 | 不碰资金 | 无支付相关代码，金额字段仅作线下参考 | D-04 |
+
+## 集合与索引清单（M1-07 建立，2026-08-30 实测通过）
+
+环境 `cloud1-d5gwcen6nb1c1fdeb`。M1 只建以下六个集合，其余集合按里程碑延后（`aiLogs`/`knowledge` 归 M2，`cities` 归 M3，`agreements`/`reviews`/`posts`/`groups`/`reports`/`stats` 更后）。
+
+- `users` — 账号 — 索引：`openid` 升序（**唯一**）
+- `requests` — 需求单主体 — 索引：`city + status + expireAt`；`ownerOpenid + status`
+- `responses` — 响应 — 索引：`requestId`；`responderOpenid + createdAt`；`requestId + responderOpenid`（**唯一**，幂等的物理保证）
+- `statusLogs` — 状态变更审计 — 索引：`requestId + createdAt`
+- `events` — 埋点 — 索引：`openid + createdAt`；`name + createdAt`
+- `configs` — 配置 — 索引：`key` 升序（**唯一**）
+
+共 10 条索引，字段命名按 D-33。两条唯一索引是业务正确性的物理兜底，不是性能优化：`users.openid` 保证登录建档幂等，`requests + responderOpenid` 保证同一人对同一单只能有一条响应（M1-10 靠捕获唯一键冲突转成「你已响应过」的业务返回）。**事后补唯一索引需要先清脏数据**，所以在写入任何业务数据之前建完。
+
+**权限**：六个集合全部为**「所有用户不可读写」**（此控制台版本的档位名）。控制台横幅注明「云控制台和服务端始终有所有数据读写权限，以下配置仅对小程序端发起的请求有效」——即云函数不受此配置约束。
+
+实测证据（M1-07 验收）：
+
+- 端侧直接 `add` 与直接 `get` 均被拒，`errCode: -502003 database permission denied`。**读也被拒**，因此端侧的一切查询都必须走云函数，没有「只读直连」这条捷径。
+- `dbProbe` 六集合全部 `writable: true` / `readBack: true` / `removed: 1`，探针文档已清空。
+- 注意：`dbProbe` 全绿**不能**当权限配置的证据——云函数本来就不受该配置约束，集合忘了收紧也一样全绿。权限只能靠端侧的 -502003 反证。
+

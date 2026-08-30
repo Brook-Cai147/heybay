@@ -250,6 +250,20 @@
 - **理由**：本项目的首要交付目标是 **AI 产品能力的可展示性**（PRD 0 文档性质：同时作为产品能力作品集）。原排期下，AI 相关产出被分散在 M2 与 M4 两个里程碑里，且与大量运营向功能耦合，意味着要做完两轮才拿得出完整的 AI 故事。重排后，M1 结束即有可运行的主干，M2 结束即有**完整可演示的 AI 能力**（解析 + 降级 + 兜底 + 工具编排 + 评测数据），这四项恰好对应 AI 产品经理最需要证明的四件事：把模糊输入结构化、给 AI 失败留退路、把 AI 定位为兜底而非替代、以及用可度量的方式判断该不该继续投入。
 - **代价**：产品在 M2 结束时仍不具备社区、信任分与评价，不能真实运营。这与"体验版小范围真实运营"的目标冲突，因此真实运营的启动时间实际推到 M4 之后。这是有意的取舍：先拿到可展示的 AI 能力，再补运营完备度。
 
+### D-33 用户标识字段统一用 openid，不引入自增/映射型 userId
+
+- **决策**：所有指向用户的字段一律以 openid 命名并直接存 openid 本身：`users.openid`、`requests.ownerOpenid`、`responses.responderOpenid`、`events.openid`、`reviews.raterOpenid` / `targetOpenid`。废弃 `tech-stack.md` 原第 4 节里的 `userId` / `ownerId` / `responderId` / `userId + createdAt` 写法。
+- **被否决**：建一层自有 userId（或 `users._id`）作为业务主键，openid 只在 `users` 里作外部标识。
+- **理由**：openid 由微信在云函数上下文中直接给出（`cloud.getWXContext()`），是本项目唯一可信身份来源。若另立主键，每一次写入都要先查 `users` 换 ID，多一次查询、多一处可失败的环节，且换不来任何隔离收益——单 AppID 下 openid 本身已经稳定唯一。字段名带 `Openid` 后缀还有一个直接好处：读代码时立刻知道这是可信身份，不会误当成端侧可传的参数。
+- **代价**：将来若做多端（公众号 / App）需要跨端统一身份，得改为 unionid 或引入映射表。M1 的 `ping` 已确认当前环境 `hasUnionid: false`（未绑开放平台），跨端不在 M1~M5 范围内，届时再迁移。
+- **落点**：M1-07 建的索引已按此命名（`requests.ownerOpenid + status`、`responses.requestId + responderOpenid` 唯一、`events.openid + createdAt`）。
+
+### D-34 城市配置暂存 configs，M3 再拆独立 cities 集合
+
+- **决策**：M1 只开伦敦一座城，城市配置以一条 `configs` 记录承载（`key: 'city_london'`，含 `code` / `nameZh` / `timeZone` / `isOpen` / `activeLimitFree` / `activeLimitMember`）。`tech-stack.md` 第 4 节规划的 `cities` 集合延后到 M3（需要紧急号码、使领馆、官方分区等结构化内容时）再建。
+- **理由**：一条记录不值得一个集合加一套索引，且 M1 的读取方只有「开城判断」与「时区取值」两处。`timeZone` 必须入库而非硬编码，因为 M1-05 的过期判定依赖它（`Intl` 的 timeZone 参数）。
+- **代价**：M3 建 `cities` 时要写一次搬迁，并改掉读取点。范围可控——读取点在 M1 只有两处，届时 grep `city_london` 即可穷举。
+
 ---
 
 ## 九、命名

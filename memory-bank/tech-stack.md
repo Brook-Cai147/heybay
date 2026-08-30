@@ -117,7 +117,7 @@ const TRANSITIONS = {
 
 **（3）金额与身份字段服务端二次校验**。PRD 5.4 规定 AI 不可代填金额、时间、地点、联系方式；服务端要独立再校验一次这些字段的来源标记，防止前端绕过。
 
-**（4）幂等**。响应、选定、确认完成、评价这四个动作都要幂等（用 `requestId + userId + action` 唯一索引），避免用户网络重试造成重复响应或重复评价。
+**（4）幂等**。响应、选定、确认完成、评价这四个动作都要幂等（用 `requestId + <角色>Openid + action` 唯一索引，字段命名见第 4 节 D-33），避免用户网络重试造成重复响应或重复评价。
 
 ---
 
@@ -128,22 +128,27 @@ const TRANSITIONS = {
 | 集合 | 用途 | 关键索引 |
 |---|---|---|
 | `users` | 账号、信任分、能力标签、常驻城市、会员状态 | `openid`（唯一） |
-| `requests` | 需求单主体（PRD 4.1 全部字段） | `city + status + expireAt`、`ownerId + status` |
-| `responses` | 对需求单的响应（含报价、自荐语） | `requestId`、`responderId + createdAt`、`requestId + responderId`（唯一，保证幂等） |
+| `requests` | 需求单主体（PRD 4.1 全部字段） | `city + status + expireAt`、`ownerOpenid + status` |
+| `responses` | 对需求单的响应（含报价、自荐语） | `requestId`、`responderOpenid + createdAt`、`requestId + responderOpenid`（唯一，保证幂等） |
 | `agreements` | 约定单（只读共识凭证，含版本历史） | `requestId`（唯一） |
-| `reviews` | 双向评价 | `targetUserId`、`requestId + raterId`（唯一） |
+| `reviews` | 双向评价 | `targetOpenid`、`requestId + raterOpenid`（唯一） |
 | `posts` | 社区内容 | `city + partition + createdAt` |
 | `groups` | 兴趣小组 + 健康分 | `city + healthScore` |
 | `cities` | 城市配置（紧急号码、使领馆、官方分区、开城状态） | `code`（唯一） |
 | `reports` | 举报 | `status + priority + createdAt` |
 | `statusLogs` | 需求单状态变更审计 | `requestId + createdAt` |
-| `aiLogs` | AI 调用记录（能力、耗时、token、是否被采纳/修改） | `userId + createdAt`、`capability + createdAt` |
-| `events` | 埋点 | `userId + createdAt`、`name + createdAt` |
+| `aiLogs` | AI 调用记录（能力、耗时、token、是否被采纳/修改） | `openid + createdAt`、`capability + createdAt` |
+| `events` | 埋点 | `openid + createdAt`、`name + createdAt` |
 | `stats` | 定时预聚合的看板数据 | `date + metric` |
-| `configs` | Feature Flag、A/B 实验、额度配置、管理员白名单 | `key`（唯一） |
+| `configs` | Feature Flag、A/B 实验、额度配置、管理员白名单、开城配置（M1~M2 暂含城市配置，见 D-34） | `key`（唯一） |
 | `knowledge` | 城市语料库（社区精华 + 过期需求单的问答对） | `city + tags` |
 
 **集合命名统一驼峰**（`statusLogs`、`aiLogs`），不用下划线，避免同一集合出现两种写法。
+
+**用户标识统一用 openid**（D-33）：指向用户的字段一律命名为 `openid` / `ownerOpenid` / `responderOpenid` / `raterOpenid` / `targetOpenid`，值就是微信 openid，不另立 userId 或映射表。openid 只能由云函数从 `cloud.getWXContext()` 取，**永不接受端侧传入**——字段名带 `Openid` 后缀即在提醒这一点。
+
+**城市配置的过渡形态**（D-34）：`cities` 集合延后到 M3 再建；M1~M2 期间伦敦的开城状态与 `timeZone` 放在 `configs` 的 `city_london` 一条记录里。`timeZone` 必须入库而非硬编码，M1-05 的过期判定要用它。
+
 
 **冗余优于联查**：`requests` 里冗余存需求方的昵称、头像、信任档位；`responses` 里冗余存响应者的同类字段。文档型数据库下这是正确做法，代价是用户改昵称时需要一个定时任务回填（可接受，甚至可以不回填——历史快照反而更真实）。
 

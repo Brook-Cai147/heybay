@@ -130,9 +130,9 @@ M1 的状态机终点是 `done`，不做 `rated`（评价属 M2）。
 - **前置依赖**：M1-06
 - **具体指令**：
   1. 建集合：`users`、`requests`、`responses`、`statusLogs`、`events`、`configs`。M1 不建其余集合。
-  2. 建索引，按 `tech-stack.md` 第 4 节：`users.openid` 唯一；`requests` 建 `city + status + expireAt` 与 `ownerId + status`；`responses` 建 `requestId`、`responderId + createdAt`，以及 **`requestId + responderId` 唯一索引（幂等的物理保证，必须建，事后补要先清脏数据）**；`statusLogs` 建 `requestId + createdAt`；`events` 建 `userId + createdAt` 与 `name + createdAt`；`configs.key` 唯一。
-  3. 六个集合的权限**全部**设为「仅管理端可读写」（即只有云函数能读写，小程序端既不可写也不直读）。绝不使用「所有用户可读」或「所有用户可读写」。设置完把每个集合的权限档位名抄进 `progress.md`。
-  4. 在 `configs` 里写入两条初始配置：管理员 openid 白名单、伦敦城市开城状态（含在架上限 3 条）。A/B 实验配置留到 M5（D-31）。
+  2. 建索引，按 `tech-stack.md` 第 4 节（字段名按 D-33 一律用 openid 系列）：`users.openid` 唯一；`requests` 建 `city + status + expireAt` 与 `ownerOpenid + status`；`responses` 建 `requestId`、`responderOpenid + createdAt`，以及 **`requestId + responderOpenid` 唯一索引（幂等的物理保证，必须建，事后补要先清脏数据）**；`statusLogs` 建 `requestId + createdAt`；`events` 建 `openid + createdAt` 与 `name + createdAt`；`configs.key` 唯一。共 10 条。
+  3. 六个集合的权限**全部**设为「仅管理端可读写」（此控制台版本的档位名为**「所有用户不可读写」**，横幅注明「云控制台和服务端始终有所有数据读写权限，以下配置仅对小程序端发起的请求有效」，即云函数不受影响）。绝不使用「所有用户可读」或「所有用户可读写」。设置完把每个集合的权限档位名抄进 `progress.md`。
+  4. 在 `configs` 里写入两条初始配置：管理员 openid 白名单（`key: 'admin_openids'`）、伦敦城市配置（`key: 'city_london'`，含 `timeZone: 'Europe/London'` 与在架上限，见 D-34）。这两条是真实配置，**不带 `_isTest`**。A/B 实验配置留到 M5（D-31）。**写入方式用云函数的 `seedConfigs` 动作，不手工敲控制台**——`configs` 权限已收成端侧不可写，云函数是唯一合法写入方；管理员 openid 直接取调用上下文，避免人肉复制出错；换环境时能一键复现。函数内做幂等（按 key 查，有则更新无则新建）。
   5. 明确写下 `_isTest` 纪律：本阶段所有手工写入的数据都带 `_isTest: true`。
 - **验证方式**：数据库步骤 → 从小程序端**直接**尝试写一次 `requests`（预期被权限拒绝），贴出报错原文；再用 `ping` 之外的任意云函数写一条 `_isTest` 数据并贴出返回的 `_id`。两条都要贴。
 - **完成标志**：端侧直写被拒有报错原文为证；索引清单已追加进 `architecture.md`。
@@ -150,7 +150,7 @@ M1 的状态机终点是 `done`，不做 `rated`（评价属 M2）。
   4. `miniprogram/services/user.js` 封装这些调用，**一个云函数动作对应一个方法**，页面不直接调云函数。
   5. 云函数间共享 `_shared` 的方式在本步定下来（复制或软链），并把结论写进 `architecture.md`，后续云函数一律照此办理。
 - **验证方式**：云函数步骤 → 连续调用 `login` 两次，贴出两次真实返回值，并贴出 `users` 集合里该 openid 的记录条数（应为 1）。
-- **完成标志**：两次返回同一 userId；`users` 只有一条记录；`architecture.md` 已登记 dao 层职责与 `_shared` 共享方式。
+- **完成标志**：两次返回同一 openid 对应的同一条 `users` 文档；`users` 只有一条记录；`architecture.md` 已登记 dao 层职责与 `_shared` 共享方式。
 - **并行冲突**：**占用开发者工具**（上传云函数）；**写云数据库**。与 M1-09~M1-13 共用 `_shared/dao` 与 `miniprogram/services`，均不可并行。
 
 ## M1-09 requestFlow 云函数与发布动作
@@ -176,7 +176,7 @@ M1 的状态机终点是 `done`，不做 `rated`（评价属 M2）。
 - **具体指令**：
   1. 响应动作写入 `responses`（含一句话自荐、付费类的报价、来源归因字段：推送 / 社区 / 邀请 / 广播），并冗余存响应者昵称、头像、信任档位（`tech-stack.md` 第 4 节：冗余优于联查）。
   2. 首个响应触发需求单 open→responded，转移必须经 `transitionRequest`，actor 为 system；已是 responded 的单再来响应不重复转移。
-  3. 幂等靠 `requestId + responderId` 唯一索引兜底：捕获唯一键冲突并转成「你已响应过」的业务返回，不向端侧抛原始数据库错误。
+  3. 幂等靠 `requestId + responderOpenid` 唯一索引兜底：捕获唯一键冲突并转成「你已响应过」的业务返回，不向端侧抛原始数据库错误。
   4. 拒绝三类响应：响应自己的单、单子不在 open/responded 状态、需求单开了「仅同性响应」而响应者性别不符或未填（未填时返回「补全性别后可响应」，见 D-26，不是笼统报错）。
   5. 需求单上维护响应计数，供详情页展示「已有 N 人响应」。
 - **验证方式**：云函数步骤 → 用另一个 openid 响应一次，贴出返回值与需求单变更后的状态；同一 openid 再响应一次，贴出幂等提示的真实返回；响应自己的单，贴出被拒报错。
@@ -379,7 +379,7 @@ M1 的状态机终点是 `done`，不做 `rated`（评价属 M2）。
   2. Key 只写进**云函数环境变量**，`.env` 与 `project.private.config.json` 已在 `.gitignore`；`.env.example` 只留变量名（tech-stack 6.1）。
   3. 网关按顺序实现八步：鉴权取 OPENID → 额度检查（调 M2-01）→ 缓存查询（本步先直通，缓存在 M2-05）→ Prompt 组装（查 M2-03 注册表）→ 模型调用（超时 8s，失败重试 1 次）→ 输出校验（调 M2-02）→ 降级（本步先只返回降级信号）→ 记账写 `aiLogs`（能力、耗时、token、成本、是否被采纳留空待回填）。
   4. **handler 不写业务逻辑**：能力分发与编排放在 service 层，handler 只做参数校验与鉴权（`architecture.md` 分层铁律）。
-  5. 建 `aiLogs` 集合与索引（`userId + createdAt`、`capability + createdAt`），权限同 M1-07 收紧为仅云函数可写。
+  5. 建 `aiLogs` 集合与索引（`openid + createdAt`、`capability + createdAt`），权限同 M1-07 收紧为仅云函数可写。
 - **验证方式**：云函数步骤 → 用 `parseRequest` 调一次真实模型，**贴出真实返回值**（含耗时、token、算出的成本）与 `aiLogs` 里的对应记录；再把超时设成 1ms 触发一次失败，贴出重试与降级信号的真实返回。
 - **完成标志**：两次调用的真实返回都已贴出；`progress.md` 里模型选型与结构化输出支持情况的核实结论已写下。
 - **并行冲突**：**独占开发者工具**（上传云函数 + 配环境变量）；**写云数据库**（新建 `aiLogs`）。与 M2-05~M2-16 共用 `aiGateway`，**全部不可并行**。
