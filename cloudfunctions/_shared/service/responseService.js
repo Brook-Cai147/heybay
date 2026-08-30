@@ -130,7 +130,9 @@ const submit = async ({ openid, params = {}, isTest = false }) => {
     // 冗余存响应者展示信息（tech-stack 第 4 节：冗余优于联查）
     responderNickName: responder ? responder.nickName : '',
     responderAvatarUrl: responder ? responder.avatarUrl : '',
-    responderTrustLevel: responder ? responder.trustLevel : 'newcomer'
+    responderTrustLevel: responder ? responder.trustLevel : 'newcomer',
+    // 完成单数是 M1 唯一能真实拿到的"证据摘要"（PRD 6.4），冗余成快照存下来
+    responderDoneCount: responder && Number.isInteger(responder.doneCount) ? responder.doneCount : 0
   }
 
   let responseId

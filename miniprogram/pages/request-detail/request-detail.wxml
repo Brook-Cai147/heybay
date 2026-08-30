@@ -1,31 +1,122 @@
 <view class="page">
   <view class="loading" wx:if="{{loading}}">加载中…</view>
 
-  <view class="card err-card" wx:if="{{error}}">
+  <view class="card err-card" wx:if="{{error && !request}}">
     <text class="err">{{error}}</text>
   </view>
 
   <block wx:if="{{request && !loading}}">
+    <!-- 需求本体 -->
     <view class="card">
-      <view class="head">
-        <text class="title">{{request.title}}</text>
+      <view class="line1">
+        <text class="category">{{categoryLabel}}</text>
         <text class="status">{{statusLabel}}</text>
       </view>
+      <text class="title">{{request.title}}</text>
       <text class="detail">{{request.detail}}</text>
-    </view>
 
-    <view class="card">
-      <view class="row"><text class="label">品类</text><text class="value">{{categoryLabel}}</text></view>
-      <view class="row"><text class="label">城市</text><text class="value">{{request.city}}</text></view>
+      <view class="row"><text class="label">时效</text><text class="value">{{timingLabel}} · {{expireText}} 前有效</text></view>
       <view class="row"><text class="label">报酬</text><text class="value">{{rewardLabel}}</text></view>
       <view class="row"><text class="label">地点</text><text class="value">{{request.area || '未填'}}</text></view>
-      <view class="row"><text class="label">失效时间</text><text class="value">{{expireText}}</text></view>
-      <view class="row"><text class="label">已有响应</text><text class="value">{{request.responseCount || 0}} 人</text></view>
+      <view class="row" wx:if="{{request.headcount}}"><text class="label">需要人数</text><text class="value">{{request.headcount}} 人</text></view>
+      <view class="row"><text class="label">已有响应</text><text class="value">{{request.responseCount}} 人</text></view>
+
+      <view class="owner-line">
+        <text class="owner">{{request.ownerNickName || '匿名'}}</text>
+        <text class="trust">新面孔</text>
+        <text class="tag" wx:if="{{request.preference.sameGenderOnly}}">仅同性响应</text>
+        <text class="tag test" wx:if="{{request.isTest}}">联调</text>
+      </view>
+    </view>
+
+    <!-- 视角一：其他人 → 响应入口 -->
+    <view class="card" wx:if="{{canRespond}}">
+      <text class="card-title">我可以帮</text>
+      <textarea
+        class="area-input"
+        value="{{pitch}}"
+        bindinput="onPitchInput"
+        placeholder="一句话说明你为什么合适，比如：我住附近，常去那家店"
+        maxlength="100"
+        auto-height
+      />
+      <view class="row" wx:if="{{needQuote}}">
+        <text class="label">我的报价</text>
+        <input class="input" type="digit" value="{{quote}}" bindinput="onQuoteInput" placeholder="线下结算，平台不代收" />
+      </view>
+      <button class="primary" loading="{{submitting}}" bindtap="onSubmitResponse">响应这条需求</button>
+    </view>
+
+    <view class="card" wx:if="{{myResponseId && !isMatchedResponder}}">
+      <text class="card-title">你已响应</text>
+      <text class="tip">等需求方选定就好。别人的自荐内容不会展示给你。</text>
+    </view>
+
+    <!-- 视角二：需求方 → 响应列表与选定 -->
+    <view class="card" wx:if="{{isOwner}}">
+      <text class="card-title">响应者（{{responses.length}}）</text>
+      <text class="tip" wx:if="{{responses.length === 0}}">还没有人响应。即时型需求通常前 30 分钟最活跃。</text>
+
+      <view class="responder" wx:for="{{responses}}" wx:key="_id">
+        <view class="responder-head">
+          <text class="responder-name">{{item.responderNickName || '匿名'}}</text>
+          <text class="trust">{{item.trustLabel}}</text>
+          <text class="tag" wx:if="{{item.selected}}">已选定</text>
+        </view>
+        <text class="pitch" wx:if="{{item.pitch}}">{{item.pitch}}</text>
+        <text class="quote" wx:if="{{item.quote}}">报价 {{item.quote}}</text>
+        <text class="evidence" wx:if="{{item.responderDoneCount}}">完成过 {{item.responderDoneCount}} 单</text>
+
+        <button
+          class="select-btn"
+          wx:if="{{request.status === STATUS_RESPONDED}}"
+          data-id="{{item._id}}"
+          bindtap="onTapSelect"
+        >选定他</button>
+      </view>
+    </view>
+
+    <!-- 双方确认完成 -->
+    <view class="card" wx:if="{{canConfirmDone}}">
+      <text class="card-title">确认完成</text>
+      <view class="row">
+        <text class="label">需求方</text>
+        <text class="value">{{doneConfirm.owner ? '已确认' : '未确认'}}</text>
+      </view>
+      <view class="row">
+        <text class="label">响应者</text>
+        <text class="value">{{doneConfirm.responder ? '已确认' : '未确认'}}</text>
+      </view>
+      <button class="primary" bindtap="onConfirmDone">我这边已完成</button>
+      <text class="tip">两边都确认后这条需求才算完成。</text>
+    </view>
+
+    <view class="card done-card" wx:if="{{request.status === STATUS_DONE}}">
+      <text class="card-title">已完成</text>
+      <text class="tip">双向评价属 M3；私信与约定单卡片属 M3，本版本没有。</text>
+    </view>
+
+    <!-- 取消 -->
+    <view class="card" wx:if="{{isOwner || isMatchedResponder}}">
+      <text class="link danger" bindtap="onCancel">取消这条需求</text>
+      <text class="tip">取消会记录取消方与次数（PRD 4.1 规则 3）。</text>
     </view>
 
     <view class="card">
-      <text class="milestone">响应、选定、双方确认完成这三段交互在 M1-17 实现；私信与约定单属 M3。</text>
       <text class="link" bindtap="goSquare">回需求广场</text>
     </view>
   </block>
+
+  <!-- 安全提示卡：选定前强制展示一次（PRD 4.5） -->
+  <view class="mask" wx:if="{{safetyVisible}}">
+    <view class="sheet">
+      <text class="sheet-title">见面前请先看这四条</text>
+      <view class="tip-item" wx:for="{{safetyTips}}" wx:key="*this">
+        <text class="dot">·</text><text class="tip-text">{{item}}</text>
+      </view>
+      <text class="sheet-note">选定之后不可更改，请确认对方是你想找的人。</text>
+      <button class="primary" loading="{{selecting}}" bindtap="onConfirmSelect">我已了解，继续选定</button>
+      <text class="link" bindtap="onCancelSelect">再想想</text>
+    </view>
+  </view>
 </view>

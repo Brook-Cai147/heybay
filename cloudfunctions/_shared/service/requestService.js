@@ -230,7 +230,13 @@ const transitionRequest = async ({ openid, params = {}, isTest = false }) => {
   return ok({ requestId, from: result.from, to: result.to, actor: actorRole })
 }
 
-/** 需求单详情（M1-17 用）。M1 阶段整条文档回传，M3 上私信与联系方式前要在这里做字段裁剪 */
+/**
+ * 需求单详情（M1-17）。一次调用把页面要的都带回来 —— 免费环境的调用次数有限，
+ * 详情 + 响应列表拆成两次请求没必要。
+ *
+ * 可见性按身份区分：需求方看到全部响应，响应者只看到自己那条，游客看不到任何响应内容。
+ * 别人的自荐语与报价不该被围观。
+ */
 const getDetail = async ({ openid, params = {} }) => {
   const { requestId } = params
   if (!requestId) fail(ERROR.BAD_PARAMS, '缺 requestId')
@@ -238,13 +244,77 @@ const getDetail = async ({ openid, params = {} }) => {
   const request = await requestsDao.findById(requestId)
   if (!request) fail(ERROR.REQUEST_NOT_FOUND, '这条需求不存在或已被删除')
 
+  const isOwner = request.ownerOpenid === openid
+  const isMatchedResponder = Boolean(
+    request.matchedResponderOpenid && request.matchedResponderOpenid === openid
+  )
+
+  const mine = isOwner ? null : await responsesDao.findByRequestAndResponder(requestId, openid)
+  const rawResponses = isOwner
+    ? await responsesDao.listByRequest(requestId)
+    : (mine ? [mine] : [])
+
   const owner = await usersDao.findByOpenid(request.ownerOpenid)
+
   return ok({
-    request,
-    isOwner: request.ownerOpenid === openid,
-    owner: publicUser(owner)
+    request: publicRequest(request),
+    viewerRole: isOwner ? ACTOR_ROLE.OWNER : (isMatchedResponder ? ACTOR_ROLE.RESPONDER : 'visitor'),
+    isOwner,
+    isMatchedResponder,
+    owner: publicUser(owner),
+    responses: rawResponses.map(publicResponse),
+    myResponseId: mine ? mine._id : null,
+    doneConfirm: {
+      owner: Boolean(request.ownerDoneAt),
+      responder: Boolean(request.responderDoneAt)
+    },
+    serverTime: Date.now()
   })
 }
+
+/** 需求单的对外字段。`ownerOpenid`、`cancelReason` 这类内部字段不发给端侧 */
+const publicRequest = request => ({
+  _id: request._id,
+  category: request.category,
+  title: request.title,
+  detail: request.detail,
+  city: request.city,
+  area: request.area || '',
+  timing: request.timing,
+  instantDuration: request.instantDuration || null,
+  expectTime: request.expectTime || null,
+  rewardType: request.rewardType,
+  amount: request.amount || null,
+  headcount: request.headcount || null,
+  visibility: request.visibility,
+  preference: request.preference || {},
+  status: request.status,
+  expireAt: request.expireAt,
+  responseCount: request.responseCount || 0,
+  matchedResponseId: request.matchedResponseId || null,
+  ownerNickName: request.ownerNickName || '',
+  ownerAvatarUrl: request.ownerAvatarUrl || '',
+  ownerTrustLevel: request.ownerTrustLevel || 'newcomer',
+  cancelledBy: request.cancelledBy || null,
+  createdAt: request.createdAt,
+  isTest: request._isTest === true
+})
+
+/** 响应的对外字段。**不含 responderOpenid** —— 页面用 responseId 就够了 */
+const publicResponse = response => ({
+  _id: response._id,
+  pitch: response.pitch || '',
+  quote: response.quote || null,
+  source: response.source,
+  selected: response.selected === true,
+  responderNickName: response.responderNickName || '',
+  responderAvatarUrl: response.responderAvatarUrl || '',
+  responderTrustLevel: response.responderTrustLevel || 'newcomer',
+  // M1 能真实拿到的证据只有完成单数（confirmDone 时累加），平均响应时长没有数据源，
+  // 因此整块不显示，也不写"暂无"占位（计划 M1-17 第 2 条）
+  responderDoneCount: Number.isInteger(response.responderDoneCount) ? response.responderDoneCount : null,
+  createdAt: response.createdAt
+})
 
 /**
  * 选定响应者（M1-11）：responded → matched。**不可逆**。
@@ -383,6 +453,17 @@ const confirmDone = async ({ openid, params = {}, isTest = false }) => {
     reason: 'both_confirmed',
     isTest
   })
+
+  // 完成单数累加到双方身上。这是 M1 唯一真实可得的"证据摘要"（PRD 6.4 的响应者证据），
+  // 也是 M3 信任分的输入。累加失败只记日志，不让已完成的单子回滚
+  for (const who of [request.ownerOpenid, request.matchedResponderOpenid]) {
+    if (!who) continue
+    try {
+      await usersDao.incCounter(who, 'doneCount', 1)
+    } catch (err) {
+      console.warn('[confirmDone] 完成单数累加失败（不影响完成本身）', err && err.message)
+    }
+  }
 
   return ok({ requestId, from: result.from, status: REQUEST_STATUS.DONE, confirmedByMe: true })
 }
