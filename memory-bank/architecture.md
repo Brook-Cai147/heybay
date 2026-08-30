@@ -122,6 +122,47 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 
 > 「仅同性响应」的校验拆到两处：**发布时**若开了开关而本人性别未填即拒（提示去补全），**响应时**按 D-26 判断未填/不符。把一半挪到发布时，是为了不让响应者替发单人的疏漏买单。
 
+**M1-11**
+
+- `cloudfunctions/_shared/service/requestService.js`（扩展 `selectResponder`）— responded→matched，选定不可逆；重复选定同一人幂等（不再转移、不再写日志），选定另一人明确拒绝；`matchedResponseId` / `matchedResponderOpenid` / `matchedAt` 随状态一起写 — `dao/responses.js`（新增 `findById`、`markSelected`）— `requestFlow`
+- `cloudfunctions/_shared/dao/responses.js`（扩展）— `markSelected(requestId, selectedId)`：先把该单全部响应置未选中、再把指定那条置选中，**顺序不可反** — `dao/db.js` — `requestService`
+
+> "不可逆"是服务端约束而非前端提示：`matched` 没有回到 `responded` 的边，状态机会拒绝；并发的两次选定也只有一次能过（事务内读加锁）。选中标记在状态提交**之后**才刷 —— 标记只影响列表展示，失败不该回滚状态。
+
+**M1-12**
+
+- `cloudfunctions/_shared/service/requestService.js`（扩展 `confirmDone` / `cancel`）— 完成按角色分别记 `ownerDoneAt` / `responderDoneAt`，两者都有才由这一次调用触发唯一的 matched→done；单方重复确认幂等。取消记 `cancelledBy` / `cancelledByOpenid` / `cancelledAt` / `cancelReason`，并在 `users.cancelCount` 上累加 — `dao/users.js`（新增 `incCounter`）— `requestFlow`
+
+> 取消次数记在**人**身上而不是单子上：单子会被清理，人的行为记录要留下（M3 信用分的输入，PRD 4.1 规则 3）。累加失败只记日志，不让取消本身失败。
+
+**M1-13**
+
+- `cloudfunctions/_shared/dao/events.js` — 埋点流水，只增不改不删 — `dao/db.js` — `trackService`
+- `cloudfunctions/_shared/service/trackService.js` — `report`（字典外或 planned 事件一律拒收）与 `reportSafely`（服务端内部上报，**永不抛错**）；桶号首次计算后缓存到 `users.bucket` — `constants/events.js`、`service/bucketing.js`、`dao/{events,users}.js` — `track` 云函数、`requestService`、`responseService`
+- `cloudfunctions/track/` — 单一 action `report` — `_shared` — `utils/track.js`
+- `miniprogram/utils/track.js` — 失败静默重试一次后放弃，不弹提示、不抛错；调用处不需要 await 也不需要 catch — `config/env.js` — 各页面
+
+> 服务端直接上报的事件（不依赖端侧触发）：`request_status_changed`（在 `applyTransition` 提交后）、`same_gender_only_enabled`、`responder_selected`、`request_done_confirmed`、`response_submitted`、`gender_missing_blocked`。端侧只报 `request_publish_submitted` 这类"意图"事件 —— 它要在发布失败时也留下记录，服务端反而拿不到。
+
+**M1-14**
+
+- `miniprogram/app.json` — 五 Tab（首页 / 城市 / 喊一声 / 消息 / 我的），标题改「喊呗」；V1.0 旧页面**已从路由摘除但文件保留** — 无 — 全局
+- `miniprogram/custom-tab-bar/index.js` — tabList 换成五 Tab，中间「喊一声」为主动作入口 — 无 — 各 Tab 页（`onShow` 里同步 `selected`）
+- `miniprogram/pages/square/` — 需求广场骨架，**不放假数据**（空列表比假卡片更能反映进度），列表在 M1-16 填 — 无 — 无
+- `miniprogram/pages/city/`、`miniprogram/pages/notice/` — 占位页，写明对应里程碑 — 无 — 无
+- `miniprogram/pages/mine/` — 最小可用：登录建档 + 补全常驻城市与性别。**不是占位页** —— 「仅同性响应」依赖性别（D-26），没有这个入口，M1-10 的性别规则在界面上无从验证 — `services/user.js` — 无
+- `miniprogram/pages/request-detail/` — 详情骨架，用于验证 M1-15 的发布跳转；双视角交互在 M1-17 — `services/request.js` — 发布页
+
+> **页面目录用新名字**（`square` / `city` / `notice` / `mine`），不复用 V1.0 的 `home` / `group` / `message` / `wode`。原因：前提第 7 条要求旧页面文件保留作重构对照，若原地重写就等于删了。计划里 M1-16 原写「`pages/home/` 重做为需求广场」，已同步改为 `pages/square/`。
+
+**M1-15**
+
+- `miniprogram/pages/publish/` — 发布页：首屏保留「一句话输入框 + 帮我整理」，M1 点按钮直接展开完整表单（无 AI，旁注 M2 接入）。枚举全部来自 `models/enums.js`，模板里不出现枚举字面量；金额 / 见面时间 / 见面地点用黄色高亮块 + 「这项请你自己确认」；偏好区只有「仅同性响应」 — `models/{enums,schema}.js`、`services/request.js`、`utils/track.js` — 详情页（跳转）
+
+> 首屏结构是为 M2 留的接口：M2-07 只需把「帮我整理」换成一次 `aiGateway` 调用并把结果填进表单，页面不重做（D-15 的降级路径就是这张表单本身）。
+>
+> `fieldSources` 由发布页组装：M1 全部标 `user` / `empty`；M2 起 AI 给的字段标 `ai`，而金额 / 见面时间 / 见面地点 / 联系方式四项标了 `ai` 会被服务端直接拒绝（PRD 5.4）。
+
 ## 关键决策的代码落点
 
 | 设计决策 | 代码落点 | 出处 |
@@ -137,7 +178,9 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 | 自主性阶梯 L0/L1，L3 永不做 | `miniprogram/pages/assistant/` + `_shared/service/inviteService.js` | D-14 / M2-14 |
 | 零用户阶段用离线评测替代 A/B | `scripts/evalParseRequest.js` + `tests/fixtures/parseRequestGolden.json` | D-31 / M2-15 |
 | 三层内容安全 | `cloudfunctions/moderation/` | tech-stack 6.3 |
-| A/B 分桶（M1 只埋字段，实验运营留 M5） | `cloudfunctions/track/` + `_shared/service/bucketing.js` | D-21 / D-31 |
+| A/B 分桶（M1 只埋字段，实验运营留 M5） | `cloudfunctions/track/` + `_shared/service/bucketing.js` + `_shared/service/trackService.js`（桶号缓存在 `users.bucket`） | D-21 / D-31 |
+| 埋点绝不阻断主流程 | 服务端走 `trackService.reportSafely`（永不抛错）；端侧 `utils/track.js` 失败静默重试一次后放弃 | M1-13 |
+| 事件名不许野生增长 | `trackService.report` 只接受 `constants/events.js` 里 status 为 active 的事件名 | PRD 7.3 |
 | 管理后台做进小程序 | `miniprogram/pages/admin/` + openid 白名单 | D-22 |
 | 端云枚举双份，云侧权威 | `cloudfunctions/_shared/constants/enums.js`（权威）+ `miniprogram/models/enums.js`（副本）+ parity 单测 | D-27 |
 | 用户标识统一用 openid，不立 userId | 集合字段 `openid` / `ownerOpenid` / `responderOpenid`；值只由云函数从 `cloud.getWXContext()` 取，永不接受端侧传入 | D-33 |

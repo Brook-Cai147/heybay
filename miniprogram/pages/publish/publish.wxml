@@ -1,0 +1,147 @@
+<view class="page">
+  <!-- 首屏：PRD 6.4 —— 表单是解析后的结果，不是输入的起点 -->
+  <view class="card">
+    <text class="card-title">想找人帮什么？</text>
+    <textarea
+      class="one-line"
+      value="{{oneLine}}"
+      bindinput="onOneLineInput"
+      placeholder="像跟朋友说话一样，比如：明天下午有人陪我去希思罗机场吗，可以请一顿"
+      maxlength="200"
+      auto-height
+    />
+    <button class="primary" bindtap="onOrganize">帮我整理</button>
+    <text class="card-tip">M1 是直接展开表单；M2 这一步会调 AI 解析成结构化需求单（解析失败也回落到这张表单）</text>
+  </view>
+
+  <block wx:if="{{expanded}}">
+    <view class="card">
+      <text class="card-title">品类</text>
+      <view class="chips">
+        <view
+          class="chip {{form.category === item.value ? 'chip-on' : ''}}"
+          wx:for="{{categoryOptions}}"
+          wx:key="value"
+          data-field="category"
+          data-value="{{item.value}}"
+          bindtap="onPick"
+        >{{item.label}}</view>
+      </view>
+      <text class="err" wx:if="{{errors.category}}">{{errors.category}}</text>
+    </view>
+
+    <view class="card">
+      <view class="row">
+        <text class="label">标题</text>
+        <input class="input" value="{{form.title}}" data-field="title" bindinput="onFieldInput" placeholder="20 字以内" maxlength="20" />
+      </view>
+      <text class="err" wx:if="{{errors.title}}">{{errors.title}}</text>
+
+      <text class="label mt">具体需求</text>
+      <textarea class="area" value="{{form.detail}}" data-field="detail" bindinput="onFieldInput" placeholder="说清楚要做什么、在哪一带、有什么要求" maxlength="500" auto-height />
+      <text class="err" wx:if="{{errors.detail}}">{{errors.detail}}</text>
+
+      <view class="row" wx:if="{{form.category === CATEGORY_COMPANION}}">
+        <text class="label">需要几人</text>
+        <input class="input" type="number" value="{{form.headcount}}" data-field="headcount" bindinput="onFieldInput" placeholder="1~20" />
+      </view>
+      <text class="err" wx:if="{{errors.headcount}}">{{errors.headcount}}</text>
+    </view>
+
+    <view class="card">
+      <text class="card-title">时效</text>
+      <view class="chips">
+        <view
+          class="chip {{form.timing === item.value ? 'chip-on' : ''}}"
+          wx:for="{{timingOptions}}"
+          wx:key="value"
+          data-field="timing"
+          data-value="{{item.value}}"
+          bindtap="onPick"
+        >{{item.label}}</view>
+      </view>
+
+      <view wx:if="{{form.timing === TIMING_INSTANT}}">
+        <view class="chips mt">
+          <view
+            class="chip {{form.instantDuration === item.value ? 'chip-on' : ''}}"
+            wx:for="{{durationOptions}}"
+            wx:key="value"
+            data-field="instantDuration"
+            data-value="{{item.value}}"
+            bindtap="onPick"
+          >{{item.label}}</view>
+        </view>
+        <text class="card-tip">「今天内」按伦敦当地日期算到当天 23:59</text>
+      </view>
+
+      <view class="highlight" wx:if="{{form.timing === TIMING_SCHEDULED}}">
+        <text class="hl-title">见面时间 · 这项请你自己确认</text>
+        <view class="row">
+          <picker mode="date" value="{{form.expectDate}}" bindchange="onDateChange">
+            <view class="picker">{{form.expectDate || '选日期'}}</view>
+          </picker>
+          <picker mode="time" value="{{form.expectTime}}" bindchange="onTimeChange">
+            <view class="picker">{{form.expectTime || '选时间'}}</view>
+          </picker>
+        </view>
+        <text class="err" wx:if="{{errors.expectTime}}">{{errors.expectTime}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="card-title">报酬</text>
+      <view class="chips">
+        <view
+          class="chip {{form.rewardType === item.value ? 'chip-on' : ''}}"
+          wx:for="{{rewardOptions}}"
+          wx:key="value"
+          data-field="rewardType"
+          data-value="{{item.value}}"
+          bindtap="onPick"
+        >{{item.label}}</view>
+      </view>
+      <text class="err" wx:if="{{errors.rewardType}}">{{errors.rewardType}}</text>
+
+      <view class="highlight" wx:if="{{form.rewardType === REWARD_PAID}}">
+        <text class="hl-title">金额 · 这项请你自己确认</text>
+        <input class="input" type="digit" value="{{form.amount}}" data-field="amount" bindinput="onFieldInput" placeholder="参考金额，线下自行结算，平台不代收" />
+        <text class="err" wx:if="{{errors.amount}}">{{errors.amount}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="highlight no-margin">
+        <text class="hl-title">见面地点 · 这项请你自己确认</text>
+        <input class="input" value="{{form.area}}" data-field="area" bindinput="onFieldInput" placeholder="写到街区或地铁站就好，不用写门牌号" />
+        <text class="hint" wx:for="{{hints}}" wx:key="field">{{item.message}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="card-title">谁能看到</text>
+      <view class="chips">
+        <view
+          class="chip {{form.visibility === item.value ? 'chip-on' : ''}}"
+          wx:for="{{visibilityOptions}}"
+          wx:key="value"
+          data-field="visibility"
+          data-value="{{item.value}}"
+          bindtap="onPick"
+        >{{item.label}}</view>
+      </view>
+
+      <view class="row mt">
+        <text class="label flex">仅同性响应</text>
+        <switch checked="{{form.sameGenderOnly}}" bindchange="onSameGenderChange" color="#1296db" />
+      </view>
+      <text class="card-tip">这是个安全开关。开启前需要先在「我的」里填好自己的性别，否则发布会被拒。</text>
+    </view>
+
+    <view class="card">
+      <text class="expect">发出后将推送给伦敦 —— 位可能帮上忙的人（占位，实际人数由 M2 的分发模块给出）</text>
+      <button class="primary" loading="{{submitting}}" bindtap="onSubmit">发出去</button>
+      <text class="err" wx:if="{{globalError}}">{{globalError}}</text>
+    </view>
+  </block>
+</view>
