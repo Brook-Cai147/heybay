@@ -1,0 +1,4 @@
+<view class="placeholder">
+  <text class="ph-title">消息</text>
+  <text class="ph-tip">1v1 私信在 {{milestone}} 实现；订阅消息推送整块归 M4（D-30）</text>
+</view>

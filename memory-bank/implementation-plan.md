@@ -229,7 +229,7 @@ M1 的状态机终点是 `done`，不做 `rated`（评价属 M2）。
 ## M1-14 五 Tab 与路由骨架
 
 - **目标**：把 V1.0 的旧 Tab 与页面结构换成 PRD 6.1 的五 Tab，并建好 M1 需要的页面空壳。
-- **涉及文件**：`miniprogram/app.json`、`miniprogram/custom-tab-bar/`、`miniprogram/pages/`（新建首页需求广场、发布、需求单详情三个目录；城市与消息两个 Tab 建空壳占位页）、V1.0 旧页面目录（暂留不删）
+- **涉及文件**：`miniprogram/app.json`、`miniprogram/custom-tab-bar/`、`miniprogram/pages/`（新建 `square/` 需求广场、`publish/` 发布、`request-detail/` 详情三个目录；`city/` 与 `notice/` 两个 Tab 建空壳占位页；`mine/` 建最小可用页）、V1.0 旧页面目录（暂留不删）
 - **前置依赖**：无（可在 M1-06 之前做，但为避免与 M1-06 抢工具，排在此处）
 - **具体指令**：
   1. Tab 改为：首页（需求广场）/ 城市 / 喊一声 / 消息 / 我的，名称与 PRD 6.1 逐字一致；`navigationBarTitleText` 从「同路人」改为「喊呗」。
@@ -260,7 +260,7 @@ M1 的状态机终点是 `done`，不做 `rated`（评价属 M2）。
 ## M1-16 首页需求广场（最小可用）
 
 - **目标**：给需求单一个被别人看见的入口——这是主干闭环缺不了的一环，但只做最小集。
-- **涉及文件**：`miniprogram/pages/home/`（重做为需求广场）、`miniprogram/components/request-card/`（新建）、`cloudfunctions/requestFlow/`（新增只读列表 action）或新建只读查询云函数、`miniprogram/services/request.js`（扩展）
+- **涉及文件**：`miniprogram/pages/square/`（M1-14 建的需求广场骨架，本步填内容）、`miniprogram/components/request-card/`（新建）、`cloudfunctions/requestFlow/`（新增只读列表 action）或新建只读查询云函数、`miniprogram/services/request.js`（扩展）
 - **前置依赖**：M1-09、M1-14
 - **具体指令**：
   1. 列表查询走云函数（端侧无直读权限），条件为「当前城市 + 状态 open/responded + 未过期」，按创建时间倒序，分页取 20 条；查询必须能命中 M1-07 建的 `city + status + expireAt` 索引。

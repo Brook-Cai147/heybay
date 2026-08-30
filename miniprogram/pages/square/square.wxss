@@ -1,0 +1,53 @@
+.page {
+  min-height: 100vh;
+  padding: 24rpx 32rpx 160rpx;
+  background: #f7f8fa;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 16rpx 0 32rpx;
+}
+
+.title {
+  font-size: 40rpx;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.city {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.empty {
+  margin-top: 160rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.empty-title {
+  font-size: 32rpx;
+  color: #333;
+}
+
+.empty-tip {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #999;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.cta {
+  margin-top: 48rpx;
+  background: #1296db;
+  color: #fff;
+  font-size: 28rpx;
+  border-radius: 44rpx;
+  padding: 0 64rpx;
+}

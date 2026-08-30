@@ -1,20 +1,15 @@
 {
   "pages": [
-    "pages/home/home",
-    "pages/group/group",
-    "pages/post/post",
-    "pages/message/message",
-    "pages/wode/wode",
-    "pages/wode/search/search",
-    "pages/wode/settings/settings",
-    "pages/search/search",
-    "pages/post-detail/post-detail",
-    "pages/hot-search/hot-search",
-    "pages/group-search/group-search"
+    "pages/square/square",
+    "pages/city/city",
+    "pages/publish/publish",
+    "pages/notice/notice",
+    "pages/mine/mine",
+    "pages/request-detail/request-detail"
   ],
   "window": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "同路人",
+    "navigationBarTitleText": "喊呗",
     "navigationBarBackgroundColor": "#ffffff"
   },
   "tabBar": {
@@ -24,31 +19,31 @@
     "backgroundColor": "#ffffff",
     "list": [
       {
-        "pagePath": "pages/home/home",
+        "pagePath": "pages/square/square",
         "text": "首页",
         "iconPath": "images/home_no.png",
         "selectedIconPath": "images/home_yes.png"
       },
       {
-        "pagePath": "pages/group/group",
-        "text": "组聊",
+        "pagePath": "pages/city/city",
+        "text": "城市",
         "iconPath": "images/group_no.png",
         "selectedIconPath": "images/group_yes.png"
       },
       {
-        "pagePath": "pages/post/post",
-        "text": "发帖",
+        "pagePath": "pages/publish/publish",
+        "text": "喊一声",
         "iconPath": "images/post_no.png",
         "selectedIconPath": "images/post_yes.png"
       },
       {
-        "pagePath": "pages/message/message",
+        "pagePath": "pages/notice/notice",
         "text": "消息",
         "iconPath": "images/message_no.png",
         "selectedIconPath": "images/message_yes.png"
       },
       {
-        "pagePath": "pages/wode/wode",
+        "pagePath": "pages/mine/mine",
         "text": "我的",
         "iconPath": "images/wode_no.png",
         "selectedIconPath": "images/wode_yes.png"

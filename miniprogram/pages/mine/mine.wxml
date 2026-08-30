@@ -1,0 +1,56 @@
+<view class="page">
+  <view class="card" wx:if="{{!user}}">
+    <text class="card-title">还没有档案</text>
+    <text class="card-tip">点一下就建档，用的是微信授权登录，不采集手机号</text>
+    <button class="primary" bindtap="onLogin">登录 / 建档</button>
+    <text class="err" wx:if="{{error}}">{{error}}</text>
+  </view>
+
+  <block wx:if="{{user}}">
+    <view class="card">
+      <text class="card-title">我的档案</text>
+      <view class="row">
+        <text class="label">昵称</text>
+        <input class="input" value="{{nickName}}" placeholder="填个昵称" bindinput="onNickNameInput" />
+        <text class="link" bindtap="onSaveNickName">保存</text>
+      </view>
+      <view class="row">
+        <text class="label">信任档位</text>
+        <text class="value">新面孔（信任分算法属 M2）</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <text class="card-title">常驻城市</text>
+      <view class="chips">
+        <view
+          class="chip {{user.city === item.value ? 'chip-on' : ''}}"
+          wx:for="{{cityOptions}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          bindtap="onPickCity"
+        >{{item.label}}</view>
+      </view>
+      <text class="card-tip">M1 只开伦敦，其他城市显示"尚未开城"</text>
+    </view>
+
+    <view class="card">
+      <text class="card-title">性别</text>
+      <view class="chips">
+        <view
+          class="chip {{user.gender === item.value ? 'chip-on' : ''}}"
+          wx:for="{{genderOptions}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          bindtap="onPickGender"
+        >{{item.label}}</view>
+      </view>
+      <text class="card-tip">
+        性别只用于「仅同性响应」这个安全开关，不参与任何推荐或排序。留空则无法响应设了该开关的需求。
+      </text>
+      <text class="warn" wx:if="{{user.gender === 'unset'}}">当前未填写</text>
+    </view>
+
+    <text class="err" wx:if="{{error}}">{{error}}</text>
+  </block>
+</view>

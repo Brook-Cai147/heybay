@@ -1,0 +1,4 @@
+<view class="placeholder">
+  <text class="ph-title">城市</text>
+  <text class="ph-tip">城市社区（官方分区、兴趣小组、城市语料）在 {{milestone}} 实现</text>
+</view>

@@ -1,0 +1,30 @@
+<view class="page">
+  <view class="loading" wx:if="{{loading}}">加载中…</view>
+
+  <view class="card err-card" wx:if="{{error}}">
+    <text class="err">{{error}}</text>
+  </view>
+
+  <block wx:if="{{request && !loading}}">
+    <view class="card">
+      <view class="head">
+        <text class="title">{{request.title}}</text>
+        <text class="status">{{statusLabel}}</text>
+      </view>
+      <text class="detail">{{request.detail}}</text>
+    </view>
+
+    <view class="card">
+      <view class="row"><text class="label">城市</text><text class="value">{{request.city}}</text></view>
+      <view class="row"><text class="label">报酬</text><text class="value">{{request.rewardType}}{{request.amount ? ' · ' + request.amount : ''}}</text></view>
+      <view class="row"><text class="label">地点</text><text class="value">{{request.area || '未填'}}</text></view>
+      <view class="row"><text class="label">失效时间</text><text class="value">{{expireText}}</text></view>
+      <view class="row"><text class="label">已有响应</text><text class="value">{{request.responseCount || 0}} 人</text></view>
+    </view>
+
+    <view class="card">
+      <text class="milestone">响应、选定、双方确认完成这三段交互在 M1-17 实现；私信与约定单属 M3。</text>
+      <text class="link" bindtap="goSquare">回需求广场</text>
+    </view>
+  </block>
+</view>
