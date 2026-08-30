@@ -5,7 +5,7 @@
  * 永不接受端侧传入的 openid。dao 层信任调用方已经做过这件事。
  */
 
-const { COLLECTION, getDb, NOT_DELETED, withCreateStamps, withUpdateStamps } = require('./db')
+const { COLLECTION, getDb, getCommand, NOT_DELETED, withCreateStamps, withUpdateStamps } = require('./db')
 
 const collection = () => getDb().collection(COLLECTION.USERS)
 
@@ -35,8 +35,14 @@ const updateByOpenid = async (openid, data) => {
   return res.stats ? res.stats.updated : 0
 }
 
+/** 计数字段自增（如取消次数、完成单数），字段不存在时从 0 起算 */
+const incCounter = async (openid, field, delta = 1) => {
+  return updateByOpenid(openid, { [field]: getCommand().inc(delta) })
+}
+
 module.exports = {
   findByOpenid,
   insert,
-  updateByOpenid
+  updateByOpenid,
+  incCounter
 }
