@@ -20,6 +20,7 @@ const {
 } = require('../constants/enums')
 const { ERROR, fail, ok } = require('../constants/errors')
 const { applyTransition } = require('./requestService')
+const trackService = require('./trackService')
 
 /** 可被响应的状态：已选定 / 已过期 / 已取消 / 已下架的单都不再接受响应 */
 const ACCEPTING_STATUSES = Object.freeze([REQUEST_STATUS.OPEN, REQUEST_STATUS.RESPONDED])
@@ -66,12 +67,19 @@ const normalizeParams = params => {
  * 「仅同性响应」校验（D-26）。
  * 未填性别时给的是"补全性别后可响应"，而不是笼统拒绝 —— 这是一条可行动的提示。
  */
-const assertGenderAllowed = async (request, responder) => {
+const assertGenderAllowed = async (request, responder, openid, isTest) => {
   const preference = request.preference || {}
   if (preference[PREFERENCE_FLAG.SAME_GENDER_ONLY] !== true) return
 
   const responderGender = (responder && responder.gender) || GENDER.UNSET
   if (responderGender === GENDER.UNSET) {
+    // 这条约束到底拦掉了多少人，需要数据来回答（事件字典 ⑤ 安全组）
+    await trackService.reportSafely({
+      openid,
+      name: 'gender_missing_blocked',
+      params: { requestId: request._id },
+      isTest
+    })
     fail(ERROR.GENDER_REQUIRED, '这条需求只接受同性响应，补全性别后就可以响应了')
   }
 
@@ -104,7 +112,7 @@ const submit = async ({ openid, params = {}, isTest = false }) => {
   }
 
   const responder = await usersDao.findByOpenid(openid)
-  await assertGenderAllowed(request, responder)
+  await assertGenderAllowed(request, responder, openid, isTest)
 
   const existing = await responsesDao.findByRequestAndResponder(requestId, openid)
   if (existing) {
@@ -151,6 +159,14 @@ const submit = async ({ openid, params = {}, isTest = false }) => {
 
   await requestsDao.incResponseCount(requestId, 1)
   const responseCount = await responsesDao.countByRequest(requestId)
+
+  // 响应归因由服务端上报：端侧可能不触发，而这条数据是判断分发路径有效性的唯一来源
+  await trackService.reportSafely({
+    openid,
+    name: 'response_submitted',
+    params: { requestId, source },
+    isTest
+  })
 
   return ok({
     responseId,

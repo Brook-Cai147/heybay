@@ -1,0 +1,10 @@
+{
+  "name": "track",
+  "version": "1.0.0",
+  "private": true,
+  "description": "埋点上报（M1-13）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "2.6.3"
+  }
+}
