@@ -87,6 +87,14 @@ const PREFERENCE_FLAG = {
   REQUIRE_VERIFIED: 'requireVerified'
 }
 
+/** 响应的来源归因（PRD 5.3 的四条分发路径） */
+const RESPONSE_SOURCE = {
+  PUSH: 'push',
+  COMMUNITY: 'community',
+  INVITE: 'invite',
+  BROADCAST: 'broadcast'
+}
+
 const freeze = Object.freeze
 const valuesOf = obj => freeze(Object.values(obj))
 
@@ -107,5 +115,7 @@ module.exports = {
   GENDER: freeze(GENDER),
   GENDER_VALUES: valuesOf(GENDER),
   PREFERENCE_FLAG: freeze(PREFERENCE_FLAG),
-  PREFERENCE_FLAG_VALUES: valuesOf(PREFERENCE_FLAG)
+  PREFERENCE_FLAG_VALUES: valuesOf(PREFERENCE_FLAG),
+  RESPONSE_SOURCE: freeze(RESPONSE_SOURCE),
+  RESPONSE_SOURCE_VALUES: valuesOf(RESPONSE_SOURCE)
 }

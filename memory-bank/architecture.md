@@ -89,11 +89,49 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 
 > **配置数据一律由云函数写入，不手工敲控制台。** 三个理由：`configs` 权限已收成端侧不可写，云函数是唯一合法写入方，手工写等于绕过自己立的纪律；管理员 openid 直接取调用上下文，避免人肉复制出错；换环境时能一键复现，不靠人记得当初敲了哪些字段。
 
+**M1-08**
+
+- `scripts/syncShared.js` — 把 `cloudfunctions/_shared` 复制进每个云函数目录（`npm run sync`）。**云函数间共享 `_shared` 的唯一方式**，详见下文「_shared 的共享方式」 — 无 — 上传云函数前必跑
+- `cloudfunctions/_shared/dao/db.js` — 集合名登记表 + `getDb` / `getCommand` / `serverDate` / `NOT_DELETED` / 时间戳补齐。**dao 内部专用**，service 不 require 它 — `wx-server-sdk` — 全部 dao
+- `cloudfunctions/_shared/dao/tx.js` — `startTransaction()`。单独一个文件，避免 service 为了开事务而 require 整个 `db.js`（那样很容易顺手写出 `db.collection(...)` 越层） — `wx-server-sdk` — `requestService`
+- `cloudfunctions/_shared/dao/{users,requests,responses,statusLogs,configs}.js` — 只做数据存取，**不含任何业务判断**；写方法统一补 `createdAt`/`updatedAt`、支持 `_isTest`；查询默认排除软删除 — `dao/db.js` — 各 service
+- `cloudfunctions/_shared/constants/errors.js` — 统一返回形状 `{ ok, ... }` / `{ ok: false, code, message }` + 业务错误码表 + `fail()`。**业务失败不是异常** — 无 — 全部 service 与 handler
+- `cloudfunctions/_shared/service/dispatch.js` — handler 骨架 `createHandler(actions)`：取 openid、校验 action、分发、把异常翻译成业务返回。抽出来是因为三个 handler 各写一遍 try-catch 迟早漏一个，漏了就是数据库原始报错泄到用户界面 — `errors.js`、`requestStateMachine.js` — 全部云函数入口
+- `cloudfunctions/_shared/service/userService.js` — 登录建档（幂等）、更新常驻城市与性别、`getMe`、`publicUser` 字段裁剪。**不采集手机号**（D-26） — `dao/users.js` — `login` 云函数、`requestService`
+- `cloudfunctions/login/` — 三个 action：`login` / `updateProfile` / `getMe` — `_shared` — `services/user.js`
+- `miniprogram/services/cloud.js` — 端侧调云函数的**唯一出口**：注入 `isTest`、把 `{ ok: false }` 转成带 code 的 Error（页面才能原样展示业务提示）、区分网络失败与业务失败 — `config/env.js` — 全部 `services/`
+- `miniprogram/services/user.js` — 一个云函数动作对应一个方法，页面不直接调云函数 — `services/cloud.js` — 页面
+
+> **_shared 的共享方式（本步定下，后续云函数一律照此办理）**：**复制**。开发者工具上传云函数时只打包该函数目录内部的文件，`require('../_shared/...')` 在云端不存在。软链在 Windows 需管理员权限或开发者模式，个人机上不可靠；npm `file:` 本地依赖要在每个函数维护依赖再让云端安装，链路更长更易碎。副本由 `.gitignore` 排除，**真源只有 `cloudfunctions/_shared`**。代价：改共享代码后必须重新 `npm run sync` 再上传，否则云端跑的是旧副本 —— 这是本方案唯一的坑。
+
+**M1-09**
+
+- `cloudfunctions/_shared/service/requestValidator.js` — 服务端**独立**字段校验（不复用端侧 `schema.js`：端侧那份为体验、这份为安全），并拦住 PRD 5.4 的四类字段被标记为 AI 生成（`fieldSources.<field> === 'ai'` 且字段有值即拒，不做"清空后继续"的宽容处理） — `constants/enums.js`、`errors.js` — `requestService`
+- `cloudfunctions/_shared/service/requestService.js` — 需求单业务规则：`create`（draft→open，含城市开城判断、在架上限、过期时间计算）、`applyTransition`（**状态变更的唯一通道**）、`resolveActorRole`、`transitionRequest`、`getDetail` — 状态机 / 过期判定 / validator / 四个 dao — `requestFlow`、`responseFlow`、M1-18 的 cron
+- `cloudfunctions/requestFlow/` — 三个 action：`create` / `transitionRequest` / `getDetail` — `_shared` — `services/request.js`
+- `miniprogram/services/request.js` — `create` / `transition` / `cancel` / `getDetail` — `services/cloud.js`、`models/enums.js` — 发布页、详情页
+
+> **状态变更用数据库事务**：`applyTransition` 在一个事务内完成「读需求单（加锁）→ 过状态机 → 更新状态 → 写 statusLogs → 提交」。这满足了"不允许状态变了却没有审计"，并白拿一个好处：并发的两次「选定」只有一次能成，另一次会看到已变更的状态而被状态机拒绝。
+
+**M1-10**
+
+- `cloudfunctions/_shared/service/responseService.js` — 响应规则：`submit`（三类拒绝 + 幂等 + 首个响应触发 open→responded）、`list`（需求方看全部，其他人只看自己那条）。幂等三道防线：预查询给友好提示 → 唯一索引物理保证 → 冲突后改读兜住并发 — `dao/responses.js`、`requestService.applyTransition` — `responseFlow`
+- `cloudfunctions/responseFlow/` — 两个 action：`submit` / `list` — `_shared` — `services/response.js`
+- `miniprogram/services/response.js` — `submit` / `list` — `services/cloud.js` — 详情页
+- `cloudfunctions/_shared/constants/enums.js` + `miniprogram/models/enums.js` — 新增 `RESPONSE_SOURCE`（push / community / invite / broadcast，PRD 5.3 的四条分发路径），两侧同步并纳入 parity 断言（D-27）
+
+> 「仅同性响应」的校验拆到两处：**发布时**若开了开关而本人性别未填即拒（提示去补全），**响应时**按 D-26 判断未填/不符。把一半挪到发布时，是为了不让响应者替发单人的疏漏买单。
+
 ## 关键决策的代码落点
 
 | 设计决策 | 代码落点 | 出处 |
 |---|---|---|
 | 前端不可信，状态变更单一入口 | `cloudfunctions/requestFlow/`，含显式转移表 | tech-stack 第 3 节 / D-20 |
+| 只有 dao 层能碰云数据库 API | `_shared/dao/`（含 `db.js` / `tx.js`）；service 里出现 `db.collection` 即越层 | tech-stack 第 3 节 |
+| 云函数间共享代码靠复制 | `scripts/syncShared.js` + `.gitignore` 排除副本，真源只有 `cloudfunctions/_shared` | M1-08 |
+| 服务端不信任端侧校验 | `_shared/service/requestValidator.js`（与端侧 `schema.js` 故意不共享） | tech-stack 第 3 节 |
+| 四类字段禁止 AI 代填 | `requestValidator.assertNoAiFilledFields`（`fieldSources` 标记为 ai 即拒） | PRD 5.4 |
+| 幂等靠唯一索引兜底 | `users.openid`、`responses.requestId + responderOpenid`；service 捕获冲突后改读 | tech-stack 第 3 节（4） |
 | AI 统一网关（额度、缓存、降级、记账） | `cloudfunctions/aiGateway/` + `_shared/ai/registry.js`（能力注册表） | tech-stack 6.1 |
 | 推荐必须可解释，禁止无理由推荐 | `_shared/service/matchService.js`（代码打分 + 依据字段）→ 模型只把依据写成人话 | PRD 5.4 / M2-11 |
 | 自主性阶梯 L0/L1，L3 永不做 | `miniprogram/pages/assistant/` + `_shared/service/inviteService.js` | D-14 / M2-14 |

@@ -98,6 +98,17 @@ const PREFERENCE_FLAG = {
 }
 
 /**
+ * 响应的来源归因（PRD 5.3 的四条分发路径）。
+ * 用途是回答"哪条分发路径真的带来了响应"，进而决定 L2 自动分发值不值得做（M5）。
+ */
+const RESPONSE_SOURCE = {
+  PUSH: 'push',              // 定向推送触达
+  COMMUNITY: 'community',    // 城市社区 / 需求广场浏览
+  INVITE: 'invite',          // 定向邀请
+  BROADCAST: 'broadcast'     // 广播（小组、群等）
+}
+
+/**
  * 状态转移的发起方角色（tech-stack 第 3 节）。**云侧独有**。
  * 判断"是谁在做这次转移"，与"这次转移本身是否合法"是两件事，分别由权限矩阵与转移表负责。
  */
@@ -129,6 +140,8 @@ module.exports = {
   GENDER_VALUES: valuesOf(GENDER),
   PREFERENCE_FLAG: freeze(PREFERENCE_FLAG),
   PREFERENCE_FLAG_VALUES: valuesOf(PREFERENCE_FLAG),
+  RESPONSE_SOURCE: freeze(RESPONSE_SOURCE),
+  RESPONSE_SOURCE_VALUES: valuesOf(RESPONSE_SOURCE),
   ACTOR_ROLE: freeze(ACTOR_ROLE),
   ACTOR_ROLE_VALUES: valuesOf(ACTOR_ROLE)
 }

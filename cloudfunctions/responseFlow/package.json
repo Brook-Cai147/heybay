@@ -1,0 +1,10 @@
+{
+  "name": "responseFlow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "响应需求单（M1-10）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "2.6.3"
+  }
+}
