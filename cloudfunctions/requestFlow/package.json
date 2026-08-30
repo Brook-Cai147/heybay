@@ -1,0 +1,10 @@
+{
+  "name": "requestFlow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "需求单的唯一写入口：发布与状态变更（M1-09）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "2.6.3"
+  }
+}
