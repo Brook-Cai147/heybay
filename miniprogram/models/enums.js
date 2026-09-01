@@ -102,6 +102,14 @@ const CONTACT_TYPE = {
   OTHER: 'other'
 }
 
+/** 需求单字段的来源标记（PRD 5.4）。M1 端侧只产出 user / empty，ai 从 M2 起才有 */
+const FIELD_SOURCE = {
+  USER: 'user',
+  AI: 'ai',
+  EMPTY: 'empty'
+}
+
+
 const freeze = Object.freeze
 const valuesOf = obj => freeze(Object.values(obj))
 
@@ -126,5 +134,7 @@ module.exports = {
   RESPONSE_SOURCE: freeze(RESPONSE_SOURCE),
   RESPONSE_SOURCE_VALUES: valuesOf(RESPONSE_SOURCE),
   CONTACT_TYPE: freeze(CONTACT_TYPE),
-  CONTACT_TYPE_VALUES: valuesOf(CONTACT_TYPE)
+  CONTACT_TYPE_VALUES: valuesOf(CONTACT_TYPE),
+  FIELD_SOURCE: freeze(FIELD_SOURCE),
+  FIELD_SOURCE_VALUES: valuesOf(FIELD_SOURCE)
 }

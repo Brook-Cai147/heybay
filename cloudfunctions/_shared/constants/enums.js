@@ -119,6 +119,18 @@ const CONTACT_TYPE = {
 }
 
 /**
+ * 需求单字段的来源标记（PRD 5.4）。**这是"禁止 AI 代填四类字段"能被服务端校验的依据**。
+ * M1 端侧只会产出 user / empty；M2 接入解析后才会出现 ai。
+ * 从字符串字面量提升为枚举是 M2-02 做的：Schema 与校验器都要引用它，两处各写一份必然漂移。
+ */
+const FIELD_SOURCE = {
+  USER: 'user',    // 用户本人填的
+  AI: 'ai',        // AI 解析填的
+  EMPTY: 'empty'   // 留空
+}
+
+
+/**
  * 状态转移的发起方角色（tech-stack 第 3 节）。**云侧独有**。
  * 判断"是谁在做这次转移"，与"这次转移本身是否合法"是两件事，分别由权限矩阵与转移表负责。
  */
@@ -154,6 +166,8 @@ module.exports = {
   RESPONSE_SOURCE_VALUES: valuesOf(RESPONSE_SOURCE),
   CONTACT_TYPE: freeze(CONTACT_TYPE),
   CONTACT_TYPE_VALUES: valuesOf(CONTACT_TYPE),
+  FIELD_SOURCE: freeze(FIELD_SOURCE),
+  FIELD_SOURCE_VALUES: valuesOf(FIELD_SOURCE),
   ACTOR_ROLE: freeze(ACTOR_ROLE),
   ACTOR_ROLE_VALUES: valuesOf(ACTOR_ROLE)
 }

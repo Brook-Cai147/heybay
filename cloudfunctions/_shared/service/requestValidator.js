@@ -17,7 +17,8 @@ const {
   REWARD_TYPE,
   REWARD_TYPE_VALUES,
   VISIBILITY_VALUES,
-  PREFERENCE_FLAG_VALUES
+  PREFERENCE_FLAG_VALUES,
+  FIELD_SOURCE
 } = require('../constants/enums')
 const { ERROR, fail } = require('../constants/errors')
 
@@ -175,7 +176,7 @@ const assertNoAiFilledFields = draft => {
   if (!sources || typeof sources !== 'object') return
 
   const offenders = USER_ONLY_FIELDS.filter(
-    field => sources[field] === 'ai' && !isBlank(draft[field])
+    field => sources[field] === FIELD_SOURCE.AI && !isBlank(draft[field])
   )
   if (offenders.length) {
     fail(

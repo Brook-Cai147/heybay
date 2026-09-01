@@ -134,6 +134,18 @@ const endOfLocalDayMs = (ms, timeZoneInfo) => {
 }
 
 /**
+ * 某时刻在当地的日期键（`YYYY-MM-DD`）。用途：AI 日额度按**当地日期**计数与重置（M2-01）。
+ *
+ * 为什么不用 UTC 日期：伦敦冬令时与 UTC 同刻，夏令时差 1 小时；用 UTC 会让当地 23:30 的调用
+ * 算进第二天的额度，用户看到的"今天还剩 1 次"就是错的。
+ */
+const localDayKey = (ms, timeZoneInfo) => {
+  const local = new Date(ms + utcOffsetMsAt(ms, timeZoneInfo))
+  const pad = n => String(n).padStart(2, '0')
+  return `${local.getUTCFullYear()}-${pad(local.getUTCMonth() + 1)}-${pad(local.getUTCDate())}`
+}
+
+/**
  * 算出需求单的过期时刻。
  *
  * @param {object} request
@@ -226,6 +238,9 @@ module.exports = {
   ACTIVE_LIMIT,
   EXPIRY_ERROR,
   isTimeZoneSupported,
+  // 时区换算只此一份：M2-01 的日额度重置直接复用，不再写第二套（写两套必然漂移）
+  endOfLocalDayMs,
+  localDayKey,
   computeExpireAt,
   isExpired,
   checkActiveLimit
