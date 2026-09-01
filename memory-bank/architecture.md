@@ -324,6 +324,27 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 >
 > **对 implementation-plan M2-03 第 4 条的收敛**：硬约束文案不在每个模板里各抄一份（会与第 3 条"不写重复表述"打架），改为单文件 + 占位符注入；单测断言组装后的 Prompt 含这两条，并反向断言模板里没抄正文。
 
+## M2-04~05 aiGateway 与护栏（2026-09-02，第 6 个云函数）
+
+- `cloudfunctions/aiGateway/index.js`（新）— **全项目唯一的模型出口**；只做入参形状校验与 action 分发（`parseRequest` / `searchKnowledge`） — `service/aiService.js` — 端侧（M2-07 起）
+- `cloudfunctions/_shared/service/aiService.js`（新）— 八步编排：额度 → 缓存 → 成本护栏 → Prompt 组装 → 模型调用 → 校验 → 降级 → 记账；三条降级路径收敛到一个 `fallbackResult` — 下列全部 — `aiGateway`
+- `cloudfunctions/_shared/ai/modelClient.js`（新）— 只讲 OpenAI 兼容的 `/chat/completions`；原生 `https`（运行时 Node v16 无全局 fetch）；超时主动 `destroy`；**只调一次，不自行重试** — `ai/registry.js` — `aiService`
+- `cloudfunctions/_shared/ai/promptVars.js`（新）— 每个能力一个变量组装器，**枚举在这里注入** — `constants/enums.js`、`aiCapabilities` — `aiService`
+- `cloudfunctions/_shared/ai/cache.js`（新）— 缓存键（城市 + 能力 + 输入归一化哈希）与有效期，纯逻辑不碰库 — `aiCapabilities` — `aiService`
+- `cloudfunctions/_shared/dao/aiLogs.js`（新）— `insert` / `countUsedToday` / `sumCostByDay` / `markAdopted`；一张表同时承担成本核算、额度计数、采纳率评测 — `dao/db.js` — `aiService`
+- `cloudfunctions/_shared/dao/aiCache.js`（新）— `findFresh` / `upsert` / `bumpHits`；过期不靠定时清理，读时比 `expireAt` — `dao/db.js` — `aiService`
+- `cloudfunctions/_shared/service/setupService.js`（扩展）— 新增种子 `ai_daily_cost_limit`（`{ limitCny: 5, enabled: true }`） — `dao/configs.js` — `cron`
+- `cloudfunctions/_shared/constants/errors.js`（扩展）— 新增 `AI_QUOTA_EXCEEDED` / `AI_FALLBACK` / `AI_NOT_AVAILABLE`：三者都是**可预期的失败**，端侧要给可解释提示而不是"操作失败"
+- `tests/aiCache.test.js`（新，10 条）— 键的三段结构、大小写空白等价、语料变则键变、语料顺序无关、空输入不生成键、TTL 取自注册表
+
+> **额度检查为什么在缓存之前**：缓存命中不扣额度，但"这个人今天还能不能用"必须先于一切副作用判断，否则被拦下的调用也会在 `aiLogs` 里留记录，用量统计就不干净了。
+>
+> **成本护栏只拦非免费档**：免费档（解析、机审）恰恰是最便宜的那批，拦它们省不下多少钱，代价却是发布流程变难用。触发时写一条 `ai_cost_ceiling_hit` 事件 —— 护栏静默生效等于线上「AI 突然不好用了」。
+>
+> **换供应商只改环境变量**：DeepSeek 官方、百炼兼容模式、公司内部 OneAPI 网关都提供 OpenAI 兼容端点，所以"厂商"被降级成三个变量（BASE_URL / API_KEY / MODEL）。`AI_JSON_MODE=off` 是供应商不认 `response_format` 时的退路，此时只靠 Prompt 内强约束 + M2-02 校验器兜底。
+>
+> **新增两个集合（M1-07 的六个之外）**：`aiLogs`（索引 `openid+createdAt`、`capability+createdAt`）、`aiCache`（索引 `cacheKey`）。权限均为「所有用户不可读写」，与 M1-07 同档。`aiCache` 是对计划的补充 —— 进程内缓存在云函数上几乎无效（实例随时回收、多实例各存一份），不落库就达不到省钱省额度的目的。
+
 
 
 
