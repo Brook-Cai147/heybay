@@ -78,13 +78,13 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 - `project.config.json`（**已从 `miniprogram/` 移到仓库根**） — 开发者工具项目配置；`miniprogramRoot: "miniprogram/"` + `cloudfunctionRoot: "cloudfunctions/"`。项目根必须上提，因为 `cloudfunctionRoot` 只能指向项目根内部的子目录 — 无 — 开发者工具
 - `miniprogram/config/env.js` — 云环境 ID 的**唯一落点**（入库，理由见 D 前提第 6 条）与 `IS_TEST_DATA` 联调开关 — 无 — `app.js`、后续 `services/`
 - `miniprogram/app.js` — `onLaunch` 里初始化云能力；基础库不支持或环境 ID 未填时只在控制台报可操作的错，不抛错、不阻断渲染；`globalData.cloudReady` 供页面调云函数前判断 — `config/env.js` — 全部页面
-- `cloudfunctions/ping/` — 临时探针：返回 openid / appid / env / 服务端时间 / Node 版本 / ICU 自检结果。不碰数据库、不依赖 `_shared`。**M1-19 删除** — `wx-server-sdk` — 无
+- `cloudfunctions/ping/` — 临时探针：返回 openid / appid / env / 服务端时间 / Node 版本 / ICU 自检结果。不碰数据库、不依赖 `_shared`。**已于 M1-19 删除** — `wx-server-sdk` — 无
 
 > **云函数运行时事实（2026-08-29 实测）**：Node `v16.13.1`，`process.env.TZ` 为空，**ICU 完整、`Intl` 的 IANA 时区可用**（伦敦夏令时偏移实测 +60 分钟）。因此云函数代码**不得使用 Node 18+ 的 API**（如 `structuredClone`、`Array.prototype.findLast`、内置 `fetch`）。
 
 **M1-07**
 
-- `cloudfunctions/ping/index.js`（扩展） — 新增两个临时动作：`dbProbe` 逐集合「写→读回→删」验证云函数侧读写；`seedConfigs` 幂等写入 `configs` 的两条初始配置（按 key 查，有则更新无则新建）。探针文档带 `_isTest` 且写完立即删；两条配置**不带 `_isTest`**（配置不是联调数据，带了会在清理时被误删）。**M1-19 随 `ping` 一起删除，届时 `seedConfigs` 的逻辑需搬进正式的初始化脚本或 admin 云函数** — `wx-server-sdk` — 无
+- `cloudfunctions/ping/index.js`（扩展） — 新增两个临时动作：`dbProbe` 逐集合「写→读回→删」验证云函数侧读写；`seedConfigs` 幂等写入 `configs` 的两条初始配置（按 key 查，有则更新无则新建）。探针文档带 `_isTest` 且写完立即删；两条配置**不带 `_isTest`**（配置不是联调数据，带了会在清理时被误删）。**已于 M1-19 随 `ping` 一起删除；`seedConfigs` 的逻辑迁至 `_shared/service/setupService.js`** — `wx-server-sdk` — 无
 - 无其他代码文件；本步产出是云端的集合、索引与权限配置，清单见下文「集合与索引清单」
 
 > **配置数据一律由云函数写入，不手工敲控制台。** 三个理由：`configs` 权限已收成端侧不可写，云函数是唯一合法写入方，手工写等于绕过自己立的纪律；管理员 openid 直接取调用上下文，避免人肉复制出错；换环境时能一键复现，不靠人记得当初敲了哪些字段。
@@ -282,6 +282,18 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 - `miniprogram/pages/mine/` — 分段切换 + 复用 `components/request-card`；被选定的那条额外标一行提示
 
 > 与广场刻意相反的取舍：广场只挂在架单（给别人看），「我的」不筛状态也不筛过期（给本人回看）。「我响应的」按**我响应的时间**倒序，用户找的是"我刚才响应的那条"。
+
+## M1-19 收尾（2026-08-31，代码部分）
+
+- `cloudfunctions/_shared/service/setupService.js`（新）— 初始配置的幂等写入（`admin_openids`、`city_london`），从被删除的 `ping.seedConfigs` 迁来 — `dao/configs.js` — `cron`
+- `cloudfunctions/_shared/dao/configs.js`（扩展）— 新增 `upsertByKey`：dao 层是唯一能碰数据库 API 的地方，写配置也不例外 — `dao/db.js` — `setupService`
+- `cloudfunctions/cron/index.js`（扩展）— 新增 `{ "action": "seedConfigs", "adminOpenids": [...] }` 运维动作 — `setupService` — 无
+- `cloudfunctions/ping/` — **已删除**（连同 gitignore 的 `_shared` 副本）；云函数从 6 个降到 5 个
+
+> 为什么把「写配置」挂在 `cron` 上：`cron` 只能由定时触发器或云端测试触发，**没有客户端入口**。挂在任何端侧可调的函数上就得先有管理员白名单校验，而白名单本身就是这里要写的配置之一——会绕成一个环。
+>
+> `admin_openids` 只在显式传入 `adminOpenids` 时才写：`cron` 没有调用者身份，猜一个错的白名单比不写更糟，所以缺参数时明确跳过并说明原因。
+
 
 
 

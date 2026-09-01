@@ -5,10 +5,11 @@
  * `configs`（在架上限"改配置不改代码"是 M1-09 的明确要求），没有 dao 就得让 service 直接查库，
  * 那会破坏分层铁律。补一个只读 dao 是代价最小的做法。
  *
- * 写入方向暂时只有 `ping` 的 `seedConfigs`（M1-07），M1-19 删 `ping` 时要把那段逻辑搬走。
+ * 写入方向只有 `setupService.seedConfigs`（M1-19 从 `ping` 搬过来的），
+ * 且只能由 `cron` 在云端手动触发 —— 端侧永远不该写配置。
  */
 
-const { COLLECTION, getDb } = require('./db')
+const { COLLECTION, getDb, serverDate } = require('./db')
 
 const collection = () => getDb().collection(COLLECTION.CONFIGS)
 
@@ -24,7 +25,26 @@ const getValue = async (key, fallback = null) => {
   return doc && doc.value !== undefined ? doc.value : fallback
 }
 
+/**
+ * 按 key 写入一条配置：有则更新、无则新建（幂等，可反复跑）。
+ * 配置**不带 `_isTest`** —— 带了会在清理联调数据时被误删。
+ */
+const upsertByKey = async (key, { value, desc }) => {
+  const existing = await findByKey(key)
+  if (existing) {
+    await collection().doc(existing._id).update({
+      data: { value, desc, updatedAt: serverDate() }
+    })
+    return { action: 'updated', _id: existing._id }
+  }
+  const added = await collection().add({
+    data: { key, value, desc, createdAt: serverDate(), updatedAt: serverDate() }
+  })
+  return { action: 'created', _id: added._id }
+}
+
 module.exports = {
   findByKey,
-  getValue
+  getValue,
+  upsertByKey
 }
