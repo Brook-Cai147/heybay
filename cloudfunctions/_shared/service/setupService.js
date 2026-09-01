@@ -36,7 +36,10 @@ const CONFIG_SEEDS = adminOpenids => [
   },
   {
     key: 'ai_daily_cost_limit',
-    value: { limitCny: 5, enabled: true },
+    // 1 元/天：按 deepseek-v4-flash 高峰价算约 250 次解析，单人联调远够用。
+    // 定得低不是抠，是让护栏在"钱烧完"之前先响一次——账户总余额只有个位数元时，
+    // 5 元/天的上限等于没有上限。
+    value: { limitCny: 1, enabled: true },
     desc: 'AI 当日全局成本上限（元）。超过后非免费档能力降级，免费档（解析/机审等）不受限，避免伤主转化路径（M2-05）'
   }
 ]
