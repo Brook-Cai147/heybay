@@ -34,6 +34,19 @@ const ENV_KEYS = Object.freeze({
   [MODEL_TIER.LONG_OUTPUT]: { base: 'AI_LONG_BASE_URL', key: 'AI_LONG_API_KEY', model: 'AI_LONG_MODEL' }
 })
 
+/**
+ * 额外请求体参数（JSON 字符串）的环境变量名。
+ *
+ * 为什么留这个口子：各家都有自己的开关（DeepSeek 的思考模式、某些网关要求的 `stream: false`），
+ * 这些开关既不属于 OpenAI 标准协议、也会随厂商文档变。写死在代码里意味着换供应商就要改代码，
+ * 而这恰恰是 modelClient 想避免的。所以给一个**逃生口**：填什么由环境变量决定，代码不认识它们。
+ * 解析失败只告警不阻断 —— 一个填错的 JSON 不该让整条能力不可用。
+ */
+const EXTRA_BODY_ENV = Object.freeze({
+  [MODEL_TIER.CHEAP]: 'AI_PRIMARY_EXTRA_BODY',
+  [MODEL_TIER.LONG_OUTPUT]: 'AI_LONG_EXTRA_BODY'
+})
+
 const modelError = (code, message) => {
   const err = new Error(message)
   err.code = code
@@ -60,6 +73,20 @@ const resolveConfig = modelTier => {
 }
 
 const jsonModeEnabled = () => String(process.env.AI_JSON_MODE || '').toLowerCase() !== 'off'
+
+/** 读并解析额外请求体参数；没配或填错都返回空对象 */
+const extraBodyOf = modelTier => {
+  const name = EXTRA_BODY_ENV[modelTier] || EXTRA_BODY_ENV[MODEL_TIER.CHEAP]
+  const raw = process.env[name] || process.env[EXTRA_BODY_ENV[MODEL_TIER.CHEAP]] || ''
+  if (!raw.trim()) return {}
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+  } catch (err) {
+    console.error(`[modelClient] ${name} 不是合法 JSON，已忽略：${raw.slice(0, 120)}`)
+    return {}
+  }
+}
 
 /** 拼出 /chat/completions 的完整地址，容忍 base_url 带不带尾斜杠、带不带 /v1 */
 const completionsUrl = baseUrl => {
@@ -122,6 +149,8 @@ const chat = async ({ modelTier = MODEL_TIER.CHEAP, prompt, timeoutMs = 8000, js
   if (jsonMode && jsonModeEnabled()) {
     body.response_format = { type: 'json_object' }
   }
+  // 厂商专有开关最后合并，允许它覆盖上面的默认值（比如某家不认 response_format 要换写法）
+  Object.assign(body, extraBodyOf(modelTier))
 
   const startedAt = Date.now()
   const { statusCode, raw } = await postJson({
@@ -168,5 +197,6 @@ module.exports = {
   MODEL_ERROR,
   resolveConfig,
   jsonModeEnabled,
+  extraBodyOf,
   chat
 }
