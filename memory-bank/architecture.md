@@ -26,7 +26,7 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 | `miniprogram/services/` | 云函数调用封装，一处一个方法 | 未创建 |
 | `miniprogram/components/` | 复用组件（需求卡片、信任徽章、响应列表项） | 未创建 |
 | `cloudfunctions/` | 云函数 | 未创建 |
-| `cloudfunctions/_shared/ai/` | 能力注册表、Prompt 模板、模型客户端、编排器；AI 只有 `aiGateway` 一个出口 | 未创建 |
+| `cloudfunctions/_shared/ai/` | 能力注册表、Prompt 模板、模型客户端、编排器；AI 只有 `aiGateway` 一个出口 | 注册表与模板就绪（M2-03），模型客户端待 M2-04 |
 | `tests/` | `node:test` 单测，只覆盖 `tech-stack.md` 第 10 节的七块纯逻辑；`tests/fixtures/` 放黄金标注集 | 未创建 |
 | `scripts/` | 一次性/周期性脚本（AI 离线评测等），不参与运行时，不计入 `npm test` | 未创建 |
 | `memory-bank/` | AI 协作的文档基座（PRD、选型、决策、计划、架构、进度） | 就绪 |
@@ -293,6 +293,36 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 > 为什么把「写配置」挂在 `cron` 上：`cron` 只能由定时触发器或云端测试触发，**没有客户端入口**。挂在任何端侧可调的函数上就得先有管理员白名单校验，而白名单本身就是这里要写的配置之一——会绕成一个环。
 >
 > `admin_openids` 只在显式传入 `adminOpenids` 时才写：`cron` 没有调用者身份，猜一个错的白名单比不写更糟，所以缺参数时明确跳过并说明原因。
+
+## M2-01~03 AI 地基（2026-09-02，纯逻辑，不接触网络与云环境）
+
+**M2-01 额度与成本**
+
+- `cloudfunctions/_shared/constants/aiCapabilities.js`（新）— PRD 5.2 的 14 项能力名 + 额度三档 + 每日限额，**云侧独有** — 无 — `aiQuota`、`ai/registry.js`
+- `cloudfunctions/_shared/service/aiQuota.js`（新）— `checkQuota`（时间与当日用量显式入参，不取系统时间不查库）、`computeCost`（保留到 0.0001 元）、`usageKey`（按**当地日**分桶） — `aiCapabilities`、`requestExpiry.localDayKey` — `aiGateway`（M2-04 第 2、8 步）
+- `cloudfunctions/_shared/service/requestExpiry.js`（扩展）— 导出 `localDayKey` / `endOfLocalDayMs`，供额度跨天重置复用同一套时区逻辑 — 无 — `aiQuota`
+- `tests/aiQuota.test.js`（新，14 条）— 含夏令时/冬令时重置点、当地日边界、会员对比、无限免费永不拦截、成本不被四舍五入成 0
+
+**M2-02 输出 Schema 与校验器**
+
+- `cloudfunctions/_shared/schemas/parseRequest.js`（新）— 需求单草稿的输出契约；枚举全部引用 `constants/enums.js`；`userOnlyFields` 非标准关键字表达 PRD 5.4 禁止代填 — `constants/enums.js` — `schemas/index.js`
+- `cloudfunctions/_shared/schemas/searchKnowledge.js`（新）— 答案 + 来源列表；`sources` 与 `refused` 均必填 — 无 — `schemas/index.js`
+- `cloudfunctions/_shared/schemas/index.js`（新）— 能力名 → Schema 汇总，`schemaOf(capability)`；网关不直接 require 单个 Schema 文件 — 上两者 — `ai/registry.js`
+- `cloudfunctions/_shared/service/aiSchemaValidator.js`（新）— 零依赖校验器（类型/枚举/必填/长度/嵌套/`valueSchema`），字段级错误路径；`decideFallback` 输出 通过 / 重试 / 降级 — `schemas/`、`constants/enums.js` — `aiGateway`（M2-04 第 6、7 步）
+- `tests/aiSchemaValidator.test.js`（新，14 条）— 含"AI 试图填金额被拒""枚举不在白名单被拒""重试 1 次后仍失败才降级"
+
+**M2-03 能力注册表与 Prompt 模板**
+
+- `cloudfunctions/_shared/ai/registry.js`（新）— 14 项能力的唯一登记处（2 实现 + 12 占位标里程碑）；每条含模板、入参契约、输出 Schema、额度类别、模型档位、超时、可缓存与有效期、降级策略；`assertCallable` 拦住未实现能力；`renderPrompt` 组装并在占位符没填满时抛错 — `aiCapabilities`、`schemas/index.js`、`ai/prompts/` — `aiGateway`（M2-04 起全部能力）
+- `cloudfunctions/_shared/ai/prompts/_hardConstraints.txt`（新）— PRD 5.4 两条硬约束的**唯一真源**，由 `{{hardConstraints}}` 注入每个模板 — 无 — 全部模板
+- `cloudfunctions/_shared/ai/prompts/parseRequest.txt` / `searchKnowledge.txt`（新）— 纯文本 + 占位符，**不写枚举字面量、不抄硬约束正文** — 无 — `registry.loadPrompt`
+- `tests/aiRegistry.test.js`（新，15 条）— 模板文件真实存在、Schema 取得到、额度类别与 M2-01 一致、占位项调不动且报错带里程碑、硬约束一定进最终 Prompt、模板里没硬编码品类、可缓存必须有有效期
+
+> **两条"不手写"**：注册表的额度类别取自 `CAPABILITY_TIER`、输出 Schema 取自 `schemaOf`。手写就会出现"注册表说 daily、额度表说 unlimited"这种两处不一致，而它只会在线上暴露。
+>
+> **占位项抛错而非静默返回空**：静默的表现是"AI 什么都没说"，在界面上和"功能没做"长得一模一样，是最难查的一类故障——与 M1-17 抽 `viewRules.js` 是同一个理由。
+>
+> **对 implementation-plan M2-03 第 4 条的收敛**：硬约束文案不在每个模板里各抄一份（会与第 3 条"不写重复表述"打架），改为单文件 + 占位符注入；单测断言组装后的 Prompt 含这两条，并反向断言模板里没抄正文。
 
 
 
