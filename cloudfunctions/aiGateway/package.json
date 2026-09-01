@@ -1,0 +1,10 @@
+{
+  "name": "aiGateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "全项目唯一的模型出口：额度、缓存、Prompt 组装、校验、降级、记账（M2-04）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "2.6.3"
+  }
+}

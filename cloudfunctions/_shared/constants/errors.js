@@ -32,6 +32,11 @@ const ERROR = Object.freeze({
   GENDER_MISMATCH: 'GENDER_MISMATCH',           // 仅同性单，性别不符
   RESPONSE_NOT_FOUND: 'RESPONSE_NOT_FOUND',
 
+  // AI（M2-04）。三种都是**可预期的失败**，端侧要给可解释的提示而不是"操作失败"
+  AI_QUOTA_EXCEEDED: 'AI_QUOTA_EXCEEDED',       // 当日额度用尽（返回值带下次可用时间与是否可升级）
+  AI_FALLBACK: 'AI_FALLBACK',                   // 模型失败或输出不合规，已降级（D-15）
+  AI_NOT_AVAILABLE: 'AI_NOT_AVAILABLE',         // 能力未实现 / 未配置模型，属接线问题
+
   UNEXPECTED: 'UNEXPECTED'                      // 兜底：非预期异常
 })
 

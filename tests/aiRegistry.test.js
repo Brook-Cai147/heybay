@@ -35,6 +35,7 @@ const {
   missingPlaceholders
 } = require('../cloudfunctions/_shared/ai/registry')
 const { REQUEST_CATEGORY_VALUES } = require('../cloudfunctions/_shared/constants/enums')
+const { buildVars, renderSnippets } = require('../cloudfunctions/_shared/ai/promptVars')
 
 /** parseRequest 组装时要注入的全部变量（与模板里的占位符一一对应） */
 const PARSE_VARS = {
@@ -191,4 +192,32 @@ test('注册表与每条记录都是冻结的，防止运行时被改坏', () =>
     assert.ok(Object.isFrozen(AI_REGISTRY[name]), `${name} 记录未冻结`)
     assert.ok(Object.isFrozen(AI_REGISTRY[name].input))
   }
+})
+
+// 以下两条属 M2-04：`promptVars` 是网关唯一的变量组装处，漏一个变量就等于线上少一次 AI 调用
+test('promptVars 能把已实现能力的模板填满（组装器与模板不脱节）', () => {
+  const context = {
+    city: { nameZh: '伦敦', timeZone: 'Europe/London' },
+    params: {
+      text: '周末想找个人一起去看球',
+      question: '这个诊所要预约吗',
+      snippets: [{ refId: 'abc', kind: 'request', text: '我上周去过，排队 20 分钟' }]
+    }
+  }
+  for (const name of implementedCapabilities()) {
+    const prompt = renderPrompt(name, buildVars(name, context))
+    assert.deepStrictEqual(missingPlaceholders(prompt), [], `${name} 的模板没被填满`)
+  }
+})
+
+test('没有组装器的能力当场报错，而不是发一个缺变量的 Prompt', () => {
+  assert.throws(() => buildVars(AI_CAPABILITY.GENERATE_CHECKLIST, {}), err => {
+    assert.strictEqual(err.code, 'PROMPT_VARS_BUILDER_MISSING')
+    return true
+  })
+})
+
+test('检索语料为空时明确写「没有检索到」，不是留一段空白', () => {
+  assert.match(renderSnippets([]), /没有检索到/)
+  assert.match(renderSnippets([{ refId: 'x', kind: 'post', text: 'hi' }]), /refId=x/)
 })
