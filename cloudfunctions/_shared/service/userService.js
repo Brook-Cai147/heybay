@@ -6,8 +6,11 @@
  */
 
 const usersDao = require('../dao/users')
-const { GENDER, GENDER_VALUES } = require('../constants/enums')
+const { GENDER, GENDER_VALUES, CONTACT_TYPE_VALUES } = require('../constants/enums')
 const { ERROR, fail, ok } = require('../constants/errors')
+
+/** 联系方式的长度上限。够写国际号码与常见 ID，又不至于被塞进一整段广告 */
+const CONTACT_VALUE_MAX = 60
 
 /** M1 的信任分起点：L1 基础 10 分，徽章统一「新面孔」（信任分算法属 M2） */
 const INITIAL_TRUST = Object.freeze({ trustScore: 10, trustLevel: 'newcomer' })
@@ -86,6 +89,14 @@ const updateProfile = async ({ openid, params = {} }) => {
     }
     patch.gender = params.gender
   }
+
+  /**
+   * 联系方式（D-36）。存在 `users.contact` 上，**只在选定后由 getDetail 下发给对方**，
+   * 任何列表、卡片、`publicUser` 都不带它。传 `{ type, value }`；value 为空表示清空。
+   */
+  if (params.contact !== undefined) {
+    patch.contact = normalizeContact(params.contact)
+  }
   if (!Object.keys(patch).length) {
     fail(ERROR.BAD_PARAMS, '没有需要更新的字段')
   }
@@ -94,13 +105,14 @@ const updateProfile = async ({ openid, params = {} }) => {
   if (!updated) fail(ERROR.NO_IDENTITY, '还没有你的档案，请先登录')
 
   const user = await usersDao.findByOpenid(openid)
-  return ok({ user: publicUser(user) })
+  return ok({ user: publicUser(user), myContact: contactOf(user) })
 }
 
 /** 取当前用户档案；没有档案返回 null 而不是报错（端侧据此决定是否调 login） */
 const getMe = async ({ openid }) => {
   const user = await usersDao.findByOpenid(openid)
-  return ok({ user: user ? publicUser(user) : null })
+  // 自己的联系方式内容要回给自己（要能看到填了什么、能改），但不进 publicUser
+  return ok({ user: user ? publicUser(user) : null, myContact: contactOf(user) })
 }
 
 /** 只回传端侧真正需要的字段，不把整条文档（含 _isTest 等内部字段）倒给前端 */
@@ -114,14 +126,45 @@ const publicUser = user => {
     city: user.city || '',
     gender: user.gender || GENDER.UNSET,
     trustScore: user.trustScore,
-    trustLevel: user.trustLevel
+    trustLevel: user.trustLevel,
+    doneCount: Number.isInteger(user.doneCount) ? user.doneCount : 0,
+    // 只回"填没填"，**不回内容** —— 内容只在选定后由 getDetail 下发给对方（D-36）
+    hasContact: Boolean(user.contact && user.contact.value)
   }
+}
+
+/**
+ * 归一化联系方式。空值表示清空（用户有权撤回自己的联系方式）。
+ * 这里不校验号码格式：全球号码与各类 ID 的格式千差万别，误拦比放过更烦人。
+ */
+const normalizeContact = raw => {
+  if (raw === null || raw === '' || raw === undefined) return null
+  if (typeof raw !== 'object' || Array.isArray(raw)) {
+    fail(ERROR.BAD_PARAMS, '联系方式格式不对，应为 { type, value }')
+  }
+  const value = typeof raw.value === 'string' ? raw.value.trim() : ''
+  if (!value) return null
+  if (!CONTACT_TYPE_VALUES.includes(raw.type)) {
+    fail(ERROR.BAD_PARAMS, `联系方式类型不对：${raw.type}`)
+  }
+  if (Array.from(value).length > CONTACT_VALUE_MAX) {
+    fail(ERROR.BAD_PARAMS, `联系方式不超过 ${CONTACT_VALUE_MAX} 字`)
+  }
+  return { type: raw.type, value }
+}
+
+/** 对方可见的联系方式。没填时回 null，让页面显示"对方还没填"而不是空白 */
+const contactOf = user => {
+  if (!user || !user.contact || !user.contact.value) return null
+  return { type: user.contact.type, value: user.contact.value }
 }
 
 module.exports = {
   INITIAL_TRUST,
+  CONTACT_VALUE_MAX,
   login,
   updateProfile,
   getMe,
-  publicUser
+  publicUser,
+  contactOf
 }

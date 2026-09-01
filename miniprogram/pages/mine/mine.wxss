@@ -59,6 +59,12 @@
   padding-left: 16rpx;
 }
 
+.link.danger {
+  color: #e54d42;
+  padding-left: 0;
+  margin-top: 20rpx;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -96,4 +102,39 @@
   font-size: 24rpx;
   color: #f37b1d;
   margin-top: 12rpx;
+}
+
+/* 「我响应的 / 我发布的」分段切换 */
+.seg {
+  display: flex;
+  background: #f2f3f5;
+  border-radius: 12rpx;
+  padding: 4rpx;
+}
+
+.seg-item {
+  flex: 1;
+  text-align: center;
+  padding: 14rpx 0;
+  font-size: 26rpx;
+  color: #666;
+  border-radius: 10rpx;
+}
+
+.seg-on {
+  background: #fff;
+  color: #1296db;
+  font-weight: 600;
+}
+
+.mine-item {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 被选定是这个列表里最需要被看到的一行 */
+.mine-flag {
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  color: #1296db;
 }

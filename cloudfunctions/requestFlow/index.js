@@ -24,6 +24,11 @@ exports.main = createHandler({
   selectResponder: ({ openid, params }) =>
     requestService.selectResponder({ openid, params, isTest: params.isTest === true }),
 
+  // 撤销选定（D-35）：退回待选定重新挑人；仅需求方
+  unselectResponder: ({ openid, params }) =>
+    requestService.unselectResponder({ openid, params, isTest: params.isTest === true }),
+
+
   confirmDone: ({ openid, params }) =>
     requestService.confirmDone({ openid, params, isTest: params.isTest === true }),
 
@@ -32,5 +37,8 @@ exports.main = createHandler({
 
   getDetail: ({ openid, params }) => requestService.getDetail({ openid, params }),
 
-  list: ({ openid, params }) => requestService.listSquare({ openid, params })
+  list: ({ openid, params }) => requestService.listSquare({ openid, params }),
+
+  // 「我发布的」+「我响应的」：响应之后能把那条单找回来的唯一入口
+  listMine: ({ openid }) => requestService.listMine({ openid })
 })

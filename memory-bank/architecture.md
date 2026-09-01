@@ -27,7 +27,7 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 | `miniprogram/components/` | 复用组件（需求卡片、信任徽章、响应列表项） | 未创建 |
 | `cloudfunctions/` | 云函数 | 未创建 |
 | `cloudfunctions/_shared/ai/` | 能力注册表、Prompt 模板、模型客户端、编排器；AI 只有 `aiGateway` 一个出口 | 未创建 |
-| `tests/` | `node:test` 单测，只覆盖 `tech-stack.md` 第 10 节的六块纯逻辑；`tests/fixtures/` 放黄金标注集 | 未创建 |
+| `tests/` | `node:test` 单测，只覆盖 `tech-stack.md` 第 10 节的七块纯逻辑；`tests/fixtures/` 放黄金标注集 | 未创建 |
 | `scripts/` | 一次性/周期性脚本（AI 离线评测等），不参与运行时，不计入 `npm test` | 未创建 |
 | `memory-bank/` | AI 协作的文档基座（PRD、选型、决策、计划、架构、进度） | 就绪 |
 | `docs/v1-assets/` | V1.0「同路人」历史资产，只读不删改 | 冻结 |
@@ -41,13 +41,13 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 - `package.json` — 仅承载 `node:test` 的运行入口（`scripts.test` 用 glob，零依赖） — 无 — `tests/` 下全部单测
 - `cloudfunctions/_shared/constants/enums.js` — 全项目枚举的**权威副本**（云侧），M1-01 只含九个需求单状态 — 无 — 状态机、后续全部 service 与 dao、端侧 `models/enums.js`（手工同步）
 - `cloudfunctions/_shared/service/requestStateMachine.js` — 需求单状态转移表与合法性判定（纯逻辑，不接触数据库）；`canTransition` 返回布尔，`assertTransition` 非法即抛（带 `code`/`from`/`to`） — `constants/enums.js` — `transitionRequest`（M1-09 起）、角色权限矩阵（M1-02）
-- `tests/requestStateMachine.transitions.test.js` — 转移表单测：12 条合法边逐条、69 条非法组合、终态无出边、未知状态被拒、转移表冻结 — 上述两者 — 无
+- `tests/requestStateMachine.transitions.test.js` — 转移表单测：合法边逐条、其余组合全数非法、终态无出边、未知状态被拒、转移表冻结（边数 M1-01 为 12 条，D-35 后为 13 条） — 上述两者 — 无
 
 **M1-02**
 
 - `cloudfunctions/_shared/constants/enums.js`（扩展） — 新增 `ACTOR_ROLE` 四角色（owner / responder / system / admin），**云侧独有**，端侧副本不需要 — 无 — 权限矩阵、后续 handler 的鉴权
-- `cloudfunctions/_shared/service/requestStateMachine.js`（扩展） — 新增 `PERMISSIONS` 权限矩阵（12 条边逐条标注允许角色）与 `assertTransitionByActor`；错误码分四种：UNKNOWN_STATUS / UNKNOWN_ACTOR / ILLEGAL_TRANSITION / TRANSITION_FORBIDDEN — `constants/enums.js` — `transitionRequest`（M1-09 起）
-- `tests/requestStateMachine.permissions.test.js` — 权限矩阵单测：权限表与转移表键集一致、四角色允许集逐条、14 条越权用例、错误码可区分、48 个格子全覆盖 — 上述两者 — 无
+- `cloudfunctions/_shared/service/requestStateMachine.js`（扩展） — 新增 `PERMISSIONS` 权限矩阵（每条边逐条标注允许角色）与 `assertTransitionByActor`；错误码分四种：UNKNOWN_STATUS / UNKNOWN_ACTOR / ILLEGAL_TRANSITION / TRANSITION_FORBIDDEN — `constants/enums.js` — `transitionRequest`（M1-09 起）
+- `tests/requestStateMachine.permissions.test.js` — 权限矩阵单测：权限表与转移表键集一致、四角色允许集逐条、越权用例、错误码可区分、边 × 角色全覆盖（M1-02 为 12×4，D-35 后为 13×4） — 上述两者 — 无
 
 > 权限矩阵的三条细化（比 PRD 更严，已确认）：未选定阶段只有需求方能取消；admin 只能下架、不能代做发布/选定/完成/取消；`done → rated` 已登记 owner+responder 但 M1 不调用。
 
@@ -124,16 +124,16 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 
 **M1-11**
 
-- `cloudfunctions/_shared/service/requestService.js`（扩展 `selectResponder`）— responded→matched，选定不可逆；重复选定同一人幂等（不再转移、不再写日志），选定另一人明确拒绝；`matchedResponseId` / `matchedResponderOpenid` / `matchedAt` 随状态一起写 — `dao/responses.js`（新增 `findById`、`markSelected`）— `requestFlow`
+- `cloudfunctions/_shared/service/requestService.js`（扩展 `selectResponder`）— responded→matched；重复选定同一人幂等（不再转移、不再写日志），选定另一人明确拒绝并提示先撤销 — `dao/responses.js`（新增 `findById`、`markSelected`）— `requestFlow`
 - `cloudfunctions/_shared/dao/responses.js`（扩展）— `markSelected(requestId, selectedId)`：先把该单全部响应置未选中、再把指定那条置选中，**顺序不可反** — `dao/db.js` — `requestService`
 
-> "不可逆"是服务端约束而非前端提示：`matched` 没有回到 `responded` 的边，状态机会拒绝；并发的两次选定也只有一次能过（事务内读加锁）。选中标记在状态提交**之后**才刷 —— 标记只影响列表展示，失败不该回滚状态。
+> "不可逆"是当时的服务端约束（`matched` 没有回到 `responded` 的边）。**该设计已在 D-35 被推翻**，见文末「M1-17 后续修正」。并发的两次选定仍只有一次能过（事务内读加锁）。选中标记在状态提交**之后**才刷 —— 标记只影响列表展示，失败不该回滚状态。
 
 **M1-12**
 
 - `cloudfunctions/_shared/service/requestService.js`（扩展 `confirmDone` / `cancel`）— 完成按角色分别记 `ownerDoneAt` / `responderDoneAt`，两者都有才由这一次调用触发唯一的 matched→done；单方重复确认幂等。取消记 `cancelledBy` / `cancelledByOpenid` / `cancelledAt` / `cancelReason`，并在 `users.cancelCount` 上累加 — `dao/users.js`（新增 `incCounter`）— `requestFlow`
 
-> 取消次数记在**人**身上而不是单子上：单子会被清理，人的行为记录要留下（M3 信用分的输入，PRD 4.1 规则 3）。累加失败只记日志，不让取消本身失败。
+> 取消次数记在**人**身上而不是单子上：单子会被清理，人的行为记录要留下（PRD 4.1 规则 3）。累加失败只记日志，不让取消本身失败。**注意口径**：D-36 后取消/撤销次数只作审计与风控信号，不再是信用分的主要输入（主要输入是 M3 的双向互评）。
 
 **M1-13**
 
@@ -214,6 +214,9 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 | 用户标识统一用 openid，不立 userId | 集合字段 `openid` / `ownerOpenid` / `responderOpenid`；值只由云函数从 `cloud.getWXContext()` 取，永不接受端侧传入 | D-33 |
 | 城市配置暂存 configs，M3 迁 cities | `configs` 的 `city_london` 一条记录（含 `timeZone`，M1-05 过期判定要用）；`cities` 集合延后 | D-34 |
 | 仅同性响应靠自填性别校验 | `users.gender` + `_shared/service/responseService.js`（未填性别不能响应） | D-26 / D-09 |
+| 选定可撤销，退回待选定 | `requestService.unselectResponder`（仅 owner、仅 matched，清 matched 字段与双方完成确认，`reselectCount + 1`） | D-35 |
+| 联系方式只在达成共识后一对一下发 | 存 `users.contact`；唯一下发点 `requestService.getDetail` 的 `peerContact`；`publicUser` 只回 `hasContact` 布尔量 | D-36 |
+| 详情页动作可见性集中判定 | `miniprogram/models/viewRules.js`（纯函数，`tests/viewRules.test.js` 覆盖）；页面不再手写条件 | M1-17 后续修正 |
 | M1 只收订阅授权不发送 | 已撤回：订阅消息整块归 M4，M1 无相关代码 | D-30 |
 | 云环境 ID 入库、密钥不入库 | `miniprogram/config/env.js`（环境 ID）｜密钥只在云函数环境变量 | tech-stack 6.1 |
 | 不碰资金 | 无支付相关代码，金额字段仅作线下参考 | D-04 |
@@ -238,4 +241,47 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 - 端侧直接 `add` 与直接 `get` 均被拒，`errCode: -502003 database permission denied`。**读也被拒**，因此端侧的一切查询都必须走云函数，没有「只读直连」这条捷径。
 - `dbProbe` 六集合全部 `writable: true` / `readBack: true` / `removed: 1`，探针文档已清空。
 - 注意：`dbProbe` 全绿**不能**当权限配置的证据——云函数本来就不受该配置约束，集合忘了收紧也一样全绿。权限只能靠端侧的 -502003 反证。
+
+## M1-17 后续修正（2026-08-31，D-35 / D-36 与三个 bug）
+
+改动的触发点是一次产品评审：原设计里「选定不可逆」+「没有联系渠道」组合起来，双方在产品里其实约不上，闭环是假的。
+
+**状态机与服务端**
+
+- `cloudfunctions/_shared/service/requestStateMachine.js` — 新增合法边 `matched → responded`（12 → 13 条），权限仅 `owner`
+- `cloudfunctions/_shared/service/requestService.js` — 新增 `unselectResponder`：仅 owner、仅 matched，事务内退回 responded，同时清 `matchedResponseId` / `matchedResponderOpenid` / `matchedAt` / `ownerDoneAt` / `responderDoneAt`，`reselectCount + 1`、记 `lastUnselectedAt`；`selectResponder` 的"已选定他人"文案改为提示先撤销；`getDetail` 增加 `peerContact` / `peerNickName`（**只在 matched / done、且只在双方之间**）；`publicRequest` 增加 `reselectCount`
+- `cloudfunctions/_shared/service/userService.js` — `users.contact` 的写入（`normalizeContact`，type 白名单 + 60 字符上限，不校验格式）与读取（`contactOf`）；`publicUser` 只加 `hasContact` 布尔量与 `doneCount`，**不含内容**
+- `cloudfunctions/requestFlow/index.js` — 注册 `unselectResponder` 动作
+
+> 清 `ownerDoneAt` / `responderDoneAt` 是必须的：否则改选后新的响应者会"继承"上一位留下的完成确认，双方确认机制被绕过。
+
+**端侧**
+
+- `miniprogram/models/viewRules.js`（新）— 详情页各动作可见性的唯一判定处，纯函数、不引用 `wx.*`；`tests/viewRules.test.js` 覆盖
+- `miniprogram/models/enums.js` / `labels.js` — 新增 `CONTACT_TYPE` 与 `CONTACT_TYPE_LABEL`
+- `miniprogram/pages/mine/` — 联系方式的填写、保存与清空
+- `miniprogram/pages/request-detail/` — 接入 `viewRules`；新增对方联系方式卡（带复制）与「撤销选定」；`onShow` 重新拉取 + `enablePullDownRefresh`；改写选定/撤销/取消三处文案
+- `miniprogram/services/{user,request}.js` — 透传 `contact`、新增 `unselectResponder`
+
+**同时修掉的三个 bug**
+
+1. 详情页只在 `onLoad` 拉数据，切账号回来看到旧数据 —— 这就是「响应方看不到我这边已完成」的真实原因（不是权限问题）。改为 `onShow` 重拉 + 下拉刷新。
+2. 「我这边已完成」卡片的显示条件写在页面里，自己确认过之后整张卡消失、看不到"等待对方"。改为 `canConfirmDone || waitingForPeer`。
+3. 取消入口在 `done` / `cancelled` 状态下仍然显示（条件只判身份不判状态）。改为走 `viewRules.canCancel`。
+
+> 为什么把可见性抽成纯函数：条件写错的表现是"按钮不出现"，在界面上和"功能没做"长得一模一样，只能靠人点出来。抽成纯函数后它能被单测覆盖，错了会变红而不是变安静。
+
+**第二轮：「我发布的 / 我响应的」列表**
+
+验收时发现响应之后退出页面就找不回那条单 —— 五个 Tab 里没有任何"跟我有关"的入口。
+
+- `cloudfunctions/_shared/dao/requests.js` — 新增 `listByOwner`（不筛状态、不筛过期，命中 `ownerOpenid + status` 索引前缀）与 `listByIds`（批量取，避免逐条 `findById` 打出 N 次调用）
+- `cloudfunctions/_shared/dao/responses.js` — 新增 `listByResponder`（命中 `responderOpenid + createdAt` 索引）
+- `cloudfunctions/_shared/service/requestService.js` — 新增 `listMine`，一次返回两个列表；把原先内联在 `listSquare` 里的字段映射抽成 `listRow`，两处共用
+- `cloudfunctions/requestFlow/index.js` — 注册 `listMine`
+- `miniprogram/pages/mine/` — 分段切换 + 复用 `components/request-card`；被选定的那条额外标一行提示
+
+> 与广场刻意相反的取舍：广场只挂在架单（给别人看），「我的」不筛状态也不筛过期（给本人回看）。「我响应的」按**我响应的时间**倒序，用户找的是"我刚才响应的那条"。
+
+
 

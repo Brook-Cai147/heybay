@@ -34,7 +34,7 @@ test('转移表覆盖全部九个状态，且与枚举一一对应', () => {
 })
 
 test('每一条合法转移都通过（canTransition 与 assertTransition 一致）', () => {
-  assert.equal(legalEdges.length, 12, '转移表边数变化时请同步 PRD 4.1 与本断言')
+  assert.equal(legalEdges.length, 13, '转移表边数变化时请同步 PRD 4.1 与本断言')
   for (const [from, to] of legalEdges) {
     assert.equal(canTransition(from, to), true, `${from} → ${to} 应为合法`)
     assert.equal(assertTransition(from, to), true, `${from} → ${to} 应为合法`)
@@ -63,7 +63,7 @@ test('非法转移全部被拒，且错误码为 ILLEGAL_TRANSITION', () => {
     }
   }
 
-  assert.equal(illegalCount, 9 * 9 - 12, '九个状态的全组合减去 12 条合法边')
+  assert.equal(illegalCount, 9 * 9 - 13, '九个状态的全组合减去 13 条合法边')
 })
 
 test('自转移（from === to）一律非法', () => {
@@ -119,7 +119,13 @@ test('关键业务约束：已完成的单不能被取消或下架，已确定�
   assert.equal(canTransition(S.DONE, S.CANCELLED), false, '完成后取消要走纠纷流程，不改状态')
   assert.equal(canTransition(S.DONE, S.REMOVED), false)
   assert.equal(canTransition(S.MATCHED, S.EXPIRED), false, '已选定的单由双方确认或取消收尾，不自动过期')
-  assert.equal(canTransition(S.MATCHED, S.RESPONDED), false, '选定不可逆')
+})
+
+test('撤销选定：matched 可以退回 responded，但不能退得更远（D-35）', () => {
+  assert.equal(canTransition(S.MATCHED, S.RESPONDED), true, '撤销选定，退回待选定重新挑人')
+  // 只退一步：回到 open 会让"已经有人响应"这个事实消失，回 draft 更是把已公开的单变回草稿
+  assert.equal(canTransition(S.MATCHED, S.OPEN), false, '不能退回招募中：响应仍然存在')
+  assert.equal(canTransition(S.MATCHED, S.DRAFT), false, '已公开的单不能变回草稿')
 })
 
 test('转移表与错误对象都是冻结的，防止运行时被改坏', () => {

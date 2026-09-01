@@ -49,10 +49,11 @@ test('每条转移至少有一个角色可执行，且角色都是已登记的',
   }
 })
 
-test('需求方 owner 的允许集：发布、选定、取消（未选定与已选定两段）、完成、评价', () => {
+test('需求方 owner 的允许集：发布、选定、撤销选定、取消（未选定与已选定两段）、完成、评价', () => {
   const expected = [
     [S.DRAFT, S.OPEN],
     [S.RESPONDED, S.MATCHED],
+    [S.MATCHED, S.RESPONDED],
     [S.OPEN, S.CANCELLED],
     [S.RESPONDED, S.CANCELLED],
     [S.MATCHED, S.CANCELLED],
@@ -151,10 +152,19 @@ test('越权用例逐条被拒，错误码为 TRANSITION_FORBIDDEN', () => {
   }
 })
 
+test('撤销选定只有需求方能做（D-35）', () => {
+  assert.equal(canActorTransition(S.MATCHED, S.RESPONDED, R.OWNER), true)
+  // 响应者不想继续时走取消，而不是把自己从"被选中"里摘出去——否则需求方会莫名回到待选定
+  assert.equal(canActorTransition(S.MATCHED, S.RESPONDED, R.RESPONDER), false)
+  assert.equal(canActorTransition(S.MATCHED, S.RESPONDED, R.SYSTEM), false)
+  assert.equal(canActorTransition(S.MATCHED, S.RESPONDED, R.ADMIN), false)
+})
+
 test('错误码能区分「转移非法」与「转移合法但没权限」', () => {
   // 转移本身非法：即使角色是 owner 也要报 ILLEGAL_TRANSITION，而不是笼统说没权限
+  // 注意：matched → responded 自 D-35 起是合法的（撤销选定），这里换成真正非法的 matched → open
   assert.throws(
-    () => assertTransitionByActor(S.MATCHED, S.RESPONDED, R.OWNER),
+    () => assertTransitionByActor(S.MATCHED, S.OPEN, R.OWNER),
     err => err.code === TRANSITION_ERROR.ILLEGAL_TRANSITION
   )
   // 转移合法但角色不对：报 TRANSITION_FORBIDDEN
@@ -190,7 +200,7 @@ test('权限矩阵每个格子（合法转移 × 四角色）都被断言覆盖'
       checked += 1
     }
   }
-  assert.equal(checked, 12 * 4, '12 条合法边 × 4 个角色')
+  assert.equal(checked, 13 * 4, '13 条合法边 × 4 个角色')
 })
 
 test('对非法转移的任何角色都返回 false，不因角色是 admin 就放行', () => {

@@ -23,9 +23,14 @@ const transition = (requestId, to, reason) =>
 /** 取消自己的需求单；服务端会记录取消方与取消次数 */
 const cancel = (requestId, reason) => callAction(FUNCTION_NAME, 'cancel', { requestId, reason })
 
-/** 选定响应者（不可逆，页面必须先做二次确认 + 展示安全提示卡） */
+/** 选定响应者（页面必须先展示安全提示卡 + 二次确认） */
 const selectResponder = (requestId, responseId) =>
   callAction(FUNCTION_NAME, 'selectResponder', { requestId, responseId })
+
+/** 撤销选定，退回待选定；原有响应全部保留（D-35）。注意联系方式无法收回 */
+const unselectResponder = (requestId, reason) =>
+  callAction(FUNCTION_NAME, 'unselectResponder', { requestId, reason })
+
 
 /** 确认完成；双方各自确认后才会真的进 done */
 const confirmDone = requestId => callAction(FUNCTION_NAME, 'confirmDone', { requestId })
@@ -39,12 +44,17 @@ const getDetail = requestId => callAction(FUNCTION_NAME, 'getDetail', { requestI
  */
 const list = (query = {}) => callAction(FUNCTION_NAME, 'list', query)
 
+/** 「我发布的」+「我响应的」；两个列表一次返回，不筛状态也不筛过期 */
+const listMine = () => callAction(FUNCTION_NAME, 'listMine')
+
 module.exports = {
   create,
   transition,
   cancel,
   selectResponder,
+  unselectResponder,
   confirmDone,
   getDetail,
-  list
+  list,
+  listMine
 }

@@ -102,7 +102,7 @@ const TRANSITIONS = {
   draft:     ['open'],
   open:      ['responded', 'expired', 'cancelled', 'removed'],
   responded: ['matched', 'expired', 'cancelled', 'removed'],
-  matched:   ['done', 'cancelled'],
+  matched:   ['responded', 'done', 'cancelled'],   // responded = 撤销选定，仅 owner（D-35）
   done:      ['rated'],
   rated:     [],
   expired:   [],
@@ -110,6 +110,8 @@ const TRANSITIONS = {
   removed:   [],
 }
 ```
+
+共 13 条合法边。`matched → responded` 是 D-35 加的（原设计选定不可逆），走 `unselectResponder`，撤销时必须一并清掉被选定者与**双方的完成确认**，否则改选后新的响应者会继承上一位的确认。
 
 唯一的写入口 `transitionRequest(requestId, toStatus, actor)` 负责：校验转移是否合法 → 校验 actor 是否有权做这次转移（需求方 / 响应者 / 系统 / 管理员各自能做哪些）→ 写入并追加一条 `statusLogs` 记录。非法转移直接抛错。
 
@@ -127,7 +129,7 @@ const TRANSITIONS = {
 
 | 集合 | 用途 | 关键索引 |
 |---|---|---|
-| `users` | 账号、信任分、能力标签、常驻城市、会员状态 | `openid`（唯一） |
+| `users` | 账号、信任分、能力标签、常驻城市、会员状态、联系方式（`contact: { type, value }`，只在选定后一对一下发，见 D-36） | `openid`（唯一） |
 | `requests` | 需求单主体（PRD 4.1 全部字段） | `city + status + expireAt`、`ownerOpenid + status` |
 | `responses` | 对需求单的响应（含报价、自荐语） | `requestId`、`responderOpenid + createdAt`、`requestId + responderOpenid`（唯一，保证幂等） |
 | `agreements` | 约定单（只读共识凭证，含版本历史） | `requestId`（唯一） |
@@ -260,7 +262,7 @@ PRD 9.3 把运营后台收窄为四件事：待审队列、举报队列、用户
 
 ## 10. 测试策略：只测会造成纠纷或让数据作废的部分
 
-不追求覆盖率，用 Node 内置的 `node:test`（零依赖）覆盖以下纯逻辑。前三块是原始范围（D-20），第 4~5 块在 M1 排期时补入、第 6 块在 M2 排期时补入（决策与判断标准见 D-29）：
+不追求覆盖率，用 Node 内置的 `node:test`（零依赖）覆盖以下纯逻辑。前三块是原始范围（D-20），第 4~5 块在 M1 排期时补入、第 6 块在 M2 排期时补入、第 7 块在 M1-17 修正时补入（决策与判断标准见 D-29）：
 
 1. **需求单状态机**（第 3 节）：合法/非法转移、各角色权限矩阵。这是最高优先级，因为状态错乱会直接导致用户纠纷。
 2. **AI 额度与成本计算**（PRD 5.6）：免费额度、会员额度、跨天重置。算错会直接导致成本超支或误拦付费用户。
@@ -268,8 +270,9 @@ PRD 9.3 把运营后台收窄为四件事：待审队列、举报队列、用户
 4. **需求单过期判定**（PRD 4.1）：预约型 +24h、即时型按时长、"今天内"的当地日期边界。算错会导致单子永不过期，直接复活 V1.0 的死水问题。
 5. **A/B 分桶与端云枚举一致性**（D-21）：同一 openid 桶号稳定、配置缺失时不入组；两份 enums 的键值完全相等。前者算错会让全部 A/B 数据作废，后者漂移会写出脏数据。
 6. **AI 输出 Schema 校验**（6.1）：AI 返回值的结构校验与降级判定。校验失效会让脏数据直接进需求单，且 D-15 的"可回退"护栏形同虚设。
+7. **详情页动作可见性**（`miniprogram/models/viewRules.js`）：三种视角 × 九个状态下各动作是否可见。这块的失效形态特殊——条件写错时按钮**不出现**，和"功能没做"长得一模一样，不会报错，只能靠人逐个视角点出来（已真实漏过一次）。
 
-**不测**：UI 渲染、页面跳转、样式。手工过一遍更快。
+**不测**：UI 渲染、页面跳转、样式。手工过一遍更快。第 7 块测的是判定函数，不是渲染。
 
 ---
 
@@ -307,7 +310,7 @@ heybay/
 │   └── progress.md               # 活文档，每步必更
 ├── docs/
 │   └── v1-assets/                # V1.0 历史资产，只读
-├── tests/                        # node:test，只覆盖第 10 节六块逻辑（含 fixtures/ 黄金标注集）
+├── tests/                        # node:test，只覆盖第 10 节七块逻辑（含 fixtures/ 黄金标注集）
 ├── scripts/                      # 一次性/周期性脚本，不参与运行时（如 AI 离线评测 evalParseRequest.js）
 ├── .env.example                  # 环境变量样例（真实 .env 不入库）
 ├── .gitignore

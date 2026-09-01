@@ -90,6 +90,40 @@ const listOpenByCity = async ({ city, category, nowMs, includeTest = false, limi
 
 
 /**
+ * 某人发布的需求单（「我发布的」列表用）。
+ *
+ * 与广场不同，这里**不筛状态、不筛过期** —— 自己的单子无论过期、取消还是已完成都要能找回来，
+ * 这是用户回看自己做过什么的唯一入口。命中 `ownerOpenid + status` 索引的前缀。
+ */
+const listByOwner = async ({ ownerOpenid, includeTest = false, limit = 20, skip = 0 }) => {
+  const _ = getCommand()
+  const where = Object.assign({ ownerOpenid }, NOT_DELETED)
+  if (!includeTest) where._isTest = _.neq(true)
+
+  const res = await collection()
+    .where(where)
+    .orderBy('createdAt', 'desc')
+    .skip(skip)
+    .limit(limit)
+    .get()
+  return res.data
+}
+
+/**
+ * 按一组 _id 批量取（「我响应的」列表：先查响应拿到 requestId，再一次取回需求单）。
+ * 逐个 `findById` 会打出 N 次数据库调用，免费额度下不值得。
+ */
+const listByIds = async ids => {
+  if (!Array.isArray(ids) || !ids.length) return []
+  const _ = getCommand()
+  const res = await collection()
+    .where(Object.assign({ _id: _.in(ids) }, NOT_DELETED))
+    .limit(ids.length)
+    .get()
+  return res.data
+}
+
+/**
  * 待过期的需求单（M1-18 的定时扫描用）：仍在架、且 `expireAt` 已经过去。
  *
  * 单次处理条数必须有上限 —— 一次异常扫描把免费额度的调用次数吃光，比晚十分钟过期严重得多。
@@ -122,5 +156,7 @@ module.exports = {
   countActiveByOwnerCity,
   incResponseCount,
   listOpenByCity,
+  listByOwner,
+  listByIds,
   listExpiredCandidates
 }

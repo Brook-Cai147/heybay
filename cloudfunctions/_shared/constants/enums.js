@@ -109,6 +109,16 @@ const RESPONSE_SOURCE = {
 }
 
 /**
+ * 联系方式类型（D-36）。**只在选定之后、且只在需求方与被选定的响应者之间互相下发**。
+ * 平台不做 IM，达成共识后双方转到自己习惯的渠道联系，这是最省事也最真实的做法。
+ */
+const CONTACT_TYPE = {
+  WECHAT: 'wechat',        // 微信号
+  PHONE: 'phone',          // 电话（含国际号码，自行带国家码）
+  OTHER: 'other'           // 其他（Telegram / WhatsApp / 邮箱等，自己写清楚）
+}
+
+/**
  * 状态转移的发起方角色（tech-stack 第 3 节）。**云侧独有**。
  * 判断"是谁在做这次转移"，与"这次转移本身是否合法"是两件事，分别由权限矩阵与转移表负责。
  */
@@ -142,6 +152,8 @@ module.exports = {
   PREFERENCE_FLAG_VALUES: valuesOf(PREFERENCE_FLAG),
   RESPONSE_SOURCE: freeze(RESPONSE_SOURCE),
   RESPONSE_SOURCE_VALUES: valuesOf(RESPONSE_SOURCE),
+  CONTACT_TYPE: freeze(CONTACT_TYPE),
+  CONTACT_TYPE_VALUES: valuesOf(CONTACT_TYPE),
   ACTOR_ROLE: freeze(ACTOR_ROLE),
   ACTOR_ROLE_VALUES: valuesOf(ACTOR_ROLE)
 }

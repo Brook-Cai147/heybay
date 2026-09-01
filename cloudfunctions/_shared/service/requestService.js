@@ -18,7 +18,7 @@ const { assertTransitionByActor } = require('./requestStateMachine')
 const { computeExpireAt, checkActiveLimit } = require('./requestExpiry')
 const { validateAndNormalize } = require('./requestValidator')
 const trackService = require('./trackService')
-const { publicUser } = require('./userService')
+const { publicUser, contactOf } = require('./userService')
 const usersDao = require('../dao/users')
 
 /** 城市配置的 key 规则（D-34：M1~M2 城市配置暂存 configs，M3 迁 cities 集合） */
@@ -256,6 +256,23 @@ const getDetail = async ({ openid, params = {} }) => {
 
   const owner = await usersDao.findByOpenid(request.ownerOpenid)
 
+  /**
+   * 联系方式的下发规则（D-36）：**只在 matched 之后，且只在需求方与被选定的响应者之间双向下发**。
+   * 其他任何身份、任何状态都拿不到。这是全项目唯一会把个人联系方式发到端侧的地方。
+   */
+  let peerContact = null
+  let peerNickName = ''
+  if (request.status === REQUEST_STATUS.MATCHED || request.status === REQUEST_STATUS.DONE) {
+    if (isOwner && request.matchedResponderOpenid) {
+      const responder = await usersDao.findByOpenid(request.matchedResponderOpenid)
+      peerContact = contactOf(responder)
+      peerNickName = responder ? responder.nickName : ''
+    } else if (isMatchedResponder) {
+      peerContact = contactOf(owner)
+      peerNickName = owner ? owner.nickName : ''
+    }
+  }
+
   return ok({
     request: publicRequest(request),
     viewerRole: isOwner ? ACTOR_ROLE.OWNER : (isMatchedResponder ? ACTOR_ROLE.RESPONDER : 'visitor'),
@@ -264,6 +281,8 @@ const getDetail = async ({ openid, params = {} }) => {
     owner: publicUser(owner),
     responses: rawResponses.map(publicResponse),
     myResponseId: mine ? mine._id : null,
+    peerContact,
+    peerNickName,
     doneConfirm: {
       owner: Boolean(request.ownerDoneAt),
       responder: Boolean(request.responderDoneAt)
@@ -292,6 +311,7 @@ const publicRequest = request => ({
   expireAt: request.expireAt,
   responseCount: request.responseCount || 0,
   matchedResponseId: request.matchedResponseId || null,
+  reselectCount: Number.isInteger(request.reselectCount) ? request.reselectCount : 0,
   ownerNickName: request.ownerNickName || '',
   ownerAvatarUrl: request.ownerAvatarUrl || '',
   ownerTrustLevel: request.ownerTrustLevel || 'newcomer',
@@ -333,7 +353,7 @@ const selectResponder = async ({ openid, params = {}, isTest = false }) => {
     fail(ERROR.FORBIDDEN, '只有需求方本人能选定响应者')
   }
 
-  // 幂等：重复选定同一人返回成功但不再转移、不再写日志；选定另一人则明确拒绝
+  // 幂等：重复选定同一人返回成功但不再转移、不再写日志；改选别人要先撤销选定（D-35）
   if (request.status === REQUEST_STATUS.MATCHED) {
     if (request.matchedResponseId === responseId) {
       return ok({
@@ -344,7 +364,7 @@ const selectResponder = async ({ openid, params = {}, isTest = false }) => {
         matchedResponderOpenid: request.matchedResponderOpenid
       })
     }
-    fail(ERROR.FORBIDDEN, '这条需求已经选定了其他人，选定不可撤销')
+    fail(ERROR.FORBIDDEN, '这条需求已经选定了其他人。要改选，请先撤销选定')
   }
 
   const response = await responsesDao.findById(responseId)
@@ -545,28 +565,138 @@ const listSquare = async ({ openid, params = {} }) => {
   })
 
   const hasMore = rows.length > SQUARE_PAGE_SIZE
-  const items = rows.slice(0, SQUARE_PAGE_SIZE).map(row => ({
-    _id: row._id,
-    category: row.category,
-    title: row.title,
-    city: row.city,
-    area: row.area || '',
-    timing: row.timing,
-    instantDuration: row.instantDuration || null,
-    rewardType: row.rewardType,
-    amount: row.amount || null,
-    status: row.status,
-    expireAt: row.expireAt,
-    responseCount: row.responseCount || 0,
-    ownerNickName: row.ownerNickName || '',
-    ownerAvatarUrl: row.ownerAvatarUrl || '',
-    ownerTrustLevel: row.ownerTrustLevel || 'newcomer',
-    isMine: row.ownerOpenid === openid,
-    isTest: row._isTest === true
-  }))
+  const items = rows.slice(0, SQUARE_PAGE_SIZE).map(row => listRow(row, openid))
 
   return ok({ city, cityOpen: true, items, page, hasMore, serverTime: nowMs })
 }
+
+/** 列表卡片的对外字段。广场与「我的」两处共用，避免两边字段慢慢长歪 */
+const listRow = (row, openid) => ({
+  _id: row._id,
+  category: row.category,
+  title: row.title,
+  city: row.city,
+  area: row.area || '',
+  timing: row.timing,
+  instantDuration: row.instantDuration || null,
+  rewardType: row.rewardType,
+  amount: row.amount || null,
+  status: row.status,
+  expireAt: row.expireAt,
+  responseCount: row.responseCount || 0,
+  ownerNickName: row.ownerNickName || '',
+  ownerAvatarUrl: row.ownerAvatarUrl || '',
+  ownerTrustLevel: row.ownerTrustLevel || 'newcomer',
+  isMine: row.ownerOpenid === openid,
+  isTest: row._isTest === true
+})
+
+/** 「我的」列表一次最多回多少条。翻页留到有真实数据量时再说 */
+const MINE_PAGE_SIZE = 20
+
+/**
+ * 「我发布的」与「我响应的」（M1-17 后续补：**响应之后没有任何入口能找回那条单**）。
+ *
+ * 为什么两个列表一次调用回来：这是「我的」页面进来就要的东西，拆两次请求在免费额度下不划算。
+ * 为什么不筛状态、不筛过期：自己参与过的单子，过期、取消、完成之后都得能找回来 ——
+ * 广场只展示在架单，那是给别人看的；这里是给本人回看的，两者的取舍相反。
+ */
+const listMine = async ({ openid }) => {
+  const publishedRows = await requestsDao.listByOwner({
+    ownerOpenid: openid,
+    includeTest: INCLUDE_TEST_DATA,
+    limit: MINE_PAGE_SIZE
+  })
+
+  const myResponses = await responsesDao.listByResponder(openid, MINE_PAGE_SIZE)
+  const respondedRows = await requestsDao.listByIds(myResponses.map(item => item.requestId))
+  // 批量取回来的顺序不保证，按"我响应的时间"倒序重排：用户找的是"我刚才响应的那条"
+  const rowById = new Map(respondedRows.map(row => [row._id, row]))
+
+  const responded = myResponses
+    .map(response => {
+      const row = rowById.get(response.requestId)
+      if (!row) return null // 需求单被删了，跳过而不是显示一张空卡
+      return Object.assign(listRow(row, openid), {
+        myResponseId: response._id,
+        mySelected: response.selected === true,
+        respondedAt: response.createdAt
+      })
+    })
+    .filter(Boolean)
+
+  return ok({
+    published: publishedRows.map(row => listRow(row, openid)),
+    responded,
+    serverTime: Date.now()
+  })
+}
+
+/**
+ * 撤销选定（D-35）：matched → responded，退回待选定，原有响应全部保留。
+ *
+ * 为什么允许：双方拿到联系方式后线下沟通，变卦、约不上、同时在聊几个人都是常态。
+ * 逼着需求方"取消整单再重发"会让其余响应者也白等一轮，代价落在无关的人身上。
+ *
+ * 三件事必须一起做，否则会留下自相矛盾的数据：
+ *   1. 清掉 matched 相关字段（被选定者、选定时间、双方的完成确认）
+ *   2. 把响应的 selected 标记全部清掉
+ *   3. 记一次 reselectCount —— 撤销不是免费的，次数要留痕
+ *
+ * **联系方式无法收回**：对方已经看到了。所以端侧必须在二次确认里说明这一点。
+ */
+const unselectResponder = async ({ openid, params = {}, isTest = false }) => {
+  const { requestId, reason } = params
+  if (!requestId || typeof requestId !== 'string') fail(ERROR.BAD_PARAMS, '缺 requestId')
+
+  const request = await requestsDao.findById(requestId)
+  if (!request) fail(ERROR.REQUEST_NOT_FOUND, '这条需求不存在或已被删除')
+  if (request.ownerOpenid !== openid) {
+    fail(ERROR.FORBIDDEN, '只有需求方本人能撤销选定')
+  }
+  if (request.status !== REQUEST_STATUS.MATCHED) {
+    fail(ERROR.ILLEGAL_TRANSITION, '这条需求当前不是「已确定」状态，没有需要撤销的选定')
+  }
+
+  const previousResponseId = request.matchedResponseId || null
+
+  const result = await applyTransition({
+    requestId,
+    to: REQUEST_STATUS.RESPONDED,
+    actorRole: ACTOR_ROLE.OWNER,
+    actorOpenid: openid,
+    reason: (typeof reason === 'string' && reason.trim()) || 'unselect',
+    patch: {
+      matchedResponseId: null,
+      matchedResponderOpenid: null,
+      matchedAt: null,
+      // 完成确认必须一起清：否则改选后新的响应者会"继承"上一位留下的确认
+      ownerDoneAt: null,
+      responderDoneAt: null,
+      reselectCount: getReselectCount(request) + 1,
+      lastUnselectedAt: new Date()
+    },
+    isTest
+  })
+
+  if (previousResponseId) {
+    try {
+      await responsesDao.updateById(previousResponseId, { selected: false })
+    } catch (err) {
+      console.warn('[unselectResponder] 清除响应选中标记失败（不影响状态回退）', err && err.message)
+    }
+  }
+
+  return ok({
+    requestId,
+    from: result.from,
+    status: REQUEST_STATUS.RESPONDED,
+    unselectedResponseId: previousResponseId,
+    reselectCount: getReselectCount(request) + 1
+  })
+}
+
+const getReselectCount = request => (Number.isInteger(request.reselectCount) ? request.reselectCount : 0)
 
 module.exports = {
   cityConfigKey,
@@ -577,8 +707,10 @@ module.exports = {
   resolveActorRole,
   transitionRequest,
   selectResponder,
+  unselectResponder,
   confirmDone,
   cancel,
   getDetail,
-  listSquare
+  listSquare,
+  listMine
 }

@@ -30,7 +30,7 @@
     </view>
 
     <!-- 视角一：其他人 → 响应入口 -->
-    <view class="card" wx:if="{{canRespond}}">
+    <view class="card" wx:if="{{actions.canRespond}}">
       <text class="card-title">我可以帮</text>
       <textarea
         class="area-input"
@@ -47,9 +47,23 @@
       <button class="primary" loading="{{submitting}}" bindtap="onSubmitResponse">响应这条需求</button>
     </view>
 
-    <view class="card" wx:if="{{myResponseId && !isMatchedResponder}}">
+    <view class="card" wx:if="{{actions.showRespondedHint}}">
       <text class="card-title">你已响应</text>
       <text class="tip">等需求方选定就好。别人的自荐内容不会展示给你。</text>
+    </view>
+
+    <!-- 达成共识后互相下发联系方式（D-36）。这是双方唯一的联系渠道，私信属 M3 -->
+    <view class="card contact-card" wx:if="{{actions.canSeeContact}}">
+      <text class="card-title">对方的联系方式</text>
+      <block wx:if="{{peerContact}}">
+        <view class="row">
+          <text class="label">{{peerContactLabel}}</text>
+          <text class="value contact-value">{{peerContact.value}}</text>
+          <text class="link" bindtap="onCopyContact">复制</text>
+        </view>
+        <text class="tip">{{peerNickName || '对方'}} 也看到了你的联系方式。见面前请回看上面那四条安全提示；不要提前转账。</text>
+      </block>
+      <text class="warn" wx:if="{{!peerContact}}">对方还没填联系方式，可以在这条需求里等一等，或者撤销选定换人。</text>
     </view>
 
     <!-- 视角二：需求方 → 响应列表与选定 -->
@@ -69,15 +83,22 @@
 
         <button
           class="select-btn"
-          wx:if="{{request.status === STATUS_RESPONDED}}"
+          wx:if="{{actions.canSelect}}"
           data-id="{{item._id}}"
           bindtap="onTapSelect"
         >选定他</button>
       </view>
+
+      <!-- 撤销选定（D-35）：约不上就换人，不必取消整条需求 -->
+      <block wx:if="{{actions.canUnselect}}">
+        <button class="ghost" loading="{{unselecting}}" bindtap="onUnselect">撤销选定，重新挑人</button>
+        <text class="tip">已经交换过的联系方式收不回；撤销次数会被记录，但信用主要看双方真实评价。</text>
+        <text class="tip" wx:if="{{request.reselectCount}}">这条需求已撤销过 {{request.reselectCount}} 次。</text>
+      </block>
     </view>
 
     <!-- 双方确认完成 -->
-    <view class="card" wx:if="{{canConfirmDone}}">
+    <view class="card" wx:if="{{actions.canConfirmDone || actions.waitingForPeer}}">
       <text class="card-title">确认完成</text>
       <view class="row">
         <text class="label">需求方</text>
@@ -87,8 +108,9 @@
         <text class="label">响应者</text>
         <text class="value">{{doneConfirm.responder ? '已确认' : '未确认'}}</text>
       </view>
-      <button class="primary" bindtap="onConfirmDone">我这边已完成</button>
-      <text class="tip">两边都确认后这条需求才算完成。</text>
+      <button class="primary" wx:if="{{actions.canConfirmDone}}" bindtap="onConfirmDone">我这边已完成</button>
+      <text class="tip" wx:if="{{actions.waitingForPeer}}">你已确认，等对方确认。</text>
+      <text class="tip">两边都确认后这条需求才算完成 —— 一方说完成、另一方没到场的情况下，不该算成一次成功。</text>
     </view>
 
     <view class="card done-card" wx:if="{{request.status === STATUS_DONE}}">
@@ -97,9 +119,9 @@
     </view>
 
     <!-- 取消 -->
-    <view class="card" wx:if="{{isOwner || isMatchedResponder}}">
+    <view class="card" wx:if="{{actions.canCancel}}">
       <text class="link danger" bindtap="onCancel">取消这条需求</text>
-      <text class="tip">取消会记录取消方与次数（PRD 4.1 规则 3）。</text>
+      <text class="tip">取消会记录取消方与次数（PRD 4.1 规则 3）；信用分主要看双方真实评价（M3）。</text>
     </view>
 
     <view class="card">
@@ -114,7 +136,7 @@
       <view class="tip-item" wx:for="{{safetyTips}}" wx:key="*this">
         <text class="dot">·</text><text class="tip-text">{{item}}</text>
       </view>
-      <text class="sheet-note">选定之后不可更改，请确认对方是你想找的人。</text>
+      <text class="sheet-note">选定之后你们会互相看到联系方式，自己去约。约不上可以撤销选定重新挑人，但已经看到的联系方式收不回。</text>
       <button class="primary" loading="{{selecting}}" bindtap="onConfirmSelect">我已了解，继续选定</button>
       <text class="link" bindtap="onCancelSelect">再想想</text>
     </view>

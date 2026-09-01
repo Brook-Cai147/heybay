@@ -95,6 +95,13 @@ const RESPONSE_SOURCE = {
   BROADCAST: 'broadcast'
 }
 
+/** 联系方式类型（D-36）。只在选定后、且只在需求方与被选定的响应者之间互相可见 */
+const CONTACT_TYPE = {
+  WECHAT: 'wechat',
+  PHONE: 'phone',
+  OTHER: 'other'
+}
+
 const freeze = Object.freeze
 const valuesOf = obj => freeze(Object.values(obj))
 
@@ -117,5 +124,7 @@ module.exports = {
   PREFERENCE_FLAG: freeze(PREFERENCE_FLAG),
   PREFERENCE_FLAG_VALUES: valuesOf(PREFERENCE_FLAG),
   RESPONSE_SOURCE: freeze(RESPONSE_SOURCE),
-  RESPONSE_SOURCE_VALUES: valuesOf(RESPONSE_SOURCE)
+  RESPONSE_SOURCE_VALUES: valuesOf(RESPONSE_SOURCE),
+  CONTACT_TYPE: freeze(CONTACT_TYPE),
+  CONTACT_TYPE_VALUES: valuesOf(CONTACT_TYPE)
 }

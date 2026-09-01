@@ -51,6 +51,20 @@ const countByRequest = async requestId => {
   return res.total
 }
 
+/**
+ * 某人响应过的记录（「我响应的」列表用）。命中 `responderOpenid + createdAt` 索引。
+ * 只回响应本身，需求单由 service 用 `requestsDao.listByIds` 批量取。
+ */
+const listByResponder = async (responderOpenid, limit = 20, skip = 0) => {
+  const res = await collection()
+    .where(Object.assign({ responderOpenid }, NOT_DELETED))
+    .orderBy('createdAt', 'desc')
+    .skip(skip)
+    .limit(limit)
+    .get()
+  return res.data
+}
+
 const updateById = async (id, data, tx) => {
   const res = await collection(tx).doc(id).update({ data: withUpdateStamps(data) })
   return res.stats ? res.stats.updated : 1
@@ -73,6 +87,7 @@ module.exports = {
   findByRequestAndResponder,
   listByRequest,
   countByRequest,
+  listByResponder,
   updateById,
   markSelected
 }

@@ -33,7 +33,13 @@ const TRANSITIONS = Object.freeze({
     REQUEST_STATUS.CANCELLED,
     REQUEST_STATUS.REMOVED
   ]),
-  [REQUEST_STATUS.MATCHED]: Object.freeze([REQUEST_STATUS.DONE, REQUEST_STATUS.CANCELLED]),
+  // matched → responded 是「撤销选定」（D-35）：线下聊过之后变卦是常态，
+  // 逼着需求方取消整单会让其余响应者也白等。退回待选定，原有响应仍在。
+  [REQUEST_STATUS.MATCHED]: Object.freeze([
+    REQUEST_STATUS.RESPONDED,
+    REQUEST_STATUS.DONE,
+    REQUEST_STATUS.CANCELLED
+  ]),
   [REQUEST_STATUS.DONE]: Object.freeze([REQUEST_STATUS.RATED]),
   [REQUEST_STATUS.RATED]: Object.freeze([]),
   [REQUEST_STATUS.EXPIRED]: Object.freeze([]),
@@ -81,6 +87,8 @@ const PERMISSIONS = Object.freeze({
     ACTOR_ROLE.OWNER,
     ACTOR_ROLE.RESPONDER
   ]),
+  // 撤销选定只有需求方能做：响应者不想继续时走取消，而不是把自己从"被选中"里摘出去
+  [edgeKey(REQUEST_STATUS.MATCHED, REQUEST_STATUS.RESPONDED)]: Object.freeze([ACTOR_ROLE.OWNER]),
   [edgeKey(REQUEST_STATUS.MATCHED, REQUEST_STATUS.CANCELLED)]: Object.freeze([
     ACTOR_ROLE.OWNER,
     ACTOR_ROLE.RESPONDER

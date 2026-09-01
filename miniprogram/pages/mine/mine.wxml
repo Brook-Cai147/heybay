@@ -51,6 +51,78 @@
       <text class="warn" wx:if="{{user.gender === 'unset'}}">当前未填写</text>
     </view>
 
+    <view class="card">
+      <text class="card-title">联系方式</text>
+      <view class="chips">
+        <view
+          class="chip {{contactType === item.value ? 'chip-on' : ''}}"
+          wx:for="{{contactTypeOptions}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          bindtap="onPickContactType"
+        >{{item.label}}</view>
+      </view>
+      <view class="row">
+        <input
+          class="input"
+          value="{{contactValue}}"
+          placeholder="填你希望对方怎么联系你"
+          maxlength="60"
+          bindinput="onContactInput"
+        />
+        <text class="link" bindtap="onSaveContact">保存</text>
+      </view>
+      <text class="card-tip">
+        只有在双方达成共识（你选定了某个响应者）之后，才会把它下发给对方一个人。广场、响应列表、任何卡片里都不会出现。
+      </text>
+      <text class="warn" wx:if="{{!hasContact}}">还没填。没有联系方式，选定之后双方也约不上。</text>
+      <text class="link danger" wx:if="{{hasContact}}" bindtap="onClearContact">清空联系方式</text>
+    </view>
+
+    <!-- 我参与过的单子：响应之后能找回来的唯一入口 -->
+    <view class="card">
+      <view class="seg">
+        <view
+          class="seg-item {{mineTab === 'responded' ? 'seg-on' : ''}}"
+          data-tab="responded"
+          bindtap="onSwitchTab"
+        >我响应的（{{responded.length}}）</view>
+        <view
+          class="seg-item {{mineTab === 'published' ? 'seg-on' : ''}}"
+          data-tab="published"
+          bindtap="onSwitchTab"
+        >我发布的（{{published.length}}）</view>
+      </view>
+
+      <text class="card-tip">过期、取消、已完成的单子也留在这里 —— 广场只挂在架的，这里是给你自己回看的。</text>
+      <text class="card-tip" wx:if="{{listLoading}}">加载中…</text>
+
+      <block wx:if="{{mineTab === 'responded'}}">
+        <text class="card-tip" wx:if="{{!listLoading && responded.length === 0}}">
+          还没响应过谁。去首页看看有没有能帮上的。
+        </text>
+        <view class="mine-item" wx:for="{{responded}}" wx:key="_id">
+          <text class="mine-flag" wx:if="{{item.mySelected}}">你已被选定，去看联系方式</text>
+          <request-card item="{{item}}" nowMs="{{nowMs}}" bindcardtap="onCardTap" />
+        </view>
+      </block>
+
+      <block wx:if="{{mineTab === 'published'}}">
+        <text class="card-tip" wx:if="{{!listLoading && published.length === 0}}">
+          还没发过需求。有事就喊一声。
+        </text>
+        <request-card
+          wx:for="{{published}}"
+          wx:key="_id"
+          item="{{item}}"
+          nowMs="{{nowMs}}"
+          bindcardtap="onCardTap"
+        />
+      </block>
+
+      <text class="link" bindtap="goSquare">去需求广场</text>
+    </view>
+
     <text class="err" wx:if="{{error}}">{{error}}</text>
   </block>
 </view>

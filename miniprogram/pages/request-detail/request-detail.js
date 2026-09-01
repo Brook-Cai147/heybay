@@ -1,27 +1,31 @@
 /**
- * 需求单详情（M1-17）。**M1 的验收核心**：一个页面里把「响应 → 选定 → 双方确认完成」走完。
+ * 需求单详情（M1-17）。**M1 的验收核心**：一个页面里把「响应 → 选定 → 交换联系方式 → 双方确认完成」走完。
  *
  * 同一页面按身份切三种视角：
- *   - 需求方：响应列表 + 选定按钮
+ *   - 需求方：响应列表 + 选定 / 撤销选定
  *   - 其他人：响应入口（一句话 + 付费类报价，PRD 6.4 要求 10 秒内可完成）
- *   - 被选定的响应者：确认完成按钮
+ *   - 被选定的响应者：对方联系方式 + 确认完成
  *
- * 两条纪律：
- *   1. 选定不可逆 → 二次确认弹窗 + 安全提示卡**强制展示一次**（PRD 4.5）
- *   2. 所有失败原样呈现云函数给的业务提示（"你已响应过""已选定他人"），不吞错、不弹通用"网络错误"
+ * 三条纪律：
+ *   1. 「谁在什么状态下能看到什么按钮」一律走 `models/viewRules.js`，页面里不再手写条件 ——
+ *      条件写错的表现是"按钮不出现"，和"功能没做"长得一样，M1-17 已经因此漏过一次
+ *   2. 选定前安全提示卡**强制展示一次**（PRD 4.5）；选定可以撤销（D-35），但已经看到的联系方式收不回
+ *   3. 所有失败原样呈现云函数给的业务提示（"你已响应过""已选定他人"），不吞错、不弹通用"网络错误"
  */
 
 const requestService = require('../../services/request')
 const responseService = require('../../services/response')
 const { track } = require('../../utils/track')
 const { REQUEST_STATUS, REWARD_TYPE } = require('../../models/enums')
+const { resolveDetailActions } = require('../../models/viewRules')
 const {
   STATUS_LABEL,
   CATEGORY_LABEL,
   REWARD_LABEL,
   TRUST_LEVEL_LABEL,
   TIMING_LABEL,
-  INSTANT_DURATION_LABEL
+  INSTANT_DURATION_LABEL,
+  CONTACT_TYPE_LABEL
 } = require('../../models/labels')
 
 /** 安全提示卡的四条（PRD 4.5），选定前强制看一次 */
@@ -46,6 +50,11 @@ Page({
     myResponseId: null,
     doneConfirm: { owner: false, responder: false },
 
+    // 对方联系方式（D-36）：只有达成共识后云端才会下发，端侧不做任何兜底推断
+    peerContact: null,
+    peerNickName: '',
+    peerContactLabel: '',
+
     // 展示文案
     statusLabel: '',
     categoryLabel: '',
@@ -63,9 +72,10 @@ Page({
     safetyVisible: false,
     pendingResponseId: '',
     selecting: false,
+    unselecting: false,
 
-    canRespond: false,
-    canConfirmDone: false,
+    /** 全部动作可见性由 viewRules 统一给出，页面不再自己算（见文件头纪律 1） */
+    actions: {},
     safetyTips: SAFETY_TIPS,
     // 模板里比较状态用这两个常量，不写字符串字面量
     STATUS_DONE: REQUEST_STATUS.DONE,
@@ -81,13 +91,32 @@ Page({
     this.load()
   },
 
+  /**
+   * 每次回到页面都重新拉一次。
+   * 双人流程里另一端随时可能改状态（选定/撤销/确认完成），只在 onLoad 拉一次的话，
+   * 切到另一个账号再切回来看到的是旧数据 —— M1-17 的「响应方看不到我这边已完成」就是这个原因。
+   */
+  onShow() {
+    if (this.requestId && !this.data.loading) this.load()
+  },
+
+  /** 双人流程没有推送（私信属 M3），下拉刷新是用户唯一的主动同步手段 */
+  async onPullDownRefresh() {
+    if (this.requestId) await this.load()
+    wx.stopPullDownRefresh()
+  },
+
   async load() {
     this.setData({ loading: true, error: '' })
     try {
       const res = await requestService.getDetail(this.requestId)
       const request = res.request || {}
-      const isVisitor = res.viewerRole === 'visitor'
-      const accepting = request.status === REQUEST_STATUS.OPEN || request.status === REQUEST_STATUS.RESPONDED
+      const actions = resolveDetailActions({
+        status: request.status,
+        viewerRole: res.viewerRole,
+        hasMyResponse: Boolean(res.myResponseId),
+        doneConfirm: res.doneConfirm
+      })
 
       this.setData({
         request,
@@ -103,6 +132,12 @@ Page({
         myResponseId: res.myResponseId,
         doneConfirm: res.doneConfirm,
 
+        peerContact: res.peerContact || null,
+        peerNickName: res.peerNickName || '',
+        peerContactLabel: res.peerContact
+          ? (CONTACT_TYPE_LABEL[res.peerContact.type] || CONTACT_TYPE_LABEL.other)
+          : '',
+
         statusLabel: STATUS_LABEL[request.status] || request.status,
         categoryLabel: CATEGORY_LABEL[request.category] || request.category,
         rewardLabel: request.rewardType === REWARD_TYPE.PAID && request.amount
@@ -114,10 +149,7 @@ Page({
         expireText: this.formatTime(request.expireAt),
 
         needQuote: request.rewardType === REWARD_TYPE.PAID,
-        // 游客 + 还没响应过 + 单子在可响应状态，才给响应入口
-        canRespond: isVisitor && !res.myResponseId && accepting,
-        canConfirmDone:
-          request.status === REQUEST_STATUS.MATCHED && (res.isOwner || res.isMatchedResponder)
+        actions
       })
     } catch (err) {
       this.setData({ error: err.message })
@@ -181,8 +213,8 @@ Page({
 
     const confirm = await new Promise(resolve => {
       wx.showModal({
-        title: '选定后不可更改',
-        content: '选定之后这条需求就锁定给对方了，不能再改选别人。确定吗？',
+        title: '确认选定他',
+        content: '选定之后你们会互相看到对方的联系方式，自己去约。选定期间别人不能再响应；如果约不上，你可以撤销选定重新挑人（撤销会被记录）。',
         confirmText: '确定选定',
         success: res => resolve(res.confirm),
         fail: () => resolve(false)
@@ -203,6 +235,45 @@ Page({
       this.setData({ selecting: false })
     }
   },
+
+  /**
+   * 撤销选定（D-35）：退回待选定，可以重新挑人。
+   * 弹窗里必须说清两件事 —— 已经看到的联系方式收不回；撤销会被记录。
+   */
+  async onUnselect() {
+    if (this.data.unselecting) return
+    const confirm = await new Promise(resolve => {
+      wx.showModal({
+        title: '撤销选定？',
+        content: '这条需求会退回"待选定"，你可以重新挑人。对方已经看到的联系方式无法收回，撤销次数会被记录。',
+        confirmText: '撤销选定',
+        success: res => resolve(res.confirm),
+        fail: () => resolve(false)
+      })
+    })
+    if (!confirm) return
+
+    this.setData({ unselecting: true })
+    try {
+      await requestService.unselectResponder(this.requestId, '')
+      wx.showToast({ title: '已撤销，可重新挑人', icon: 'none' })
+      this.setData({ error: '' })
+      await this.load()
+    } catch (err) {
+      this.setData({ error: err.message })
+      wx.showModal({ title: '没能撤销', content: err.message, showCancel: false })
+    } finally {
+      this.setData({ unselecting: false })
+    }
+  },
+
+  /** 联系方式一律给复制按钮：手抄微信号/号码极易出错，出错的代价是双方约不上 */
+  onCopyContact() {
+    const contact = this.data.peerContact
+    if (!contact || !contact.value) return
+    wx.setClipboardData({ data: contact.value })
+  },
+
 
   /** 确认完成：双方各自确认，两边都点了才真的进 done */
   async onConfirmDone() {
@@ -227,7 +298,7 @@ Page({
     const confirm = await new Promise(resolve => {
       wx.showModal({
         title: '取消这条需求？',
-        content: '取消会被记录（取消次数将来会影响信用），确定吗？',
+        content: '整条需求会关闭，其他人也无法再响应。取消记录会保留（信用主要看双方真实评价，不是取消次数）。',
         success: res => resolve(res.confirm),
         fail: () => resolve(false)
       })

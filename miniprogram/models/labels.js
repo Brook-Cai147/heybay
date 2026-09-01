@@ -13,7 +13,8 @@ const {
   INSTANT_DURATION,
   REWARD_TYPE,
   VISIBILITY,
-  GENDER
+  GENDER,
+  CONTACT_TYPE
 } = require('./enums')
 
 /** 品类中文名在枚举里已有（AI prompt 也要用），这里直接复用，不再抄一份 */
@@ -71,6 +72,13 @@ const CITY_LABEL = {
   london: '伦敦'
 }
 
+/** 联系方式类型展示名（D-36） */
+const CONTACT_TYPE_LABEL = {
+  [CONTACT_TYPE.WECHAT]: '微信号',
+  [CONTACT_TYPE.PHONE]: '电话',
+  [CONTACT_TYPE.OTHER]: '联系方式'
+}
+
 const freeze = Object.freeze
 
 module.exports = {
@@ -82,5 +90,6 @@ module.exports = {
   VISIBILITY_LABEL: freeze(VISIBILITY_LABEL),
   GENDER_LABEL: freeze(GENDER_LABEL),
   TRUST_LEVEL_LABEL: freeze(TRUST_LEVEL_LABEL),
-  CITY_LABEL: freeze(CITY_LABEL)
+  CITY_LABEL: freeze(CITY_LABEL),
+  CONTACT_TYPE_LABEL: freeze(CONTACT_TYPE_LABEL)
 }

@@ -187,6 +187,37 @@
   border: 1rpx solid #d8f0dd;
 }
 
+/* 联系方式卡：给一点强调色，它是达成共识之后最该被看见的东西（D-36） */
+.contact-card {
+  border: 1rpx solid #cfe9f7;
+  background: #fbfeff;
+}
+
+.contact-value {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.ghost {
+  margin-top: 24rpx;
+  align-self: flex-start;
+  background: #fff;
+  color: #1296db;
+  font-size: 26rpx;
+  border: 1rpx solid #1296db;
+  border-radius: 32rpx;
+  padding: 0 40rpx;
+  line-height: 64rpx;
+}
+
+.warn {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #f37b1d;
+  line-height: 1.7;
+}
+
 .link {
   font-size: 26rpx;
   color: #1296db;
