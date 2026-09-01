@@ -34,19 +34,6 @@ const ENV_KEYS = Object.freeze({
   [MODEL_TIER.LONG_OUTPUT]: { base: 'AI_LONG_BASE_URL', key: 'AI_LONG_API_KEY', model: 'AI_LONG_MODEL' }
 })
 
-/**
- * 额外请求体参数（JSON 字符串）的环境变量名。
- *
- * 为什么留这个口子：各家都有自己的开关（DeepSeek 的思考模式、某些网关要求的 `stream: false`），
- * 这些开关既不属于 OpenAI 标准协议、也会随厂商文档变。写死在代码里意味着换供应商就要改代码，
- * 而这恰恰是 modelClient 想避免的。所以给一个**逃生口**：填什么由环境变量决定，代码不认识它们。
- * 解析失败只告警不阻断 —— 一个填错的 JSON 不该让整条能力不可用。
- */
-const EXTRA_BODY_ENV = Object.freeze({
-  [MODEL_TIER.CHEAP]: 'AI_PRIMARY_EXTRA_BODY',
-  [MODEL_TIER.LONG_OUTPUT]: 'AI_LONG_EXTRA_BODY'
-})
-
 const modelError = (code, message) => {
   const err = new Error(message)
   err.code = code
@@ -74,16 +61,24 @@ const resolveConfig = modelTier => {
 
 const jsonModeEnabled = () => String(process.env.AI_JSON_MODE || '').toLowerCase() !== 'off'
 
-/** 读并解析额外请求体参数；没配或填错都返回空对象 */
-const extraBodyOf = modelTier => {
-  const name = EXTRA_BODY_ENV[modelTier] || EXTRA_BODY_ENV[MODEL_TIER.CHEAP]
-  const raw = process.env[name] || process.env[EXTRA_BODY_ENV[MODEL_TIER.CHEAP]] || ''
-  if (!raw.trim()) return {}
+/**
+ * 厂商专有的请求体字段，用环境变量注入，**不写进代码** —— 这是"客户端只讲通用协议"的逃生舱。
+ *
+ * 现实需要：DeepSeek V4 的思考模式**默认开着**，思维链按输出 token 计费，
+ * 对"把一句话拆成结构化字段"这种任务纯属浪费（更慢、更贵、还更容易跑偏）。
+ * 关掉的方式是 `{"thinking":{"type":"disabled"}}` —— 这是 DeepSeek 专有字段，
+ * 写死在代码里就等于把客户端绑到一家供应商上，所以放环境变量。
+ *
+ * 解析失败只告警不抛错：一个配错的可选字段不该让整条 AI 能力不可用。
+ */
+const extraBody = () => {
+  const raw = process.env.AI_EXTRA_BODY
+  if (!raw) return {}
   try {
     const parsed = JSON.parse(raw)
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
   } catch (err) {
-    console.error(`[modelClient] ${name} 不是合法 JSON，已忽略：${raw.slice(0, 120)}`)
+    console.error('[modelClient] AI_EXTRA_BODY 不是合法 JSON，已忽略：', String(raw).slice(0, 120))
     return {}
   }
 }
@@ -139,18 +134,21 @@ const postJson = ({ url, headers, body, timeoutMs }) =>
  *
  * @returns {{text: string, inputTokens: number, outputTokens: number, latencyMs: number, model: string}}
  */
-const chat = async ({ modelTier = MODEL_TIER.CHEAP, prompt, timeoutMs = 8000, jsonMode = true, temperature = 0.2 }) => {
+const chat = async ({ modelTier = MODEL_TIER.CHEAP, prompt, timeoutMs = 8000, jsonMode = true, temperature = 1.0 }) => {
   const { baseUrl, apiKey, model } = resolveConfig(modelTier)
-  const body = {
-    model,
-    messages: [{ role: 'user', content: prompt }],
-    temperature
-  }
+  // 顺序：通用字段 → 厂商专有字段。专有字段放后面，配错了至少能看出是它覆盖的
+  const body = Object.assign(
+    {
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      // 1.0 是 DeepSeek 官方对「数据抽取/分析」这类任务的建议值，不是随手填的
+      temperature
+    },
+    extraBody()
+  )
   if (jsonMode && jsonModeEnabled()) {
     body.response_format = { type: 'json_object' }
   }
-  // 厂商专有开关最后合并，允许它覆盖上面的默认值（比如某家不认 response_format 要换写法）
-  Object.assign(body, extraBodyOf(modelTier))
 
   const startedAt = Date.now()
   const { statusCode, raw } = await postJson({
@@ -197,6 +195,6 @@ module.exports = {
   MODEL_ERROR,
   resolveConfig,
   jsonModeEnabled,
-  extraBodyOf,
+  extraBody,
   chat
 }
