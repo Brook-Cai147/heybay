@@ -17,12 +17,15 @@ const { ERROR, ok } = require('../constants/errors')
 const { AI_CAPABILITY, QUOTA_TIER } = require('../constants/aiCapabilities')
 const registry = require('../ai/registry')
 const modelClient = require('../ai/modelClient')
+const aiCache = require('../ai/cache')
 const { buildVars } = require('../ai/promptVars')
 const { checkQuota, computeCost, QUOTA_RESULT } = require('./aiQuota')
 const { localDayKey } = require('./requestExpiry')
 const { validate, decideFallback, FALLBACK_DECISION, MAX_RETRIES } = require('./aiSchemaValidator')
 const { schemaOf } = require('../schemas')
 const aiLogsDao = require('../dao/aiLogs')
+const aiCacheDao = require('../dao/aiCache')
+const eventsDao = require('../dao/events')
 const configsDao = require('../dao/configs')
 
 /** 联调期把 AI 调用也标成测试数据，和 M1 的口径一致，便于一次性清理 */
@@ -91,6 +94,73 @@ const parseModelJson = text => {
 const zoneInfoOf = city =>
   city && city.timeZone ? { timeZone: city.timeZone } : { utcOffsetMinutes: 0 }
 
+/** 当日全局成本上限（元）。配置缺失或关闭时返回 0 = 不设限 */
+const loadCostCeiling = async () => {
+  const config = await configsDao.getValue('ai_daily_cost_limit')
+  if (!config || config.enabled !== true) return 0
+  const limit = Number(config.limitCny)
+  return Number.isFinite(limit) && limit > 0 ? limit : 0
+}
+
+/** 触发成本护栏时记一条告警事件：护栏静默生效等于线上「AI 突然不好用了」，必须留痕 */
+const raiseCostAlert = async payload => {
+  try {
+    await eventsDao.insert(
+      Object.assign({ name: 'ai_cost_ceiling_hit', openid: '' }, payload),
+      INCLUDE_TEST_DATA
+    )
+  } catch (err) {
+    console.error('[aiGateway] 成本告警事件写入失败（不影响降级返回）', err && err.message)
+  }
+}
+
+/**
+ * 统一的降级返回（D-15：**返回值而不是异常**）。
+ * 成本护栏、模型失败、校验失败三条路都走这里，保证端侧只需要认一种形状。
+ */
+const fallbackResult = async ({
+  record,
+  capability,
+  openid,
+  dayKey,
+  reasonCode,
+  message,
+  totals,
+  attempts,
+  errors = [],
+  model = ''
+}) => {
+  const cost = computeCost(Object.assign({}, totals, priceOf(record.modelTier)))
+  const logId = await safeLog({
+    openid,
+    capability,
+    dayKey,
+    // 降级不计额度：这次没给用户拿到东西，扣次数是双重惩罚
+    quotaCounted: false,
+    modelTier: record.modelTier,
+    model,
+    inputTokens: totals.inputTokens,
+    outputTokens: totals.outputTokens,
+    cost,
+    latencyMs: totals.latencyMs,
+    attempts,
+    result: AI_RESULT.FALLBACK,
+    errorCode: reasonCode
+  })
+  return {
+    ok: false,
+    code: ERROR.AI_FALLBACK,
+    message,
+    fallback: {
+      strategy: record.fallback,
+      reasonCode,
+      attempts,
+      errors: errors.slice(0, 5),
+      logId
+    }
+  }
+}
+
 const invoke = async ({ openid, capability, params = {} }) => {
   // 第 1 步：能力必须已登记且已实现。占位项在这里被拦住，而不是走到模型调用才炸
   let record
@@ -136,8 +206,53 @@ const invoke = async ({ openid, capability, params = {} }) => {
     return { ok: false, code: ERROR.AI_QUOTA_EXCEEDED, message: quota.message, quota }
   }
 
-  // 第 3 步：缓存查询。M2-04 先直通，M2-05 接上 `ai/cache.js`
-  const fromCache = false
+  // 第 3 步：缓存查询（M2-05）。命中不扣额度、不花钱、不写 aiLogs 的成本
+  const cacheKey = aiCache.isCacheable(record)
+    ? aiCache.cacheKeyOf({ capability, city: city.code || params.city, params })
+    : null
+  if (cacheKey) {
+    const hit = await aiCacheDao.findFresh(cacheKey, nowMs)
+    if (hit) {
+      await aiCacheDao.bumpHits(hit._id)
+      await safeLog({
+        openid,
+        capability,
+        dayKey,
+        quotaCounted: false,
+        modelTier: record.modelTier,
+        result: AI_RESULT.CACHED,
+        fromCache: true
+      })
+      return ok({
+        capability,
+        data: hit.value,
+        meta: { fromCache: true, attempts: 0, latencyMs: 0, cost: 0, cacheKey }
+      })
+    }
+  }
+
+  // 成本护栏（M2-05）：只拦非免费档。免费档（解析、机审）被拦会直接伤主转化路径，
+  // 而它们恰恰是最便宜的那批 —— 拦它们省不下多少钱，代价却是发布流程变难用。
+  if (record.quotaTier !== QUOTA_TIER.UNLIMITED) {
+    const ceiling = await loadCostCeiling()
+    if (ceiling > 0) {
+      const spent = await aiLogsDao.sumCostByDay(dayKey)
+      if (spent >= ceiling) {
+        await raiseCostAlert({ dayKey, spent, ceiling, capability })
+        return fallbackResult({
+          record,
+          capability,
+          openid,
+          dayKey,
+          reasonCode: 'cost_ceiling',
+          message: '今天的 AI 用量已经到上限了，这个功能明天恢复；你可以先用普通表单继续',
+          totals: { inputTokens: 0, outputTokens: 0, latencyMs: 0 },
+          attempts: 0,
+          errors: []
+        })
+      }
+    }
+  }
 
   // 第 4 步：Prompt 组装。占位符没填满会抛错，这是接线 bug，不该静默
   const prompt = registry.renderPrompt(capability, buildVars(capability, { params, city }))
@@ -187,6 +302,23 @@ const invoke = async ({ openid, capability, params = {} }) => {
 
     if (decision.decision === FALLBACK_DECISION.PASS) {
       const cost = computeCost(Object.assign({}, totals, priceOf(record.modelTier)))
+      // 缓存写入放在返回之前、且失败不影响返回：缓存是优化，不是正确性的一部分
+      if (cacheKey) {
+        try {
+          await aiCacheDao.upsert(
+            {
+              cacheKey,
+              capability,
+              city: city.code || params.city || '',
+              value: validation.value,
+              expireAtMs: aiCache.expireAtMsOf(record, nowMs)
+            },
+            INCLUDE_TEST_DATA
+          )
+        } catch (err) {
+          console.error('[aiGateway] 写缓存失败（忽略）', err && err.message)
+        }
+      }
       const logId = await safeLog({
         openid,
         capability,
@@ -201,14 +333,14 @@ const invoke = async ({ openid, capability, params = {} }) => {
         latencyMs: totals.latencyMs,
         attempts: attempt,
         result: AI_RESULT.SUCCESS,
-        fromCache
+        fromCache: false
       })
       return ok({
         capability,
         data: validation.value,
         meta: {
           attempts: attempt,
-          fromCache,
+          fromCache: false,
           latencyMs: totals.latencyMs,
           inputTokens: totals.inputTokens,
           outputTokens: totals.outputTokens,
@@ -228,36 +360,19 @@ const invoke = async ({ openid, capability, params = {} }) => {
     break
   }
 
-  // 第 7 步：降级。**返回值而不是异常**（D-15）
-  const cost = computeCost(Object.assign({}, totals, priceOf(record.modelTier)))
-  const logId = await safeLog({
-    openid,
+  // 第 7 步：降级
+  return fallbackResult({
+    record,
     capability,
+    openid,
     dayKey,
-    // 降级不计额度：这次没给用户拿到东西，扣次数是双重惩罚
-    quotaCounted: false,
-    modelTier: record.modelTier,
-    model: usedModel,
-    inputTokens: totals.inputTokens,
-    outputTokens: totals.outputTokens,
-    cost,
-    latencyMs: totals.latencyMs,
-    attempts: attempt,
-    result: AI_RESULT.FALLBACK,
-    errorCode: lastErrorCode
-  })
-  return {
-    ok: false,
-    code: ERROR.AI_FALLBACK,
+    reasonCode: lastErrorCode,
     message: '这次没能自动整理好，你可以直接用表单填，一样能发出去',
-    fallback: {
-      strategy: record.fallback,
-      reasonCode: lastErrorCode,
-      attempts: attempt,
-      errors: lastErrors.slice(0, 5),
-      logId
-    }
-  }
+    totals,
+    attempts: attempt,
+    errors: lastErrors,
+    model: usedModel
+  })
 }
 
 module.exports = {

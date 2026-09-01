@@ -33,6 +33,11 @@ const CONFIG_SEEDS = adminOpenids => [
       activeLimitMember: 10
     },
     desc: '开城配置：M1 只开伦敦，在架上限对所有人按 3 条（D-34：M3 迁往 cities 集合）'
+  },
+  {
+    key: 'ai_daily_cost_limit',
+    value: { limitCny: 5, enabled: true },
+    desc: 'AI 当日全局成本上限（元）。超过后非免费档能力降级，免费档（解析/机审等）不受限，避免伤主转化路径（M2-05）'
   }
 ]
 
