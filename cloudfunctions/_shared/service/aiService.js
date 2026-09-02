@@ -264,6 +264,8 @@ const invoke = async ({ openid, capability, params = {} }) => {
   let lastErrors = []
   let lastErrorCode = null
   let usedModel = ''
+  // 重试时用的 Prompt：原样重发一遍等于白花一次钱，要把上次的字段级错误回喂给模型
+  let currentPrompt = prompt
 
   while (attempt < MAX_RETRIES + 1) {
     attempt += 1
@@ -271,7 +273,7 @@ const invoke = async ({ openid, capability, params = {} }) => {
     try {
       call = await modelClient.chat({
         modelTier: record.modelTier,
-        prompt,
+        prompt: currentPrompt,
         timeoutMs: record.timeoutSeconds * 1000
       })
     } catch (err) {
@@ -356,7 +358,13 @@ const invoke = async ({ openid, capability, params = {} }) => {
 
     lastErrors = validation.errors
     lastErrorCode = decision.reasonCode
-    if (decision.decision === FALLBACK_DECISION.RETRY) continue
+    if (decision.decision === FALLBACK_DECISION.RETRY) {
+      // 只在原始 Prompt 后追加错误清单，不累积多轮 —— 避免第二次的 Prompt 里带着第一次的噪音
+      currentPrompt = decision.retryHint
+        ? `${prompt}\n\n【上一次的输出有这些问题，请修正后重新输出完整 JSON】\n${decision.retryHint}`
+        : prompt
+      continue
+    }
     break
   }
 

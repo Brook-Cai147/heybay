@@ -202,3 +202,37 @@ test('Schema 汇总表：已实现的两个能力都能取到，未实现的取�
   assert.equal(schemaOf(AI_CAPABILITY.GENERATE_CHECKLIST), null)
   assert.equal(schemaOf('nope'), null)
 })
+
+/**
+ * 以下三条来自第一次真实调用踩到的坑（2026-09-02）：
+ * Prompt 要求"判断不了就留空"，模型老实回了 `instantDuration: ""` 与 `rewardType: ""`，
+ * 结果被判成"取值不在白名单内"，重试一次仍旧、最后降级。
+ * 「留空」在 JSON 里有三种写法，校验器必须都认。
+ */
+test('nullable 字段的空字符串等于留空，不是非法枚举值（真实调用踩过的坑）', () => {
+  const res = validate(
+    parseRequestSchema,
+    Object.assign(validParse(), { instantDuration: '', rewardType: '', detail: '' })
+  )
+  assert.equal(res.valid, true, JSON.stringify(res.errors))
+  assert.equal(res.value.instantDuration, null)
+  assert.equal(res.value.rewardType, null)
+})
+
+test('三种「留空」写法（缺字段 / null / 空串）结果一致', () => {
+  const base = validParse()
+  delete base.rewardType
+  const missing = validate(parseRequestSchema, base)
+  const nulled = validate(parseRequestSchema, Object.assign(validParse(), { rewardType: null }))
+  const blank = validate(parseRequestSchema, Object.assign(validParse(), { rewardType: '   ' }))
+  for (const res of [missing, nulled, blank]) {
+    assert.equal(res.valid, true, JSON.stringify(res.errors))
+    assert.equal(res.value.rewardType, null)
+  }
+})
+
+test('空字符串的宽容只给 nullable 字段：title 空串照样报错', () => {
+  const res = validate(parseRequestSchema, Object.assign(validParse(), { title: '' }))
+  assert.equal(res.valid, false)
+  assert.ok(res.errors.some(e => e.path === 'title'), '必填且有 minLength 的字段不能被放过')
+})

@@ -74,6 +74,15 @@ const validateValue = (schema, value, path) => {
     return { errors, value: null }
   }
 
+  /**
+   * 「留空」在 JSON 里有三种写法：字段缺失、`null`、空字符串。Prompt 明确要求"判断不了就留空"，
+   * 模型回一个 `""` 是完全合理的响应，不该被判成"枚举值不在白名单"——第一次真实调用就栽在这儿。
+   * 只对 `nullable` 字段生效：`title` 这类有 minLength 的字段，空串仍然要报错。
+   */
+  if (schema.nullable && typeof value === 'string' && value.trim() === '') {
+    return { errors, value: null }
+  }
+
   if (!typeMatches(schema.type, value)) {
     at(VALIDATION_CODE.TYPE, `应为 ${schema.type}，实际是 ${Array.isArray(value) ? 'array' : typeof value}`)
     return { errors, value: null }
@@ -151,7 +160,12 @@ const validateObject = (schema, value, path, errors) => {
 
   const declared = schema.properties || {}
   for (const [field, sub] of Object.entries(declared)) {
-    if (value[field] === undefined) continue
+    if (value[field] === undefined) {
+      // 声明了 nullable 却没给：显式补 null，让「缺字段 / null / 空串」三种留空写法在结果里长得一样。
+      // 否则端侧要同时判 undefined 和 null，而写进云数据库时 undefined 会被直接丢掉、null 会存下来。
+      if (sub.nullable) cleaned[field] = null
+      continue
+    }
     const res = validateValue(sub, value[field], path ? `${path}.${field}` : field)
     errors.push(...res.errors)
     if (res.value !== null || sub.nullable) cleaned[field] = res.value
