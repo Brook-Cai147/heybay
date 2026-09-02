@@ -36,10 +36,15 @@ const {
 } = require('../cloudfunctions/_shared/ai/registry')
 const { REQUEST_CATEGORY_VALUES } = require('../cloudfunctions/_shared/constants/enums')
 const { buildVars, renderSnippets } = require('../cloudfunctions/_shared/ai/promptVars')
+const {
+  PARSE_OUTPUT_FIELDS,
+  USER_ONLY_FIELDS
+} = require('../cloudfunctions/_shared/schemas/parseRequest')
 
 /** parseRequest 组装时要注入的全部变量（与模板里的占位符一一对应） */
 const PARSE_VARS = {
   city: 'london',
+  outputFields: PARSE_OUTPUT_FIELDS,
   categories: REQUEST_CATEGORY_VALUES,
   timingTypes: ['scheduled', 'instant'],
   instantDurations: ['1h', '3h', 'today'],
@@ -113,14 +118,20 @@ test('未登记的能力名直接报 UNKNOWN_CAPABILITY，而不是当占位项�
 
 test('两条硬约束（PRD 5.4）一定进最终 Prompt：四类字段留空 + 四类问题拒答', () => {
   const constraints = loadHardConstraints()
-  assert.match(constraints, /金额、见面时间、见面地点、联系方式/)
+  // 断言的是**英文键名**而不是中文说明：第一次真实调用时模型把「见面时间」自己译成了 meetTime，
+  // 因为 Prompt 只给了中文。硬约束里必须出现模型真正要输出的那个键名。
+  for (const field of USER_ONLY_FIELDS) {
+    assert.ok(constraints.includes(field), `硬约束里缺字段键名 ${field}`)
+  }
   assert.match(constraints, /留空/)
   assert.match(constraints, /签证、医疗、法律、移民/)
   assert.match(constraints, /GOV\.UK/)
 
   for (const name of implementedCapabilities()) {
     const prompt = loadPrompt(name)
-    assert.match(prompt, /金额、见面时间、见面地点、联系方式/, `${name} 缺第一条硬约束`)
+    for (const field of USER_ONLY_FIELDS) {
+      assert.ok(prompt.includes(field), `${name} 缺第一条硬约束里的 ${field}`)
+    }
     assert.match(prompt, /签证、医疗、法律、移民/, `${name} 缺第二条硬约束`)
     assert.ok(
       !prompt.includes(`{{${HARD_CONSTRAINTS_KEY}}}`),
@@ -150,6 +161,16 @@ test('组装后的 Prompt 不留任何未替换占位符，数组按顿号拼接
   assert.deepStrictEqual(missingPlaceholders(prompt), [])
   assert.ok(prompt.includes(REQUEST_CATEGORY_VALUES.join('、')))
   assert.ok(prompt.includes('周末想找个人一起去看球'))
+})
+
+test('Prompt 必须给出全部输出字段的键名，否则模型会自己译一个（真实调用踩过的坑）', () => {
+  const prompt = renderPrompt(AI_CAPABILITY.PARSE_REQUEST, PARSE_VARS)
+  for (const field of PARSE_OUTPUT_FIELDS) {
+    assert.ok(prompt.includes(field), `Prompt 里没给出字段名 ${field}`)
+  }
+  // 字段名来自 Schema，模板里不能手抄
+  const raw = fs.readFileSync(path.join(PROMPTS_DIR, 'parseRequest.txt'), 'utf8')
+  assert.ok(raw.includes('{{outputFields}}'), '模板必须留字段名占位符')
 })
 
 test('少传一个变量当场报错，绝不把 {{city}} 字面量发给模型', () => {

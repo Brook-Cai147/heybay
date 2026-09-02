@@ -236,3 +236,21 @@ test('空字符串的宽容只给 nullable 字段：title 空串照样报错', (
   assert.equal(res.valid, false)
   assert.ok(res.errors.some(e => e.path === 'title'), '必填且有 minLength 的字段不能被放过')
 })
+
+test('fieldSources 里键名跑偏的标记被剥掉并记 warning（真实调用踩过的坑）', () => {
+  const bad = validParse()
+  // 模型第一次真实调用时把「见面时间」自己译成了 meetTime、「见面地点」译成 meetLocation
+  bad.fieldSources = Object.assign({}, bad.fieldSources, {
+    meetTime: FIELD_SOURCE.EMPTY,
+    meetLocation: FIELD_SOURCE.EMPTY
+  })
+  const res = validate(parseRequestSchema, bad)
+  assert.equal(res.valid, true, JSON.stringify(res.errors))
+  assert.equal(res.value.fieldSources.meetTime, undefined, '白名单外的键必须被剥掉')
+  assert.equal(res.value.fieldSources.expectTime, FIELD_SOURCE.EMPTY, '正确的键要保留')
+  // warning 必须冒到最外层，否则被剥掉的键悄无声息
+  assert.ok(
+    res.warnings.some(w => w.path === 'fieldSources.meetTime'),
+    '嵌套对象里的 warning 要能冒到最外层'
+  )
+})

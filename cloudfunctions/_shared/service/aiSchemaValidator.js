@@ -151,6 +151,14 @@ const validateObject = (schema, value, path, errors) => {
 
   if (schema.valueSchema) {
     for (const [key, item] of Object.entries(value)) {
+      // 声明了键白名单时，白名单外的键剥掉并记 warning（不算错，理由同"多余字段"）
+      if (Array.isArray(schema.keyWhitelist) && !schema.keyWhitelist.includes(key)) {
+        warnings.push({
+          path: path ? `${path}.${key}` : key,
+          message: '不在字段白名单内的来源标记，已忽略'
+        })
+        continue
+      }
       const res = validateValue(schema.valueSchema, item, path ? `${path}.${key}` : key)
       errors.push(...res.errors)
       cleaned[key] = res.value
@@ -168,6 +176,8 @@ const validateObject = (schema, value, path, errors) => {
     }
     const res = validateValue(sub, value[field], path ? `${path}.${field}` : field)
     errors.push(...res.errors)
+    // 嵌套对象里的 warning 也要冒上来：只在最外层收集会让 fieldSources 内部被剥掉的键悄无声息
+    if (Array.isArray(res.warnings)) warnings.push(...res.warnings)
     if (res.value !== null || sub.nullable) cleaned[field] = res.value
   }
   for (const field of Object.keys(value)) {

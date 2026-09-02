@@ -19,6 +19,7 @@ const {
   REWARD_TYPE_VALUES,
   FIELD_SOURCE_VALUES
 } = require('../constants/enums')
+const { PARSE_OUTPUT_FIELDS } = require('../schemas/parseRequest')
 
 /** `companion（搭子同行）、paid_guide（付费地陪）…`：值给机器、中文给模型理解 */
 const categoryList = () =>
@@ -42,6 +43,8 @@ const renderSnippets = snippets => {
 const BUILDERS = Object.freeze({
   [AI_CAPABILITY.PARSE_REQUEST]: ({ params = {}, city = {} }) => ({
     city: city.nameZh || params.city || '',
+    // 字段名从 Schema 取，模板里不手抄 —— Schema 改了 Prompt 自动跟着变
+    outputFields: PARSE_OUTPUT_FIELDS,
     categories: categoryList(),
     timingTypes: TIMING_TYPE_VALUES,
     instantDurations: INSTANT_DURATION_VALUES,
