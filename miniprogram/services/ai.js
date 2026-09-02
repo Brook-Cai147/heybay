@@ -123,6 +123,78 @@ const assistantGreeting = async () => {
   }
 }
 
+/**
+ * 自主性档位（M2-14 / D-14）。
+ *
+ * **档位由服务端算**：端侧只负责显示与提交用户的选择。
+ * 取不到就返回 `ok: false`，页面把档位区块整块隐藏 —— 显示一个错的档位比不显示更糟，
+ * 用户会据此判断"AI 会不会替我发东西"。
+ */
+const autonomyInfo = async () => {
+  try {
+    const res = await callAction(FUNCTION_NAME, 'autonomyInfo', {})
+    return Object.assign({ ok: true }, res)
+  } catch (err) {
+    return softFail('autonomyInfo', err)
+  }
+}
+
+/** 切换档位。**可回退**是 PRD 5.4 的明确要求，所以 L0 ⇄ L1 双向都走这一个方法 */
+const setAutonomy = async level => {
+  try {
+    const res = await callAction(FUNCTION_NAME, 'setAutonomy', { level })
+    return Object.assign({ ok: true }, res)
+  } catch (err) {
+    return softFail('setAutonomy', err)
+  }
+}
+
+/** 起草定向邀请（不发送）。L0 档也能拿到草稿，只是 `canSend` 为 false */
+const draftInvite = async requestId => {
+  try {
+    const res = await callAction(FUNCTION_NAME, 'draftInvite', { requestId })
+    return Object.assign({ ok: true }, res)
+  } catch (err) {
+    return softFail('draftInvite', err)
+  }
+}
+
+/**
+ * 发出邀请。
+ * @param {string} requestId
+ * @param {Array<object>} targets 用户**勾选后**的名单 `[{ openid, text, textSource }]`
+ *
+ * 这里不做"没勾就全发"的兜底：那等于把勾选这一步偷偷跳过（D-14）。
+ */
+const sendInvites = async (requestId, targets) => {
+  try {
+    const res = await callAction(FUNCTION_NAME, 'sendInvites', { requestId, targets })
+    return Object.assign({ ok: true }, res)
+  } catch (err) {
+    return softFail('sendInvites', err)
+  }
+}
+
+/** L1→L2 一次性询问的答案。答"要"也不会改档位，只是记下来（L2 属 M5） */
+const answerL2Prompt = async (requestId, accepted) => {
+  try {
+    const res = await callAction(FUNCTION_NAME, 'answerL2Prompt', { requestId, accepted })
+    return Object.assign({ ok: true }, res)
+  } catch (err) {
+    return softFail('answerL2Prompt', err)
+  }
+}
+
+/** 我收到的邀请（消息 Tab） */
+const myInvites = async () => {
+  try {
+    const res = await callAction(FUNCTION_NAME, 'myInvites', {})
+    return Object.assign({ ok: true }, res)
+  } catch (err) {
+    return softFail('myInvites', err)
+  }
+}
+
 module.exports = {
   SOFT_FAIL_CODES,
   parseRequest,
@@ -130,5 +202,11 @@ module.exports = {
   generateChecklist,
   matchResponders,
   assistantChat,
-  assistantGreeting
+  assistantGreeting,
+  autonomyInfo,
+  setAutonomy,
+  draftInvite,
+  sendInvites,
+  answerL2Prompt,
+  myInvites
 }

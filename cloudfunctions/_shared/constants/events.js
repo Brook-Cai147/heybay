@@ -120,6 +120,36 @@ const EVENTS = {
     params: ['requestId', 'channel'],
     desc: 'L2 自动分发触达（M5）'
   },
+  autonomy_level_set: {
+    group: EVENT_GROUP.DISTRIBUTION,
+    status: ACTIVE,
+    params: ['level', 'from'],
+    desc: '用户切换自主性档位（M2-14）。档位分布是 D-14 那条主张唯一的量化依据'
+  },
+  invite_drafted: {
+    group: EVENT_GROUP.DISTRIBUTION,
+    status: ACTIVE,
+    params: ['requestId', 'count'],
+    desc: 'L1 生成了 N 条邀请文案（还没发）。与 invite_sent 的差值就是"起草了但用户没选"的比例'
+  },
+  invite_sent: {
+    group: EVENT_GROUP.DISTRIBUTION,
+    status: ACTIVE,
+    params: ['requestId', 'count'],
+    desc: '用户勾选后实际发出的邀请数（M2-14）'
+  },
+  invite_responded: {
+    group: EVENT_GROUP.DISTRIBUTION,
+    status: ACTIVE,
+    params: ['requestId', 'inviteId'],
+    desc: '定向邀请换来了一次响应 —— 这一刻正是 L1→L2 询问的触发点（D-14）'
+  },
+  l2_prompt_answered: {
+    group: EVENT_GROUP.DISTRIBUTION,
+    status: ACTIVE,
+    params: ['requestId', 'accepted'],
+    desc: 'L1→L2 的一次性询问被接受还是拒绝（M2-14 只埋触发点，L2 实现属 M5）'
+  },
 
   // ④ 增信任务漏斗 —— 占位，M3 信任体系时填满
   trust_task_completed: {

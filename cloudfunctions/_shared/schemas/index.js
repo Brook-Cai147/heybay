@@ -10,13 +10,15 @@ const { parseRequestSchema, USER_ONLY_FIELDS } = require('./parseRequest')
 const { searchKnowledgeSchema, REFUSAL_REASON } = require('./searchKnowledge')
 const { matchRespondersSchema } = require('./matchResponders')
 const { generateChecklistSchema } = require('./generateChecklist')
+const { draftInviteSchema } = require('./draftInvite')
 
-/** 已实现的 Schema。M2-02 只做两个，其余能力随各自里程碑补（M2-11 / M2-12 补了两个） */
+/** 已实现的 Schema。M2-02 只做两个，其余能力随各自里程碑补（M2-11 / M2-12 / M2-14 各补一个） */
 const AI_SCHEMAS = Object.freeze({
   [AI_CAPABILITY.PARSE_REQUEST]: parseRequestSchema,
   [AI_CAPABILITY.SEARCH_KNOWLEDGE]: searchKnowledgeSchema,
   [AI_CAPABILITY.MATCH_RESPONDERS]: matchRespondersSchema,
-  [AI_CAPABILITY.GENERATE_CHECKLIST]: generateChecklistSchema
+  [AI_CAPABILITY.GENERATE_CHECKLIST]: generateChecklistSchema,
+  [AI_CAPABILITY.DRAFT_INVITE]: draftInviteSchema
 })
 
 const schemaOf = capability => AI_SCHEMAS[capability] || null

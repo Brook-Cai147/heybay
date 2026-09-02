@@ -21,6 +21,7 @@ const {
 } = require('../constants/enums')
 const { PARSE_OUTPUT_FIELDS } = require('../schemas/parseRequest')
 const { REASON_MAX } = require('../schemas/matchResponders')
+const { INVITE_MAX } = require('../schemas/draftInvite')
 const {
   CHECKLIST_GROUP_VALUES,
   CHECKLIST_GROUP_LABEL,
@@ -99,6 +100,15 @@ const BUILDERS = Object.freeze({
     title: String(params.title || '').slice(0, 60),
     // 字数上限从 Schema 取，模板里不手抄 —— 两处各写一个数就会漂移
     reasonMax: REASON_MAX,
+    candidates: renderCandidates(params.candidates)
+  }),
+
+  [AI_CAPABILITY.DRAFT_INVITE]: ({ params = {}, city = {} }) => ({
+    city: city.nameZh || params.city || '',
+    category: REQUEST_CATEGORY_LABEL[params.category] || params.category || '',
+    title: String(params.title || '').slice(0, 60),
+    detail: String(params.detail || '（没写补充说明）').slice(0, 200),
+    inviteMax: INVITE_MAX,
     candidates: renderCandidates(params.candidates)
   }),
 

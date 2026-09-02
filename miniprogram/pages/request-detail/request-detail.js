@@ -15,6 +15,7 @@
 
 const requestService = require('../../services/request')
 const responseService = require('../../services/response')
+const aiService = require('../../services/ai')
 const { track } = require('../../utils/track')
 const { REQUEST_STATUS, REWARD_TYPE } = require('../../models/enums')
 const { resolveDetailActions } = require('../../models/viewRules')
@@ -77,6 +78,24 @@ Page({
     /** 全部动作可见性由 viewRules 统一给出，页面不再自己算（见文件头纪律 1） */
     actions: {},
     safetyTips: SAFETY_TIPS,
+
+    /**
+     * 定向邀请（M2-14 / D-14）。**AI 起草、用户勾选、用户点发**，三步顺序不能省。
+     * `inviteCanSend` 由服务端的档位决定：L0 档拿得到文案但发不出去 ——
+     * 档位如果只是个标签，那它就不是产品主张而是装饰。
+     */
+    canInvite: false,
+    inviteLevel: '',
+    inviteLevelName: '',
+    inviteCanSend: false,
+    inviteTargets: [],
+    inviteMessage: '',
+    inviteDegraded: false,
+    inviteDrafting: false,
+    inviteSending: false,
+    inviteSentCount: 0,
+    l2Prompt: null,
+
     // 模板里比较状态用这两个常量，不写字符串字面量
     STATUS_DONE: REQUEST_STATUS.DONE,
     STATUS_RESPONDED: REQUEST_STATUS.RESPONDED
@@ -149,6 +168,9 @@ Page({
         expireText: this.formatTime(request.expireAt),
 
         needQuote: request.rewardType === REWARD_TYPE.PAID,
+        // 只在还能招人的时候给邀请入口：已选定之后再邀请别人是骚扰
+        canInvite: Boolean(res.isOwner) &&
+          (request.status === REQUEST_STATUS.OPEN || request.status === REQUEST_STATUS.RESPONDED),
         actions
       })
     } catch (err) {
@@ -317,5 +339,79 @@ Page({
 
   goSquare() {
     wx.switchTab({ url: '/pages/square/square' })
+  },
+
+  /**
+   * 让 AI 想想能邀请谁，并起草文案。**这一步只起草，一条都不发。**
+   * 失败一律软失败（`services/ai.js` 永不抛错），把话原样显示出来即可。
+   */
+  async onDraftInvite() {
+    if (this.data.inviteDrafting) return
+    this.setData({ inviteDrafting: true, inviteMessage: '' })
+    const res = await aiService.draftInvite(this.requestId)
+    this.setData({ inviteDrafting: false })
+
+    if (!res.ok) {
+      this.setData({ inviteMessage: res.message })
+      return
+    }
+
+    this.setData({
+      inviteLevel: res.level || '',
+      inviteLevelName: res.levelName || '',
+      inviteCanSend: res.canSend === true,
+      // 默认全不勾：默认勾上等于把"勾选"变成"取消勾选"，那就不是用户做的决定了
+      inviteTargets: (res.targets || []).map(item => Object.assign({}, item, { checked: false })),
+      inviteMessage: res.message || '',
+      inviteDegraded: res.degraded === true,
+      l2Prompt: res.l2Prompt || null
+    })
+  },
+
+  onToggleTarget(e) {
+    const index = Number(e.currentTarget.dataset.index)
+    const targets = this.data.inviteTargets.map((item, i) =>
+      i === index ? Object.assign({}, item, { checked: !item.checked }) : item
+    )
+    this.setData({ inviteTargets: targets })
+  },
+
+  /** 发出勾选的邀请。L0 档在服务端被明确拒绝，这里把拒绝理由原样显示 */
+  async onSendInvites() {
+    if (this.data.inviteSending) return
+    const picked = this.data.inviteTargets
+      .filter(item => item.checked)
+      .map(item => ({ openid: item.openid, text: item.text, textSource: item.textSource }))
+    if (!picked.length) {
+      wx.showToast({ title: '先勾几位再发', icon: 'none' })
+      return
+    }
+
+    this.setData({ inviteSending: true })
+    const res = await aiService.sendInvites(this.requestId, picked)
+    this.setData({ inviteSending: false })
+
+    if (!res.ok) {
+      wx.showModal({ title: '没发出去', content: res.message, showCancel: false })
+      return
+    }
+    wx.showToast({ title: res.message, icon: 'none' })
+    this.setData({
+      inviteSentCount: res.sent || 0,
+      // 发过的这批就不再留在勾选列表里，避免重复发
+      inviteTargets: [],
+      inviteMessage: res.message
+    })
+  },
+
+  /**
+   * L1→L2 的一次性询问（D-14）。
+   * 答"要"也不会真的切到 L2 —— L2 还没做（M5），改档位就等于承诺做不到的事。
+   */
+  async onAnswerL2(e) {
+    const accepted = e.currentTarget.dataset.accepted === 'yes'
+    const res = await aiService.answerL2Prompt(this.requestId, accepted)
+    this.setData({ l2Prompt: null })
+    if (res.ok && res.message) wx.showModal({ title: '记下了', content: res.message, showCancel: false })
   }
 })

@@ -199,7 +199,8 @@ test('Schema 汇总表：注册表里已实现的能力都能取到 Schema，未
   assert.equal(schemaOf(AI_CAPABILITY.PARSE_REQUEST), parseRequestSchema)
   assert.equal(schemaOf(AI_CAPABILITY.SEARCH_KNOWLEDGE), searchKnowledgeSchema)
   assert.ok(schemaOf(AI_CAPABILITY.GENERATE_CHECKLIST), 'M2-12 起长输出清单也有 Schema')
-  assert.equal(schemaOf(AI_CAPABILITY.DRAFT_INVITE), null, '还没做的能力不该有 Schema')
+  assert.ok(schemaOf(AI_CAPABILITY.DRAFT_INVITE), 'M2-14 起邀请文案也有 Schema')
+  assert.equal(schemaOf(AI_CAPABILITY.MODERATE), null, '还没做的能力不该有 Schema')
   assert.equal(schemaOf('nope'), null)
 })
 

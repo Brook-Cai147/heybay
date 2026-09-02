@@ -1,4 +1,11 @@
 <view class="page">
+  <!-- 自主性档位（M2-14 / D-14）：当前档位与理由常驻，随时可改 -->
+  <view class="levelbar" wx:if="{{level}}">
+    <text class="levelbar-name">{{levelName}}</text>
+    <text class="levelbar-reason">{{levelReason}}</text>
+    <text class="levelbar-link" bindtap="onToggleLadder">换一档</text>
+  </view>
+
   <scroll-view class="stream" scroll-y scroll-into-view="{{scrollInto}}" scroll-with-animation>
     <view
       class="row {{item.role === 'me' ? 'row-me' : ''}}"
@@ -103,5 +110,42 @@
       bindconfirm="onSend"
     />
     <button class="send" size="mini" loading="{{sending}}" bindtap="onSend">发送</button>
+  </view>
+
+  <!-- 档位说明：每档「能做什么 / 不能做什么」都要列出来，用户才谈得上"选择" -->
+  <view class="mask" wx:if="{{ladderVisible}}" bindtap="onToggleLadder">
+    <view class="sheet" catchtap="noop">
+      <text class="sheet-title">AI 能替你做到哪一步，你说</text>
+
+      <view class="lv {{item.current ? 'lv-current' : ''}}" wx:for="{{ladder}}" wx:key="level">
+        <view class="lv-head">
+          <text class="lv-name">{{item.name}}</text>
+          <text class="lv-flag" wx:if="{{item.current}}">当前</text>
+          <text class="lv-flag off" wx:if="{{!item.selectable}}">{{item.defaultFor}}</text>
+        </view>
+        <text class="lv-summary">{{item.summary}}</text>
+        <text class="lv-line" wx:for="{{item.can}}" wx:for-item="c" wx:key="*this">会：{{c}}</text>
+        <text class="lv-line no" wx:for="{{item.cannot}}" wx:for-item="n" wx:key="*this">{{n}}</text>
+        <button
+          class="ghost"
+          size="mini"
+          wx:if="{{item.selectable && !item.current}}"
+          loading="{{switching}}"
+          data-level="{{item.level}}"
+          catchtap="onPickLevel"
+        >切到这一档</button>
+      </view>
+
+      <!-- 明确不做的那一档：理由要给用户看，不是只写在决策日志里 -->
+      <view class="lv lv-never" wx:if="{{never}}">
+        <view class="lv-head">
+          <text class="lv-name">{{never.name}}</text>
+          <text class="lv-flag off">永不实现</text>
+        </view>
+        <text class="lv-summary">{{never.whyNever}}</text>
+      </view>
+
+      <text class="lv-close" bindtap="onToggleLadder">知道了</text>
+    </view>
   </view>
 </view>

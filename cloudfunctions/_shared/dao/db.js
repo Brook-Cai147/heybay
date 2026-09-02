@@ -17,7 +17,8 @@ const COLLECTION = Object.freeze({
   CONFIGS: 'configs',
   AI_LOGS: 'aiLogs',
   AI_CACHE: 'aiCache',
-  KNOWLEDGE: 'knowledge'
+  KNOWLEDGE: 'knowledge',
+  INVITES: 'invites'
 })
 
 /**

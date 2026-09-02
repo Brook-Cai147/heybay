@@ -34,12 +34,78 @@ Page({
     travelTypeOptions: [],
     travelType: '',
     seq: 0,
-    scrollInto: ''
+    scrollInto: '',
+
+    /**
+     * 自主性档位（M2-14 / D-14）。**这一块必须让用户看得见、随时能改。**
+     * 档位与「为什么是这一档」都由服务端给，页面不自己推断 —— 显示错的档位比不显示更糟，
+     * 用户正是靠这行字判断"AI 会不会替我发东西"。
+     */
+    level: '',
+    levelName: '',
+    levelReason: '',
+    ladder: [],
+    never: null,
+    selectable: [],
+    ladderVisible: false,
+    switching: false
   },
 
   onLoad() {
     this.greet()
+    this.loadAutonomy()
   },
+
+  /** 拉档位。失败就整块不显示（level 为空），不猜一个默认值糊上去 */
+  async loadAutonomy() {
+    const res = await aiService.autonomyInfo()
+    if (!res.ok) return
+    const ladder = (res.ladder || []).map(item =>
+      Object.assign({}, item, { current: item.level === res.level })
+    )
+    this.setData({
+      level: res.level || '',
+      levelName: this.nameOf(ladder, res.level),
+      levelReason: res.levelReason || '',
+      ladder,
+      never: res.never || null,
+      selectable: res.selectable || []
+    })
+  },
+
+  nameOf(ladder, level) {
+    const hit = ladder.find(item => item.level === level)
+    return hit ? hit.name : ''
+  },
+
+  onToggleLadder() {
+    this.setData({ ladderVisible: !this.data.ladderVisible })
+  },
+
+  /** 挡住蒙层的点透：点面板内部不该把面板关掉 */
+  noop() {},
+
+
+  /** 切档位。L0 ⇄ L1 双向都走这里 —— 可回退是 PRD 5.4 的硬要求，不是善意 */
+  async onPickLevel(e) {
+    const level = e.currentTarget.dataset.level
+    if (!level || level === this.data.level || this.data.switching) return
+    this.setData({ switching: true })
+    const res = await aiService.setAutonomy(level)
+    this.setData({ switching: false })
+    if (!res.ok) {
+      wx.showModal({ title: '没能切换', content: res.message, showCancel: false })
+      return
+    }
+    await this.loadAutonomy()
+    this.setData({ ladderVisible: false })
+    this.push(ROLE.AI, {
+      kind: 'clarify',
+      text: `已切到「${(res.info && res.info.name) || level}」档。${(res.info && res.info.summary) || ''}`,
+      aiAssisted: true
+    })
+  },
+
 
   /** 首屏身份声明（PRD 5.4）。文案来自服务端，取不到用兜底文案，绝不留空 */
   async greet() {

@@ -21,6 +21,31 @@ const {
 const { ERROR, fail, ok } = require('../constants/errors')
 const { applyTransition } = require('./requestService')
 const trackService = require('./trackService')
+const invitesDao = require('../dao/invites')
+
+/**
+ * 定向邀请的闭环（M2-14）：这次响应是不是某条邀请换来的。
+ *
+ * **这一刻正是 L1→L2 询问的触发点**（D-14：不在设置页放开关，而在正反馈时刻问一次）。
+ * 所以这里必须留下记录，否则那个询问就没有依据可以触发。
+ * 失败一律只打日志 —— 邀请统计不准，远好过一次成功的响应被记账拖失败。
+ */
+const closeInviteLoop = async ({ requestId, openid, isTest }) => {
+  try {
+    const mine = await invitesDao.listByInvitee(openid, 20)
+    const hit = mine.find(item => item.requestId === requestId && !item.respondedAt)
+    if (!hit) return
+    await invitesDao.markState(hit._id, { respondedAt: new Date() })
+    await trackService.reportSafely({
+      openid,
+      name: 'invite_responded',
+      params: { requestId, inviteId: hit._id },
+      isTest
+    })
+  } catch (err) {
+    console.error('[response] 邀请闭环记录失败（不影响响应）', err && err.message)
+  }
+}
 
 /** 可被响应的状态：已选定 / 已过期 / 已取消 / 已下架的单都不再接受响应 */
 const ACCEPTING_STATUSES = Object.freeze([REQUEST_STATUS.OPEN, REQUEST_STATUS.RESPONDED])
@@ -169,6 +194,9 @@ const submit = async ({ openid, params = {}, isTest = false }) => {
     params: { requestId, source },
     isTest
   })
+
+  await closeInviteLoop({ requestId, openid, isTest })
+
 
   return ok({
     responseId,

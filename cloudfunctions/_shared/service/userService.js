@@ -6,6 +6,8 @@
  */
 
 const usersDao = require('../dao/users')
+const autonomy = require('../ai/autonomy')
+const trackService = require('./trackService')
 const { GENDER, GENDER_VALUES, CONTACT_TYPE_VALUES } = require('../constants/enums')
 const { ERROR, fail, ok } = require('../constants/errors')
 
@@ -159,6 +161,31 @@ const contactOf = user => {
   return { type: user.contact.type, value: user.contact.value }
 }
 
+/**
+ * 设自主性档位（M2-14 / D-14）。
+ *
+ * 不可选的档位要**给出理由**而不是只说"不支持"：L2 是还没做，L3 是永不做，
+ * 两者对用户的含义完全不同（`autonomy.rejectReasonOf` 负责说清）。
+ */
+const setAutonomyLevel = async ({ openid, params = {} }) => {
+  const level = String(params.level || '').trim()
+  const reject = autonomy.rejectReasonOf(level)
+  if (reject) fail(ERROR.BAD_PARAMS, reject)
+
+  const before = await usersDao.findByOpenid(openid)
+  const updated = await usersDao.updateByOpenid(openid, { autonomyLevel: level })
+  if (!updated) fail(ERROR.NO_IDENTITY, '还没有你的档案，请先登录')
+
+  await trackService.reportSafely({
+    openid,
+    name: 'autonomy_level_set',
+    params: { level, from: (before && before.autonomyLevel) || 'default' },
+    isTest: params.isTest === true
+  })
+
+  return ok({ level, info: autonomy.AUTONOMY_INFO[level] })
+}
+
 module.exports = {
   INITIAL_TRUST,
   CONTACT_VALUE_MAX,
@@ -166,5 +193,6 @@ module.exports = {
   updateProfile,
   getMe,
   publicUser,
-  contactOf
+  contactOf,
+  setAutonomyLevel
 }

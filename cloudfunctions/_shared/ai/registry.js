@@ -154,6 +154,19 @@ const IMPLEMENTED = [
     cacheTtlSeconds: 7 * 24 * 60 * 60,
     fallback: FALLBACK_STRATEGY.MANUAL_FORM,
     note: '每日限免 1 次；紧急号码等高风险事实由服务端注入，不让模型编（PRD 5.2）'
+  }),
+  entry({
+    capability: AI_CAPABILITY.DRAFT_INVITE,
+    implemented: true,
+    milestone: 'M2-14',
+    promptFile: 'draftInvite.txt',
+    input: { required: ['requestId'], optional: [] },
+    modelTier: MODEL_TIER.CHEAP,
+    timeoutSeconds: 8,
+    // 不缓存：文案跟着候选与需求单变，缓存住等于把别人的邀请发给这个人
+    cacheable: false,
+    fallback: FALLBACK_STRATEGY.MANUAL_FORM,
+    note: 'L1 一键代发：只生成文案，**发不发由用户勾选**（D-14）'
   })
 ]
 
@@ -171,12 +184,6 @@ const PLACEHOLDERS = [
     milestone: 'M2-13',
     fallback: FALLBACK_STRATEGY.MANUAL_FORM,
     note: '只写库不调模型，登记在册是为了让工具编排从同一张表取契约'
-  }),
-  placeholder({
-    capability: AI_CAPABILITY.DRAFT_INVITE,
-    milestone: 'M2-14',
-    fallback: FALLBACK_STRATEGY.MANUAL_FORM,
-    note: 'L1 一键代发：只生成文案，发不发由用户勾选（D-14）'
   }),
   placeholder({
     capability: AI_CAPABILITY.MODERATE,

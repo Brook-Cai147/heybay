@@ -97,6 +97,56 @@
       </block>
     </view>
 
+    <!-- 视角二·补充：定向邀请（M2-14）。AI 起草 → 你勾选 → 你点发，三步都在这一张卡里 -->
+    <view class="card" wx:if="{{canInvite}}">
+      <text class="card-title">让 AI 帮你想想能问谁</text>
+      <view class="row" wx:if="{{inviteLevelName}}">
+        <text class="label">当前档位</text>
+        <text class="value">{{inviteLevelName}}</text>
+      </view>
+      <text class="tip" wx:if="{{!inviteTargets.length}}">AI 只出名单和文案，发给谁由你勾。一条都不会自己发出去。</text>
+      <text class="tip" wx:if="{{inviteDegraded}}">这次模型没帮上忙，文案用的是按需求单套出来的模板，你可以照原样发。</text>
+      <text class="warn" wx:if="{{inviteMessage}}">{{inviteMessage}}</text>
+
+      <view class="invite" wx:for="{{inviteTargets}}" wx:key="openid">
+        <view class="invite-head" data-index="{{index}}" bindtap="onToggleTarget">
+          <text class="checkbox {{item.checked ? 'on' : ''}}">{{item.checked ? '✓' : ''}}</text>
+          <text class="responder-name">{{item.user.nickName || '这位用户'}}</text>
+          <text class="tag" wx:if="{{item.textSource === 'template'}}">模板文案</text>
+        </view>
+        <text class="pitch">{{item.text}}</text>
+        <text class="evidence">依据：{{item.reason}}</text>
+      </view>
+
+      <button
+        class="ghost"
+        wx:if="{{!inviteTargets.length}}"
+        loading="{{inviteDrafting}}"
+        bindtap="onDraftInvite"
+      >找人并起草邀请</button>
+
+      <block wx:if="{{inviteTargets.length}}">
+        <button
+          class="primary"
+          wx:if="{{inviteCanSend}}"
+          loading="{{inviteSending}}"
+          bindtap="onSendInvites"
+        >发出勾选的邀请</button>
+        <text class="warn" wx:if="{{!inviteCanSend}}">你现在是「{{inviteLevelName}}」档，AI 只出建议不代发。想让它帮你发，去小螺那页切到「一键代发」。</text>
+      </block>
+    </view>
+
+    <!-- L1→L2 的一次性询问（D-14）：只在邀请真的换来过响应之后问，而且只问一次 -->
+    <view class="card" wx:if="{{l2Prompt}}">
+      <text class="card-title">要不要更省事一点</text>
+      <text class="tip">{{l2Prompt.question}}</text>
+      <text class="tip">{{l2Prompt.note}}</text>
+      <view class="row">
+        <button class="ghost" size="mini" data-accepted="yes" bindtap="onAnswerL2">以后自动发</button>
+        <button class="ghost" size="mini" data-accepted="no" bindtap="onAnswerL2">还是我自己勾</button>
+      </view>
+    </view>
+
     <!-- 双方确认完成 -->
     <view class="card" wx:if="{{actions.canConfirmDone || actions.waitingForPeer}}">
       <text class="card-title">确认完成</text>

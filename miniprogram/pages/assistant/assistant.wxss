@@ -203,3 +203,134 @@
   color: #ffffff;
   background: #1296db;
 }
+
+/* 自主性档位（M2-14） */
+.levelbar {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 24rpx;
+  background: #ffffff;
+  border-bottom: 1rpx solid #eeeeee;
+}
+
+.levelbar-name {
+  padding: 2rpx 12rpx;
+  font-size: 22rpx;
+  color: #1296db;
+  background: #e8f4fd;
+  border-radius: 20rpx;
+}
+
+.levelbar-reason {
+  flex: 1;
+  margin-left: 12rpx;
+  font-size: 22rpx;
+  line-height: 32rpx;
+  color: #999999;
+}
+
+.levelbar-link {
+  margin-left: 12rpx;
+  font-size: 24rpx;
+  color: #1296db;
+}
+
+.mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  width: 100%;
+  max-height: 80vh;
+  padding: 32rpx 32rpx 48rpx;
+  background: #ffffff;
+  border-radius: 24rpx 24rpx 0 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.sheet-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.lv {
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid #eeeeee;
+}
+
+.lv-current {
+  padding: 24rpx 20rpx;
+  background: #f7fbfe;
+  border: 1rpx solid #1296db;
+  border-radius: 16rpx;
+}
+
+.lv-never {
+  background: #fdf6e3;
+  padding: 24rpx 20rpx;
+  border-radius: 16rpx;
+}
+
+.lv-head {
+  display: flex;
+  align-items: center;
+}
+
+.lv-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333333;
+}
+
+.lv-flag {
+  margin-left: 12rpx;
+  padding: 2rpx 12rpx;
+  font-size: 20rpx;
+  color: #1296db;
+  background: #e8f4fd;
+  border-radius: 20rpx;
+}
+
+.lv-flag.off {
+  color: #999999;
+  background: #f0f0f0;
+}
+
+.lv-summary {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  line-height: 38rpx;
+  color: #555555;
+}
+
+.lv-line {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  line-height: 34rpx;
+  color: #888888;
+}
+
+.lv-line.no {
+  color: #e54d42;
+}
+
+.lv-close {
+  display: block;
+  margin-top: 32rpx;
+  font-size: 28rpx;
+  color: #1296db;
+  text-align: center;
+}

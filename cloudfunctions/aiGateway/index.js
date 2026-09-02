@@ -22,6 +22,9 @@ const fallbackAnswerService = require('./_shared/service/fallbackAnswerService')
 const matchService = require('./_shared/service/matchService')
 const checklistService = require('./_shared/service/checklistService')
 const assistantService = require('./_shared/service/assistantService')
+const inviteService = require('./_shared/service/inviteService')
+const userService = require('./_shared/service/userService')
+const autonomy = require('./_shared/ai/autonomy')
 
 const badParams = message => ({ ok: false, code: ERROR.BAD_PARAMS, message })
 
@@ -84,5 +87,42 @@ exports.main = createHandler({
     }),
 
   /** 首屏那句身份声明（PRD 5.4 身份明示）。文案放服务端，端侧不另写一份 */
-  assistantGreeting: () => ({ ok: true, greeting: assistantService.GREETING })
+  assistantGreeting: () => ({ ok: true, greeting: assistantService.GREETING }),
+
+  /**
+   * 自主性阶梯（M2-14 / D-14）。档位、每档能做什么不能做什么、当前档位与"为什么是这一档"
+   * 全从服务端取 —— 档位说明是产品主张，不该在端侧再抄一份。
+   */
+  autonomyInfo: async ({ openid }) => {
+    const current = await inviteService.levelOfUser(openid)
+    return {
+      ok: true,
+      ladder: autonomy.ladder(),
+      never: autonomy.AUTONOMY_INFO[autonomy.AUTONOMY.L3],
+      selectable: autonomy.SELECTABLE,
+      level: current.level,
+      levelReason: current.reason
+    }
+  },
+
+  setAutonomy: ({ openid, params }) =>
+    userService.setAutonomyLevel({ openid, params: { level: params.level, isTest: params.isTest } }),
+
+  /** 起草邀请（不发送）。L0 也能用 —— 只读建议档看得到草稿正是它的价值 */
+  draftInvite: ({ openid, params }) =>
+    inviteService.draft({ openid, params: { requestId: params.requestId } }),
+
+  /** 发出用户勾选的邀请。**targets 必须由用户勾选产生**，L0 档在这里被明确拒绝 */
+  sendInvites: ({ openid, params }) =>
+    inviteService.send({ openid, params: { requestId: params.requestId, targets: params.targets } }),
+
+  /** L1→L2 一次性询问的答案。**只记录，不改档位**（L2 属 M5） */
+  answerL2Prompt: ({ openid, params }) =>
+    inviteService.answerL2Prompt({
+      openid,
+      params: { requestId: params.requestId, accepted: params.accepted }
+    }),
+
+  /** 我收到的邀请（消息 Tab） */
+  myInvites: ({ openid }) => inviteService.listReceived({ openid })
 })
