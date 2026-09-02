@@ -105,3 +105,24 @@
   font-size: 24rpx;
   color: #e54d42;
 }
+
+/* 小螺悬浮球（M2-13 / PRD 6.1）：右下角固定，避开自定义 tabBar 的高度 */
+.assistant-ball {
+  position: fixed;
+  right: 32rpx;
+  bottom: 200rpx;
+  width: 104rpx;
+  height: 104rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1296db;
+  border-radius: 52rpx;
+  box-shadow: 0 6rpx 20rpx rgba(18, 150, 219, 0.35);
+  z-index: 10;
+}
+
+.assistant-ball-text {
+  font-size: 26rpx;
+  color: #ffffff;
+}

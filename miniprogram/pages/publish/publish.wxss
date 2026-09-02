@@ -5,6 +5,27 @@
   box-sizing: border-box;
 }
 
+/* 小螺入口（M2-13 / PRD 6.1）：做成一条低调的横条，不跟「帮我整理」抢主按钮的位置 */
+.assistant-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+  padding: 20rpx 24rpx;
+  background: #e8f4fd;
+  border-radius: 20rpx;
+}
+
+.assistant-entry-title {
+  font-size: 26rpx;
+  color: #1296db;
+}
+
+.assistant-entry-arrow {
+  font-size: 32rpx;
+  color: #1296db;
+}
+
 .card {
   background: #fff;
   border-radius: 20rpx;

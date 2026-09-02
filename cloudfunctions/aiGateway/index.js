@@ -21,6 +21,7 @@ const parseRequestService = require('./_shared/service/parseRequestService')
 const fallbackAnswerService = require('./_shared/service/fallbackAnswerService')
 const matchService = require('./_shared/service/matchService')
 const checklistService = require('./_shared/service/checklistService')
+const assistantService = require('./_shared/service/assistantService')
 
 const badParams = message => ({ ok: false, code: ERROR.BAD_PARAMS, message })
 
@@ -60,5 +61,28 @@ exports.main = createHandler({
     checklistService.generate({
       openid,
       params: { city: params.city, arriveAt: params.arriveAt, travelType: params.travelType }
-    })
+    }),
+
+  /**
+   * 小螺对话（M2-13）。**服务端不存会话状态**：澄清轮数与待确认草稿都由端侧带上来 ——
+   * 存一份会话状态就要考虑过期、并发与清理，而这轮对话的全部上下文本来就在端侧手里。
+   */
+  assistantChat: ({ openid, params }) =>
+    assistantService.chat({
+      openid,
+      params: {
+        text: params.text,
+        city: params.city,
+        clarifyCount: params.clarifyCount,
+        pendingDraft: params.pendingDraft,
+        confirmed: params.confirmed,
+        forcedIntent: params.forcedIntent,
+        arriveAt: params.arriveAt,
+        travelType: params.travelType,
+        isTest: params.isTest
+      }
+    }),
+
+  /** 首屏那句身份声明（PRD 5.4 身份明示）。文案放服务端，端侧不另写一份 */
+  assistantGreeting: () => ({ ok: true, greeting: assistantService.GREETING })
 })

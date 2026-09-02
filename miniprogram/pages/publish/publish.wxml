@@ -1,4 +1,10 @@
 <view class="page">
+  <!-- 小螺入口（PRD 6.1：Tab3 顶部入口，**不占底部 Tab**） -->
+  <view class="assistant-entry" bindtap="goAssistant">
+    <text class="assistant-entry-title">说不清也没关系，找小螺聊两句</text>
+    <text class="assistant-entry-arrow">›</text>
+  </view>
+
   <!-- 首屏：PRD 6.4 —— 表单是解析后的结果，不是输入的起点 -->
   <view class="card">
     <text class="card-title">想找人帮什么？</text>

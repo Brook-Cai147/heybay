@@ -57,19 +57,78 @@ const parseRequest = async (text, city) => {
  * 基于站内语料的兜底作答。
  * @param {string} question
  * @param {string} city
- * @param {Array} [snippets] 关键词检索命中的语料（M2-09 起有值）
+ *
+ * **M2-10 起不再传 snippets**：语料检索移到服务端 —— 端侧能塞语料，就等于能给答案伪造来源。
  */
-const searchKnowledge = async (question, city, snippets = []) => {
+const searchKnowledge = async (question, city) => {
   try {
-    const res = await callAction(FUNCTION_NAME, 'searchKnowledge', { question, city, snippets })
+    const res = await callAction(FUNCTION_NAME, 'searchKnowledge', { question, city })
     return Object.assign({ ok: true }, res)
   } catch (err) {
     return softFail('searchKnowledge', err)
   }
 }
 
+/**
+ * 落地清单（M2-12）。长输出、每日限免 1 次，失败一律软失败。
+ * @param {object} input `{ city, arriveAt, travelType }`
+ */
+const generateChecklist = async ({ city, arriveAt, travelType }) => {
+  try {
+    const res = await callAction(FUNCTION_NAME, 'generateChecklist', { city, arriveAt, travelType })
+    return Object.assign({ ok: true }, res)
+  } catch (err) {
+    return softFail('generateChecklist', err)
+  }
+}
+
+/**
+ * 给自己的需求单找可能帮得上的人（M2-11）。只拿名单与理由，不发送任何东西。
+ * @param {string} requestId
+ */
+const matchResponders = async requestId => {
+  try {
+    const res = await callAction(FUNCTION_NAME, 'matchResponders', { requestId })
+    return Object.assign({ ok: true }, res)
+  } catch (err) {
+    return softFail('matchResponders', err)
+  }
+}
+
+/**
+ * 小螺对话一轮（M2-13）。
+ *
+ * **会话状态由端侧持有**：`clarifyCount` 与 `pendingDraft` 都由调用方带上来。
+ * 服务端存一份会话就要考虑过期、并发与清理，而这轮对话的全部上下文本来就在页面手里。
+ *
+ * @param {object} input `{ text, city, clarifyCount, pendingDraft, confirmed, forcedIntent, arriveAt, travelType }`
+ * @returns {Promise<object>} `{ ok: true, reply: { kind, text, ... }, intent, tool }` 或软失败
+ */
+const assistantChat = async (input = {}) => {
+  try {
+    const res = await callAction(FUNCTION_NAME, 'assistantChat', input)
+    return Object.assign({ ok: true }, res)
+  } catch (err) {
+    return softFail('assistantChat', err)
+  }
+}
+
+/** 首屏身份声明。取不到就用端侧兜底文案，不能让首屏空着（PRD 5.4 身份明示） */
+const assistantGreeting = async () => {
+  try {
+    const res = await callAction(FUNCTION_NAME, 'assistantGreeting', {})
+    return res.greeting || ''
+  } catch (err) {
+    return '我是 AI 助手小螺。签证、医疗、法律、移民这四类问题我不给判断。'
+  }
+}
+
 module.exports = {
   SOFT_FAIL_CODES,
   parseRequest,
-  searchKnowledge
+  searchKnowledge,
+  generateChecklist,
+  matchResponders,
+  assistantChat,
+  assistantGreeting
 }

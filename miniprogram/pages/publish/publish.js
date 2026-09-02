@@ -51,6 +51,9 @@ const USER_ONLY_FIELDS = ['amount', 'expectTime', 'area', 'contact']
  */
 const ORGANIZE_MAX = 3
 
+/** 小螺对话页交接草稿用的 storage key（M2-13）。两处共用一个常量，别手抄字符串 */
+const ASSISTANT_HANDOFF_KEY = 'assistant_draft_handoff'
+
 const labelsOf = fields => fields.map(field => FIELD_LABEL[field] || field).join('、')
 
 Page({
@@ -115,10 +118,42 @@ Page({
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 2 })
     }
+    this.takeAssistantHandoff()
+  },
+
+  /**
+   * 接小螺对话页交过来的草稿（M2-13）。
+   *
+   * 用 storage 传而不是 URL 参数：草稿是个嵌套对象，塞进 query 要序列化 + 转义，
+   * 长度还有限制。取完立刻删 —— 它是一次性的交接，留着会在下次进页面时莫名其妙自动填一遍。
+   *
+   * 复用 `applyParsed`，不另写一套填表逻辑：交接过来的本来就是同一个解析结果。
+   */
+  takeAssistantHandoff() {
+    let handoff = null
+    try {
+      handoff = wx.getStorageSync(ASSISTANT_HANDOFF_KEY)
+    } catch (err) {
+      return
+    }
+    if (!handoff || !handoff.draft) return
+
+    try {
+      wx.removeStorageSync(ASSISTANT_HANDOFF_KEY)
+    } catch (err) {
+      // 删不掉也要继续填，顶多下次多填一遍
+    }
+    this.applyParsed(handoff)
+    wx.showToast({ title: '小螺整理的内容已带过来', icon: 'none' })
   },
 
   onOneLineInput(e) {
     this.setData({ oneLine: e.detail.value })
+  },
+
+  /** 去小螺对话页（PRD 6.1 的两个入口之一） */
+  goAssistant() {
+    wx.navigateTo({ url: '/pages/assistant/assistant' })
   },
 
   /**

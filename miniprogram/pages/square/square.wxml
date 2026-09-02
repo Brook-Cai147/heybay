@@ -53,4 +53,9 @@
     <view class="more" wx:if="{{hasMore}}">{{loadingMore ? '加载中…' : '上滑加载更多'}}</view>
     <view class="more" wx:if="{{!hasMore && items.length > 0}}">没有更多了</view>
   </block>
+
+  <!-- 小螺悬浮球（PRD 6.1：首页右下角，**不占底部 Tab**） -->
+  <view class="assistant-ball" bindtap="goAssistant">
+    <text class="assistant-ball-text">小螺</text>
+  </view>
 </view>

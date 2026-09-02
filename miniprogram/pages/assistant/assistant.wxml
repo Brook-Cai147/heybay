@@ -1,0 +1,107 @@
+<view class="page">
+  <scroll-view class="stream" scroll-y scroll-into-view="{{scrollInto}}" scroll-with-animation>
+    <view
+      class="row {{item.role === 'me' ? 'row-me' : ''}}"
+      wx:for="{{messages}}"
+      wx:key="id"
+      id="{{item.id}}"
+    >
+      <view class="bubble {{item.role === 'me' ? 'mine' : ''}}">
+        <text class="badge" wx:if="{{item.aiAssisted}}">AI 协助</text>
+        <text class="text">{{item.text}}</text>
+
+        <!-- 兜底作答的来源标注（PRD 5.4：答案必须能追到出处） -->
+        <view class="sources" wx:if="{{item.sources.length}}">
+          <text class="sources-title">出处</text>
+          <view class="source" wx:for="{{item.sources}}" wx:for-item="src" wx:key="refId">
+            <text class="source-ref">{{src.sourceRef || src.refId}}</text>
+            <text class="source-excerpt">{{src.excerpt}}</text>
+          </view>
+        </view>
+
+        <!-- 落地清单 -->
+        <view class="groups" wx:if="{{item.groups.length}}">
+          <view class="group" wx:for="{{item.groups}}" wx:for-item="g" wx:key="group">
+            <text class="group-title">{{g.group}}</text>
+            <view class="citem" wx:for="{{g.items}}" wx:for-item="it" wx:key="text">
+              <text class="citem-text">{{it.text}}</text>
+              <text class="citem-note" wx:if="{{it.note}}">{{it.note}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 可解释推荐：理由旁边一定要有依据字段 -->
+        <view class="cands" wx:if="{{item.candidates.length}}">
+          <view class="cand" wx:for="{{item.candidates}}" wx:for-item="c" wx:key="score">
+            <text class="cand-name">{{c.user.nickName || '这位用户'}}</text>
+            <text class="cand-reason">{{c.reason}}</text>
+            <view class="cand-evidence">
+              <text class="tag" wx:for="{{c.evidence}}" wx:for-item="ev" wx:key="field">{{ev.text}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 草稿：缺必填项时不给「确认发布」，改为交给发布页 -->
+        <view class="draft-ops" wx:if="{{item.kind === 'draft'}}">
+          <text class="draft-missing" wx:if="{{item.missingFields.length}}">还差几项才能发出去，去表单补齐更快。</text>
+          <block wx:if="{{item.needsConfirm}}">
+            <button class="primary" size="mini" bindtap="onConfirmDraft">确认发布</button>
+            <button class="ghost" size="mini" bindtap="onDropDraft">先不发</button>
+          </block>
+          <button class="ghost" size="mini" wx:else bindtap="onHandoffPublish">去表单补齐</button>
+        </view>
+
+        <!-- 认不出意图时的三个按钮 -->
+        <view class="opts" wx:if="{{item.options.length}}">
+          <button
+            class="ghost"
+            size="mini"
+            wx:for="{{item.options}}"
+            wx:for-item="opt"
+            wx:key="intent"
+            data-intent="{{opt.intent}}"
+            data-label="{{opt.label}}"
+            bindtap="onPickOption"
+          >{{opt.label}}</button>
+        </view>
+
+        <!-- 落地清单缺的出行类型 -->
+        <view class="opts" wx:if="{{item.travelTypeOptions.length}}">
+          <button
+            class="ghost"
+            size="mini"
+            wx:for="{{item.travelTypeOptions}}"
+            wx:for-item="tt"
+            wx:key="*this"
+            data-value="{{tt}}"
+            bindtap="onPickTravelType"
+          >{{tt}}</button>
+        </view>
+
+        <view class="draft-ops" wx:if="{{item.kind === 'created' && item.requestId}}">
+          <button class="primary" size="mini" data-id="{{item.requestId}}" bindtap="onOpenRequest">看看这条单</button>
+        </view>
+
+        <view class="draft-ops" wx:if="{{item.kind === 'soft_fail' && item.missingFields.length}}">
+          <button class="ghost" size="mini" bindtap="onHandoffPublish">去表单补齐</button>
+        </view>
+      </view>
+    </view>
+
+    <view class="row" wx:if="{{sending}}">
+      <view class="bubble"><text class="text">小螺在想…</text></view>
+    </view>
+  </scroll-view>
+
+  <view class="composer">
+    <input
+      class="input"
+      value="{{input}}"
+      placeholder="说一句你想做的事"
+      confirm-type="send"
+      bindinput="onInput"
+      bindconfirm="onSend"
+    />
+    <button class="send" size="mini" loading="{{sending}}" bindtap="onSend">发送</button>
+  </view>
+</view>

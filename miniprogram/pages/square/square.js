@@ -154,5 +154,10 @@ Page({
 
   goPublish() {
     wx.switchTab({ url: '/pages/publish/publish' })
+  },
+
+  /** 小螺对话页（M2-13 / PRD 6.1 的悬浮球入口） */
+  goAssistant() {
+    wx.navigateTo({ url: '/pages/assistant/assistant' })
   }
 })

@@ -5,7 +5,8 @@
     "pages/publish/publish",
     "pages/notice/notice",
     "pages/mine/mine",
-    "pages/request-detail/request-detail"
+    "pages/request-detail/request-detail",
+    "pages/assistant/assistant"
   ],
   "window": {
     "navigationBarTextStyle": "black",
