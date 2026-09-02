@@ -11,6 +11,7 @@ const assert = require('node:assert/strict')
 
 const {
   DRAFT_CONFIDENCE,
+  NON_FORM_FIELDS,
   normalizeDraft,
   confidenceOf
 } = require('../cloudfunctions/_shared/ai/parseDraft')
@@ -118,6 +119,15 @@ test('aiFilledFields 是采纳率的分母：只数 AI 真给了建议的字段'
   assert.ok(res.aiFilledFields.includes('title'))
   for (const field of USER_ONLY_FIELDS) {
     assert.ok(!res.aiFilledFields.includes(field), `${field} 永远不该进分母`)
+  }
+})
+
+test('summary 不进分母：表单里没这一项，用户永远改不到它，算进去会白送采纳率', () => {
+  const res = normalizeDraft(modelOutput())
+  assert.equal(res.draft.summary.length > 0, true, 'summary 本身要保留，卡片上要展示')
+  assert.ok(!res.aiFilledFields.includes('summary'))
+  for (const field of NON_FORM_FIELDS) {
+    assert.ok(!res.aiFilledFields.includes(field), `${field} 不该进分母`)
   }
 })
 

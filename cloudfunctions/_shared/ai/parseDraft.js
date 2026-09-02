@@ -30,6 +30,15 @@ const DRAFT_CONFIDENCE = Object.freeze({
 const UNCLASSIFIED_HINT =
   '这条我没法归进现有分类，你换个说法再试试，比如说清是想找人一起做什么、还是想请人帮忙做什么'
 
+/**
+ * 不属于需求单表单的字段。**不进采纳率的分母。**
+ *
+ * `summary` 是模型对自己理解的一句话说明，只用来展示"我理解成这样，对吗？"，
+ * 表单里没有对应输入框，用户永远改不到它 —— 放进分母就等于每次都白送一个"已采纳"，
+ * 采纳率会被系统性地抬高。
+ */
+const NON_FORM_FIELDS = Object.freeze(['summary'])
+
 const isEmptyValue = v => v === undefined || v === null || (typeof v === 'string' && v.trim() === '')
 
 /**
@@ -69,7 +78,7 @@ const normalizeDraft = (data = {}) => {
   }
 
   const aiFilledFields = PARSE_OUTPUT_FIELDS.filter(
-    field => fieldSources[field] === FIELD_SOURCE.AI
+    field => fieldSources[field] === FIELD_SOURCE.AI && !NON_FORM_FIELDS.includes(field)
   )
 
   return {
@@ -99,6 +108,7 @@ const confidenceOf = (draft, unclassified) => {
 module.exports = {
   DRAFT_CONFIDENCE,
   UNCLASSIFIED_HINT,
+  NON_FORM_FIELDS,
   normalizeDraft,
   confidenceOf
 }
