@@ -106,7 +106,9 @@ Page({
     /** 本次解析的 logId 与 AI 填了哪些字段，发布时回传给服务端算采纳率（M2-08） */
     aiMeta: null,
     /** 降级说明：解析用不了时显示的一行话，不是报错 */
-    degradeHint: ''
+    degradeHint: '',
+    /** 上次自动填进「具体需求」的原文，用来判断能不能覆盖（用户手改过就不覆盖） */
+    autoFilledDetail: ''
   },
 
   onShow() {
@@ -158,11 +160,30 @@ Page({
     }
   },
 
+  /**
+   * 「具体需求」当前的内容是不是上一次自动填进去的。
+   *
+   * 需要区分这件事，否则会出现：用户换了一句话重新整理，而"具体需求"里还留着上一次那句 ——
+   * 界面上两处内容对不上，用户会以为发出去的是旧的那条。
+   * 判定方式是记下上次自动填的原文，只有内容没被手改过才允许覆盖。
+   */
+  detailIsAutoFilled() {
+    return !this.data.form.detail || this.data.form.detail === this.data.autoFilledDetail
+  },
+
+  /** 把一句话原文落进"具体需求"，并记下它是自动填的 */
+  autoFillDetail(patch) {
+    const text = this.data.oneLine.trim()
+    if (!text || !this.detailIsAutoFilled()) return false
+    patch['form.detail'] = text
+    patch.autoFilledDetail = text
+    return true
+  },
+
   /** 降级到纯表单：一句话原文先落进"具体需求"，用户不用重打一遍 */
   expandPlainForm(degradeHint) {
     const patch = { expanded: true, parse: null, aiMeta: null, degradeHint }
-    const text = this.data.oneLine.trim()
-    if (text && !this.data.form.detail) patch['form.detail'] = text
+    this.autoFillDetail(patch)
     this.setData(patch)
   },
 
@@ -178,9 +199,10 @@ Page({
       }
     }
     if (draft.headcount) patch['form.headcount'] = String(draft.headcount)
-    // 一句话原文兜底进"具体需求"：模型没给 detail 时，原话比空白有用
-    if (!patch['form.detail'] && !this.data.form.detail) {
-      patch['form.detail'] = this.data.oneLine.trim()
+    // 模型给了 detail 就用它；没给才拿原话兜底 —— 原话比空白有用
+    if (patch['form.detail']) {
+      patch.autoFilledDetail = patch['form.detail']
+    } else if (this.autoFillDetail(patch)) {
       sources.detail = FIELD_SOURCE.USER
     }
 
