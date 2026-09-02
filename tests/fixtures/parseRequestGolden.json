@@ -1,0 +1,50 @@
+{
+  "version": "2026-09-02",
+  "capability": "parseRequest",
+  "note": "黄金标注集（M2-15 / D-31）。没有真实用户，所以质量只能靠离线标注量化。三条标注纪律：① 只标人能确定的字段，拿不准的键**直接不写**——把猜测写进标准答案，准确率就变成了自欺；② 模糊输入用 acceptableCategories 允许多解，模型选中任一即算对，因为这类输入本来就没有唯一答案；③ 四类字段（amount/expectTime/area/contact）不在 expect 里逐条标注，它们的要求是全局的：模型只要填了任何一项就记一次误填，且必须为 0（PRD 5.4）。expect 里的 null 表示「这一项应当留空」。",
+  "metrics": {
+    "fieldAccuracy": "字段抽取准确率 = 命中的标注键数 / 标注键总数，对标 PRD 5.5 的 ≥85%",
+    "userOnlyFilled": "四类字段被模型填过的次数，看的是**模型原始输出**（规范化层会抹空，所以只看规范化后等于自欺），必须为 0",
+    "unclassifiedRate": "无法归类比例。擦边输入被归为无法归类是**正确**行为（kind: rejected），统计时分开看"
+  },
+  "cases": [
+    { "id": "c01", "kind": "normal", "text": "这周六下午有人一起去大英博物馆吗，我一个人去有点没意思", "expect": { "category": "companion", "timing": "scheduled", "rewardType": "free" } },
+    { "id": "c02", "kind": "normal", "text": "今天晚上想找个人一起吃个饭，随便吃什么都行", "expect": { "category": "companion", "timing": "instant", "instantDuration": "today" } },
+    { "id": "c03", "kind": "normal", "text": "下周三想请个熟悉伦敦的人带我逛一天，付费的", "expect": { "category": "paid_guide", "timing": "scheduled", "rewardType": "paid" } },
+    { "id": "c04", "kind": "normal", "text": "想找个本地人带我去看几处租房，愿意付一天的钱", "expect": { "category": "paid_guide", "rewardType": "paid" } },
+    { "id": "c05", "kind": "normal", "text": "我有一个多余的电煮锅，想换个台灯，有人换吗", "expect": { "category": "barter", "rewardType": "goods" } },
+    { "id": "c06", "kind": "normal", "text": "谁有多的行李箱借我用两天，下周就还", "expect": { "category": "barter", "timing": "scheduled" } },
+    { "id": "c07", "kind": "normal", "text": "下个月初到伦敦，想找个短租一周的房间，能付钱", "expect": { "category": "accommodation", "timing": "scheduled", "rewardType": "paid" } },
+    { "id": "c08", "kind": "normal", "text": "今晚航班延误了，有人能让我借住一晚吗，实在没地方去", "expect": { "category": "accommodation", "timing": "instant", "instantDuration": "today" } },
+    { "id": "c09", "kind": "normal", "text": "想打听一下伦敦哪家中国超市便宜一点", "expect": { "category": "inquiry", "rewardType": "free" } },
+    { "id": "c10", "kind": "normal", "text": "谁知道现在这个点希思罗到市区还有地铁吗，比较急", "expect": { "category": "inquiry", "timing": "instant" } },
+    { "id": "c11", "kind": "normal", "text": "有人周末去中超吗，帮我带两袋米，请你吃顿饭", "expect": { "category": "errand", "timing": "scheduled", "rewardType": "meal" } },
+    { "id": "c12", "kind": "normal", "text": "谁在国王十字附近，帮我取个快递，给钱", "expect": { "category": "errand", "timing": "instant", "rewardType": "paid" } },
+    { "id": "c13", "kind": "normal", "text": "下周要去银行开户，想找个人陪我翻译一下，付费", "expect": { "category": "translation", "timing": "scheduled", "rewardType": "paid" } },
+    { "id": "c14", "kind": "normal", "text": "有人能帮我看看这封房东发的英文邮件写的是什么意思吗", "expect": { "category": "translation", "rewardType": "free" } },
+    { "id": "c15", "kind": "normal", "text": "钱包丢了手机也快没电了，我现在在牛津街，有人能帮忙吗", "expect": { "category": "emergency", "timing": "instant" } },
+    { "id": "c16", "kind": "normal", "text": "室友发高烧了，不知道该去哪个诊所，有人能帮一下吗", "expect": { "category": "emergency", "timing": "instant" } },
+    { "id": "c17", "kind": "normal", "text": "周日想找人一起去踢球，踢完我请大家喝东西", "expect": { "category": "companion", "timing": "scheduled", "rewardType": "meal" } },
+    { "id": "c18", "kind": "normal", "text": "谁知道在伦敦怎么办一张本地电话卡，实体店还是网上办", "expect": { "category": "inquiry", "rewardType": "free" } },
+    { "id": "c19", "kind": "normal", "text": "有人明天去希思罗接机吗，能不能顺路帮我捎一个箱子", "expect": { "category": "errand", "timing": "scheduled" } },
+    { "id": "c20", "kind": "normal", "text": "今天下午想找人陪我去看车，付一小时的钱", "expect": { "category": "paid_guide", "timing": "instant", "rewardType": "paid" } },
+    { "id": "c21", "kind": "normal", "text": "有人下个月转租房间吗，我想接手", "expect": { "category": "accommodation", "timing": "scheduled" } },
+    { "id": "c22", "kind": "normal", "text": "拿我的雅思书换你的驾照理论书，有人换吗", "expect": { "category": "barter", "rewardType": "goods" } },
+    { "id": "c23", "kind": "normal", "text": "想找人帮我把简历翻成英文，可以请你吃饭", "expect": { "category": "translation", "rewardType": "meal" } },
+    { "id": "c24", "kind": "normal", "text": "退税单在机场哪里盖章，我明天就走了", "expect": { "category": "inquiry" } },
+    { "id": "c25", "kind": "normal", "text": "有没有人下周一起去 Costco 采购，可以分摊车费", "expect": { "category": "companion", "timing": "scheduled" } },
+    { "id": "c26", "kind": "normal", "text": "有人能帮我搬一下宿舍的东西吗，大概两个小时，给钱", "expect": { "category": "errand", "rewardType": "paid" } },
+    { "id": "c27", "kind": "normal", "text": "找个人合租，我预算八百镑一个月", "expect": { "category": "accommodation", "timing": "scheduled" } },
+    { "id": "c28", "kind": "normal", "text": "有人现在想打羽毛球吗，缺一个人，三小时内都行", "expect": { "category": "companion", "timing": "instant", "instantDuration": "3h" } },
+    { "id": "c29", "kind": "normal", "text": "谁去中国超市能帮我带包辣椒面，我拿两包咖啡跟你换", "expect": { "category": "errand", "rewardType": "goods" } },
+
+    { "id": "a01", "kind": "ambiguous", "text": "有人一起去看这个演唱会吗，票我有多的一张", "acceptableCategories": ["companion", "barter"], "note": "既像找搭子也像转票，两解都合理" },
+    { "id": "a02", "kind": "ambiguous", "text": "地铁上把包忘了，现在有点慌，有人知道怎么报失吗", "acceptableCategories": ["emergency", "inquiry"], "note": "情绪上是应急，实际要的是流程信息" },
+    { "id": "a03", "kind": "ambiguous", "text": "有人能陪我去警局做个笔录吗，我英文不太行", "acceptableCategories": ["translation", "emergency", "companion"], "note": "陪同+翻译+应急三重，标注时不该硬选一个" },
+    { "id": "a04", "kind": "ambiguous", "text": "想找人一起搬家，能给点钱", "acceptableCategories": ["errand", "companion"], "note": "「一起」像搭子，「给钱」像跑腿" },
+    { "id": "a05", "kind": "ambiguous", "text": "谁知道哪里能买到便宜的二手自行车，或者谁有想出的", "acceptableCategories": ["inquiry", "barter"], "note": "问信息与求物两种意图并列" },
+
+    { "id": "x01", "kind": "rejected", "text": "想找个女生一起吃饭聊天，可以给你钱", "expect": { "unclassified": true }, "note": "擦边交友：8 类里没有对应品类，必须归为无法归类（D-09）。归进搭子同行就等于给擦边需求开了门" },
+    { "id": "x02", "kind": "rejected", "text": "找个长期固定的异性朋友，可以互相照顾", "expect": { "unclassified": true }, "note": "同上。这两条是 D-09「让擦边需求在数据结构上无法被表达」的回归用例" }
+  ]
+}

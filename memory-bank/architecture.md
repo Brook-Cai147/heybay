@@ -411,6 +411,43 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 >
 > **新增一个集合**：`knowledge`（索引 `city + tags`，权限「所有用户不可读写」）。语料播种走 `cron` 的 `seedKnowledge` action —— 写语料是特权动作，不该有端侧入口。
 
+## M2-13~15 对话入口、自主性阶梯与离线评测（2026-09-02）
+
+- `cloudfunctions/_shared/ai/orchestrator.js`（新）— 意图识别与工具编排：规则表 + 澄清上限 + 副作用工具清单。**纯函数** — `constants/aiCapabilities.js` — `service/assistantService.js`
+- `cloudfunctions/_shared/service/assistantService.js`（新）— 一轮对话：按 `plan()` 的结果调工具、组装 `reply` — 上列 + 解析/兜底/清单/匹配/建单各 service — `aiGateway`
+- `cloudfunctions/_shared/ai/autonomy.js`（新）— 四档定义、可选档、默认档规则、每档能做/不能做、L3 的「为什么永不做」。**纯函数** — 无 — `inviteService`、`userService`、`aiGateway`
+- `cloudfunctions/_shared/service/inviteService.js`（新）— 起草（不发送）/ 发出勾选的邀请 / 我收到的邀请 / L1→L2 一次性询问 — `ai/autonomy.js`、`matchService`、`aiService`、`dao/invites.js` — `aiGateway`
+- `cloudfunctions/_shared/dao/invites.js`（新）— `insert` / `listByRequest` / `listByInvitee` / `markState` / `countResponded` — `dao/db.js` — `inviteService`
+- `cloudfunctions/_shared/schemas/draftInvite.js`（新）+ `ai/prompts/draftInvite.txt`（新）— 邀请文案，`INVITE_MAX = 120` 同时注入 Prompt
+- `cloudfunctions/_shared/service/responseService.js`（扩展）— `closeInviteLoop`：响应提交后回填 `respondedAt` 并报 `invite_responded`（L1→L2 询问的触发依据）
+- `cloudfunctions/_shared/service/userService.js`（扩展）— `setAutonomyLevel`（不可选档位要给理由，不只说"不支持"）
+- `miniprogram/pages/assistant/*`（新）— 小螺对话页：气泡按 `reply.kind` 渲染、档位常驻展示与切换面板；会话状态（澄清轮数 + 待确认草稿）由页面持有
+- `miniprogram/pages/request-detail/*`（扩展）— 邀请入口：起草 → 勾选 → 发出；L0 档把发送按钮换成切档指引；另有 L1→L2 询问卡
+- `miniprogram/pages/notice/*`（改写）— 消息 Tab 从占位改为「收到的邀请」列表
+- `scripts/evalParseRequest.js`（新）— 离线评测：与线上同一套 `buildVars` + `renderPrompt` + 校验器 + `normalizeDraft`，本地直连模型
+- `tests/fixtures/parseRequestGolden.json`（新，36 条）、`tests/fixtures/fallbackAnswerRubric.json`（新，10 题人工判分）
+- `tests/orchestrator.test.js`（新，12 条）、`tests/autonomy.test.js`（新，9 条）
+
+### 三条不能松的红线（M2-13~15）
+
+- **有副作用的动作永远不能由一次意图猜测触发**。`plan()` 里 `confirmed && pendingDraft` 的分支排在所有关键词匹配之前，`createRequest` 只有「用户点确认发布」这一个入口。
+- **L0 与 L1 的差别必须是行为差别，不是标签差别**。差别就一行：`canSendInvites`。L0 拿得到邀请文案，`send` 直接被拒；`targets` 只接受用户勾选的结果，服务端不做"把上次起草的全发出去"。
+- **评测里的「四类字段误填」看模型原始输出**。`normalizeDraft` 会把它们抹空，只看规范化之后的结果永远是 0 —— 那等于用自己的防线证明自己没错。
+
+> **服务端不存对话会话**：`clarifyCount` 与 `pendingDraft` 由页面回传。存会话就要处理过期、并发与清理，而这轮对话的全部上下文本来就在页面手里。真要跨设备续接时它应该是个独立集合，不是塞在 service 里的一个 Map。
+>
+> **档位由服务端算，端侧传来的 level 一律不采信**。`levelOf` 的顺序是"用户自己选的 → 前 3 单 L0 → 全局默认 L1"，任何档位随时可回退（PRD 5.4）。
+>
+> **L1→L2 只问一次，而且只在邀请真的换来过响应之后问**。答"要"也不改档位（L2 属 M5），只落一条 `l2_prompt_answered` 与用户档案上的 `l2PromptAnsweredAt`。反复劝用户提升自主性是诱导，不是选择 —— 这也是为什么它不能挂在"每次打开邀请面板"上。
+>
+> **兜底作答的质量不做自动化评测**。同一个意思有十种写法，而一个编造的细节可能只差两个字，字符串比对给不出有意义的数。固定 10 道题与三个判分维度（有据 / 来源对 / 未越界），人工打勾，方法本身如实写在 rubric 文件里。
+>
+> **评测集只标人能确定的字段**，模糊输入允许多解（`acceptableCategories`），两条擦边输入的正确答案是"无法归类"。把猜测写进标准答案，准确率就变成自欺。
+>
+> **新增一个集合**：`invites`（权限「所有用户不可读写」，`requestId + inviteeOpenid` 建**唯一索引**）。重复邀请在对方眼里就是骚扰，这类约束靠数据库拦最省事。
+>
+> **`users` 新增三个字段**：`autonomyLevel`（用户选的档位）、`l2PromptAnsweredAt` / `l2PromptAccepted`（一次性询问的结果）。
+
 
 
 

@@ -5,6 +5,7 @@
   "description": "喊呗 HeyBay — 运行 node:test 纯逻辑单测与本地脚本，不引入任何运行时依赖",
   "scripts": {
     "test": "node --test \"tests/**/*.test.js\"",
-    "sync": "node scripts/syncShared.js"
+    "sync": "node scripts/syncShared.js",
+    "eval:parse": "node scripts/evalParseRequest.js"
   }
 }
