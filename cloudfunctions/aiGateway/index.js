@@ -17,9 +17,10 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const { createHandler } = require('./_shared/service/dispatch')
 const { ERROR } = require('./_shared/constants/errors')
-const { AI_CAPABILITY } = require('./_shared/constants/aiCapabilities')
-const aiService = require('./_shared/service/aiService')
 const parseRequestService = require('./_shared/service/parseRequestService')
+const fallbackAnswerService = require('./_shared/service/fallbackAnswerService')
+const matchService = require('./_shared/service/matchService')
+const checklistService = require('./_shared/service/checklistService')
 
 const badParams = message => ({ ok: false, code: ERROR.BAD_PARAMS, message })
 
@@ -34,18 +35,30 @@ exports.main = createHandler({
     return parseRequestService.parse({ openid, params: { text, city: params.city } })
   },
 
-  /** 基于站内语料的兜底作答。`snippets` 由 M2-09 的关键词检索给出，本步允许为空 */
+  /**
+   * 基于站内语料的兜底作答（M2-10）。编排在 fallbackAnswerService：
+   * 拒答前置拦截、语料检索、来源白名单都在那一层，**snippets 不再由端侧传入** ——
+   * 端侧能塞语料就等于能给答案伪造来源。
+   */
   searchKnowledge: ({ openid, params }) => {
     const question = typeof params.question === 'string' ? params.question.trim() : ''
     if (!question) return badParams('想打听什么？说一句就行')
-    return aiService.invoke({
+    return fallbackAnswerService.answer({ openid, params: { question, city: params.city } })
+  },
+
+  /**
+   * 给自己的需求单找可能帮得上的人（M2-11）。**只产出名单与理由，不发送任何东西** ——
+   * 自动触达与频控属 M5。打分在代码里，模型只写理由。
+   */
+  matchResponders: ({ openid, params }) =>
+    matchService.recommend({ openid, params: { requestId: params.requestId } }),
+
+  /**
+   * 落地清单（M2-12）。长输出档 + 每日限免 1 次，是唯一需要盯着成本看的能力。
+   */
+  generateChecklist: ({ openid, params }) =>
+    checklistService.generate({
       openid,
-      capability: AI_CAPABILITY.SEARCH_KNOWLEDGE,
-      params: {
-        question,
-        city: params.city,
-        snippets: Array.isArray(params.snippets) ? params.snippets.slice(0, 5) : []
-      }
+      params: { city: params.city, arriveAt: params.arriveAt, travelType: params.travelType }
     })
-  }
 })

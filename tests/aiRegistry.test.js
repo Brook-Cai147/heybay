@@ -58,13 +58,15 @@ test('注册表覆盖 PRD 5.2 的 14 项，不多不少', () => {
   assert.strictEqual(AI_CAPABILITY_VALUES.length, 14)
 })
 
-test('本步只实现两项，其余 12 项是占位并注明里程碑', () => {
+test('实现了四项（M2-06 两条 + M2-11 / M2-12 各一条），其余是占位并注明里程碑', () => {
   assert.deepStrictEqual(implementedCapabilities(), [
     AI_CAPABILITY.PARSE_REQUEST,
-    AI_CAPABILITY.SEARCH_KNOWLEDGE
+    AI_CAPABILITY.SEARCH_KNOWLEDGE,
+    AI_CAPABILITY.MATCH_RESPONDERS,
+    AI_CAPABILITY.GENERATE_CHECKLIST
   ])
   const placeholders = placeholderCapabilities()
-  assert.strictEqual(placeholders.length, 12)
+  assert.strictEqual(placeholders.length, AI_CAPABILITY_VALUES.length - 4)
   for (const name of placeholders) {
     assert.match(AI_REGISTRY[name].milestone, /^M[1-9](-\d{2})?$/, `${name} 的里程碑标注不规范`)
   }
@@ -232,7 +234,7 @@ test('promptVars 能把已实现能力的模板填满（组装器与模板不脱
 })
 
 test('没有组装器的能力当场报错，而不是发一个缺变量的 Prompt', () => {
-  assert.throws(() => buildVars(AI_CAPABILITY.GENERATE_CHECKLIST, {}), err => {
+  assert.throws(() => buildVars(AI_CAPABILITY.DRAFT_INVITE, {}), err => {
     assert.strictEqual(err.code, 'PROMPT_VARS_BUILDER_MISSING')
     return true
   })

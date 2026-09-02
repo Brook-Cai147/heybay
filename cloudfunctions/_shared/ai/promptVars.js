@@ -20,6 +20,15 @@ const {
   FIELD_SOURCE_VALUES
 } = require('../constants/enums')
 const { PARSE_OUTPUT_FIELDS } = require('../schemas/parseRequest')
+const { REASON_MAX } = require('../schemas/matchResponders')
+const {
+  CHECKLIST_GROUP_VALUES,
+  CHECKLIST_GROUP_LABEL,
+  ITEMS_PER_GROUP_MAX,
+  TEXT_MAX,
+  NOTE_MAX,
+  REMINDER_MAX
+} = require('../schemas/generateChecklist')
 
 /** `companion（搭子同行）、paid_guide（付费地陪）…`：值给机器、中文给模型理解 */
 const categoryList = () =>
@@ -40,6 +49,31 @@ const renderSnippets = snippets => {
     .join('\n')
 }
 
+/**
+ * 候选与依据渲染成编号列表。**只给依据文本，不给 openid、不给分数** ——
+ * 身份标识没有任何理由进模型上下文（D-33）；分数给了模型就会开始比较谁更好，
+ * 而"谁更好"不是它该说的（排序已经由代码定了）。
+ */
+const renderCandidates = candidates => {
+  if (!Array.isArray(candidates) || !candidates.length) return '（没有候选）'
+  return candidates
+    .map((item, index) => {
+      const evidence = Array.isArray(item && item.evidence) ? item.evidence : []
+      const facts = evidence.map(fact => fact.text).join('；') || '（无依据）'
+      return `（${index + 1}）依据：${facts}`
+    })
+    .join('\n')
+}
+
+/** 核实过的事实（紧急号码、使领馆等）。渲染成"键：值"，让模型只能照抄 */
+const renderFacts = facts => {
+  if (!facts || typeof facts !== 'object') return '（没有可用的预置事实）'
+  const lines = Object.entries(facts)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `- ${key}：${Array.isArray(value) ? value.join('、') : value}`)
+  return lines.length ? lines.join('\n') : '（没有可用的预置事实）'
+}
+
 const BUILDERS = Object.freeze({
   [AI_CAPABILITY.PARSE_REQUEST]: ({ params = {}, city = {} }) => ({
     city: city.nameZh || params.city || '',
@@ -56,6 +90,28 @@ const BUILDERS = Object.freeze({
   [AI_CAPABILITY.SEARCH_KNOWLEDGE]: ({ params = {}, city = {} }) => ({
     city: city.nameZh || params.city || '',
     question: String(params.question || '').slice(0, 300),
+    snippets: renderSnippets(params.snippets)
+  }),
+
+  [AI_CAPABILITY.MATCH_RESPONDERS]: ({ params = {}, city = {} }) => ({
+    city: city.nameZh || params.city || '',
+    category: REQUEST_CATEGORY_LABEL[params.category] || params.category || '',
+    title: String(params.title || '').slice(0, 60),
+    // 字数上限从 Schema 取，模板里不手抄 —— 两处各写一个数就会漂移
+    reasonMax: REASON_MAX,
+    candidates: renderCandidates(params.candidates)
+  }),
+
+  [AI_CAPABILITY.GENERATE_CHECKLIST]: ({ params = {}, city = {} }) => ({
+    city: city.nameZh || params.city || '',
+    arriveAt: String(params.arriveAt || '').slice(0, 40),
+    travelType: String(params.travelType || '').slice(0, 40),
+    groups: CHECKLIST_GROUP_VALUES.map(value => `${value}（${CHECKLIST_GROUP_LABEL[value]}）`).join('、'),
+    itemsPerGroupMax: ITEMS_PER_GROUP_MAX,
+    textMax: TEXT_MAX,
+    noteMax: NOTE_MAX,
+    reminderMax: REMINDER_MAX,
+    facts: renderFacts(params.facts),
     snippets: renderSnippets(params.snippets)
   })
 })
@@ -74,5 +130,7 @@ module.exports = {
   BUILDERS,
   buildVars,
   categoryList,
-  renderSnippets
+  renderSnippets,
+  renderCandidates,
+  renderFacts
 }

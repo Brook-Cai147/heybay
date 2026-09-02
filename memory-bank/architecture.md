@@ -375,6 +375,42 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 >
 > **端侧的 `services/ai.js` 永不抛错**：额度用完、成本护栏、模型抽风、网络不通，页面要做的事完全一样（展开纯表单）。如果它抛错，每个调用点都得写一遍 try-catch，漏一个就变成一个红色报错弹窗 —— 而那正是 D-15 要避免的。
 
+## M2-09~12 语料兜底、匹配与长输出（2026-09-02）
+
+- `cloudfunctions/_shared/ai/knowledgeRank.js`（新）— 语料打分与排序：显式权重表 + 中文 2-gram 切词 + 停用词 + 两道入选门槛。**纯函数** — 无 — `service/knowledgeSearch.js`
+- `cloudfunctions/_shared/service/knowledgeSearch.js`（新）— 只做"按城市 + 标签捞候选"再交给纯函数排序 — `dao/knowledge.js`、`ai/knowledgeRank.js` — `fallbackAnswerService`、`checklistService`
+- `cloudfunctions/_shared/dao/knowledge.js`（新）— `listCandidates` / `findByRefId` / `upsertByRefId` / `countByCity` — `dao/db.js` — `knowledgeSearch`、`setupService`
+- `cloudfunctions/_shared/data/londonKnowledge.js`（新）— 伦敦最小语料集 25 条（完整语料库属 M4，别在这里堆内容） — `ai/knowledgeRank.js` — `setupService.seedKnowledge`
+- `cloudfunctions/_shared/ai/answerGuard.js`（新）— 拒答词表 + 官方渠道 + 来源白名单 + 编造判定。**纯函数** — `schemas/searchKnowledge.js` — `fallbackAnswerService`
+- `cloudfunctions/_shared/service/fallbackAnswerService.js`（新）— 兜底作答五步：拒答拦截 → 检索 → 调模型 → 来源白名单 → 关键词兜底 — 上列各项 + `aiService` — `aiGateway`
+- `cloudfunctions/_shared/ai/matchScore.js`（新）— 匹配打分、硬门槛、Top N 选取、推荐理由校验、模板兜底。**纯函数** — `constants/enums.js` — `service/matchService.js`
+- `cloudfunctions/_shared/service/matchService.js`（新）— 名单由代码定、理由由模型写；只产出不发送 — `dao/{requests,users}.js`、`aiService`、`userService.publicUser` — `aiGateway`
+- `cloudfunctions/_shared/service/checklistService.js`（新）— 落地清单：出行类型白名单 + 高风险事实注入 + 语料检索 — `dao/configs.js`、`knowledgeSearch`、`aiService` — `aiGateway`
+- `cloudfunctions/_shared/schemas/{matchResponders,generateChecklist}.js`（新）— 输出结构 + **字数上限常量**（同时注入 Prompt，见下）
+- `cloudfunctions/_shared/ai/prompts/{matchReason,generateChecklist}.txt`（新）
+- `cloudfunctions/_shared/service/setupService.js`（扩展）— `seedKnowledge`（按 refId 幂等、**不打 `_isTest`**）；`city_london` 增 `emergency` 四项
+- `cloudfunctions/_shared/dao/users.js`（扩展）— `listByCity`（候选池）
+- `cloudfunctions/_shared/constants/events.js`（扩展）— 新增 `ai_answer_feedback`（兜底采纳率的唯一数据源，按钮在 M2-13）
+- `tests/knowledgeSearch.test.js`（新，11 条）、`tests/answerGuard.test.js`（新，13 条）、`tests/matchScore.test.js`（新，12 条）
+
+### 三条不能松的红线（M2-09~12）
+
+- **拒答在服务端用关键词前置拦截**，不调模型、不占额度、不花钱。医疗一类只拦"求判断"（该吃什么药、症状严重吗），不拦"求流程"（怎么注册 GP、急诊打哪个号）—— 全拦会让语料里的就医流程词条永远回不出来，而那恰恰是本产品该答的。
+- **来源必须来自本次检索**。模型给的 refId 不在检索结果里就丢掉；丢完一条不剩却给了具体答案，按编造处理、改走关键词兜底。
+- **推荐名单由代码排序，理由里的数字必须能追溯回依据字段**。校验不过就换模板拼接的理由 —— 宁可难看，不可无据。
+
+> **缓存与额度的先后在 M2-12 改过一次**（tech-stack 原文是额度在前）：命中缓存不调模型、不花钱、不写业务数据，因此不该受额度约束。保持额度在前的话，`generateChecklist` 这种"每天免费 1 次"的能力第二次请求会被直接拦下，缓存永远命中不了 —— 一个永远命中不了的缓存等于没做。
+>
+> **Schema 卡的上限必须同时写进 Prompt**。第一次真实调用 `generateChecklist` 就出现 `attempts: 2`：Schema 限每条 60 字而 Prompt 没说，模型写超被判不合规、白跑一轮。字数上限现在从 Schema 常量注入模板，与 M2-04 "Prompt 必须给出输出键名"是同一类错的同一种解法。
+>
+> **成功返回的 `meta.quota.remaining` 要减去这一次**：`checkQuota` 在调用之前算，直接回传会出现"每天只能用 1 次、用完了还显示剩 1 次"，而前端一定会照着显示。
+>
+> **M2-11 候选池门槛比计划宽**：计划要求"城市 + 能力标签或同品类完成记录"，但 M1 数据结构里没有任何地方写入后两项（能力标签属 M3 增信体系），当硬门槛候选池恒为空。现降级为加分项，硬门槛只留城市与 D-26 性别规则，等 M3 有标签写入方再收紧。
+>
+> **纯逻辑与 dao 分文件不是风格问题**：service 一 require dao 就连带 require `wx-server-sdk`，本地 `node:test` 直接起不来。所以 `knowledgeRank` / `answerGuard` / `matchScore` 都放在 `ai/` 下 —— 与 `ai/parseDraft.js`、`ai/cache.js` 同一个原因。
+>
+> **新增一个集合**：`knowledge`（索引 `city + tags`，权限「所有用户不可读写」）。语料播种走 `cron` 的 `seedKnowledge` action —— 写语料是特权动作，不该有端侧入口。
+
 
 
 

@@ -40,7 +40,14 @@ const CACHE_INPUT = Object.freeze({
       .sort()
       .join(',')
     return `${normalizeInput(params.question)}|${refIds}`
-  }
+  },
+
+  /**
+   * 落地清单（M2-12）：**只按出行类型缓存，不含到达时间**（计划 M2-12 第 2 条：
+   * 同城市同出行类型可复用）。代价是同一份清单会被不同日期的用户共用，
+   * 所以 Prompt 里明确要求"不要写具体日期，写成落地当天" —— 少了这条约束，缓存就会串日期。
+   */
+  [AI_CAPABILITY.GENERATE_CHECKLIST]: (params = {}) => normalizeInput(params.travelType)
 })
 
 /** 该能力可缓存吗：注册表说了算，且必须有一个能算键的输入 */

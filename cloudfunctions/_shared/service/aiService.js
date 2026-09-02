@@ -1,13 +1,15 @@
 /**
  * aiGateway 的编排层（M2-04）——**全项目唯一的模型出口**。
  *
- * tech-stack 6.1 的八步，顺序不可调换：
- *   1 鉴权取 openid（handler 做）  2 额度检查   3 缓存查询（M2-04 直通，M2-05 接上）
+ * tech-stack 6.1 的八步：
+ *   1 鉴权取 openid（handler 做）  2 缓存查询   3 额度检查
  *   4 Prompt 组装                 5 模型调用   6 输出校验
  *   7 降级                        8 记账写 aiLogs
  *
- * 为什么额度在缓存之前：缓存命中不该扣额度，但"这个人今天还能不能用"要先于一切副作用判断，
- * 否则被拦下的用户仍然会在日志里留下一次调用记录，用量统计就不干净了。
+ * **缓存与额度的先后在 M2-12 调整过一次**（tech-stack 原文是额度在前）：
+ * 命中缓存不调模型、不花钱、不写业务数据，因此也不该受额度约束。
+ * 保持额度在前的话，`generateChecklist` 这种"每天免费 1 次"的能力第二次请求会被直接拦下，
+ * 缓存永远不可能命中 —— 一个永远命中不了的缓存等于没做。理由与代价见函数内注释。
  *
  * **本文件不抛错给端侧**（D-15）。模型超时、返回乱码、校验不过，一律翻译成
  * `{ ok: false, code: AI_FALLBACK, fallback: {...} }`，让调用页退回纯表单/纯手动，功能一项不少。
@@ -37,7 +39,9 @@ const AI_RESULT = Object.freeze({
   SUCCESS: 'success',
   CACHED: 'cached',
   QUOTA_BLOCKED: 'quota_blocked',
-  FALLBACK: 'fallback'
+  FALLBACK: 'fallback',
+  /** 服务端前置拦截的拒答（M2-10）。**没调模型**，所以既不计额度也不计成本 */
+  REFUSED: 'refused'
 })
 
 const cityConfigKey = city => `city_${String(city || '').toLowerCase()}`
@@ -199,34 +203,17 @@ const invoke = async ({ openid, capability, params = {} }) => {
   const city = (await configsDao.getValue(cityConfigKey(params.city || 'london'))) || {}
   const dayKey = localDayKey(nowMs, zoneInfoOf(city))
 
-  // 第 2 步：额度检查。只有每日限免档才需要真去数一次，其余两档不查库
-  let usedToday = 0
-  if (record.quotaTier === QUOTA_TIER.DAILY) {
-    usedToday = await aiLogsDao.countUsedToday({ openid, capability, dayKey })
-  }
-  // isMember 恒为 false：会员体系在 M5，此处**不读端侧传来的 isMember**（端侧不可信）
-  const quota = checkQuota({
-    capability,
-    usedToday,
-    nowMs,
-    isMember: false,
-    timeZone: city.timeZone,
-    utcOffsetMinutes: city.timeZone ? undefined : 0
-  })
-  if (!quota.allowed) {
-    await safeLog({
-      openid,
-      capability,
-      dayKey,
-      quotaCounted: false,
-      modelTier: record.modelTier,
-      result: quota.result === QUOTA_RESULT.QUOTA_EXCEEDED ? AI_RESULT.QUOTA_BLOCKED : AI_RESULT.FALLBACK,
-      errorCode: quota.result
-    })
-    return { ok: false, code: ERROR.AI_QUOTA_EXCEEDED, message: quota.message, quota }
-  }
-
-  // 第 3 步：缓存查询（M2-05）。命中不扣额度、不花钱、不写 aiLogs 的成本
+  /**
+   * 第 2 步：缓存查询（M2-05）。命中不扣额度、不花钱。
+   *
+   * **顺序在 M2-12 被改过一次**：原来是"先额度后缓存"，理由是"这个人今天还能不能用"
+   * 该先于一切副作用判断。但 `generateChecklist` 的免费额度是每天 1 次，
+   * 于额度在前时第二次同样的请求会被拦下，缓存永远不可能命中 —— 一个每天只能用一次的
+   * 能力配一个永远命中不了的缓存，等于没做缓存。
+   *
+   * 现在的口径是：**命中缓存不消耗任何资源，因此也不受额度约束**。
+   * 副作用上没有风险（不写库、不调模型），代价只是同一个答案可以被反复取用，这本来就是缓存的意义。
+   */
   const cacheKey = aiCache.isCacheable(record)
     ? aiCache.cacheKeyOf({ capability, city: city.code || params.city, params })
     : null
@@ -258,6 +245,34 @@ const invoke = async ({ openid, capability, params = {} }) => {
       })
     }
   }
+
+  // 第 3 步：额度检查。只有每日限免档才需要真去数一次，其余两档不查库
+  let usedToday = 0
+  if (record.quotaTier === QUOTA_TIER.DAILY) {
+    usedToday = await aiLogsDao.countUsedToday({ openid, capability, dayKey })
+  }
+  // isMember 恒为 false：会员体系在 M5，此处**不读端侧传来的 isMember**（端侧不可信）
+  const quota = checkQuota({
+    capability,
+    usedToday,
+    nowMs,
+    isMember: false,
+    timeZone: city.timeZone,
+    utcOffsetMinutes: city.timeZone ? undefined : 0
+  })
+  if (!quota.allowed) {
+    await safeLog({
+      openid,
+      capability,
+      dayKey,
+      quotaCounted: false,
+      modelTier: record.modelTier,
+      result: quota.result === QUOTA_RESULT.QUOTA_EXCEEDED ? AI_RESULT.QUOTA_BLOCKED : AI_RESULT.FALLBACK,
+      errorCode: quota.result
+    })
+    return { ok: false, code: ERROR.AI_QUOTA_EXCEEDED, message: quota.message, quota }
+  }
+
 
   // 成本护栏（M2-05）：只拦非免费档。免费档（解析、机审）被拦会直接伤主转化路径，
   // 而它们恰恰是最便宜的那批 —— 拦它们省不下多少钱，代价却是发布流程变难用。
@@ -387,7 +402,18 @@ const invoke = async ({ openid, capability, params = {} }) => {
           logId,
           // 多余字段已被剥掉，但要让调用方知道模型多吐了什么，便于改 Prompt
           warnings: validation.warnings,
-          quota: { tier: record.quotaTier, limit: quota.limit, remaining: quota.remaining }
+          /**
+           * 剩余额度要**减去这一次**：`checkQuota` 是在调用之前算的，直接回传会出现
+           * "每天只能用 1 次、用完了还显示剩 1 次"这种前端一定会照着显示的错数。
+           */
+          quota: {
+            tier: record.quotaTier,
+            limit: quota.limit,
+            remaining:
+              record.quotaTier === QUOTA_TIER.DAILY && Number.isFinite(quota.remaining)
+                ? Math.max(0, quota.remaining - 1)
+                : quota.remaining
+          }
         }
       })
     }
@@ -395,6 +421,14 @@ const invoke = async ({ openid, capability, params = {} }) => {
     lastErrors = validation.errors
     lastErrorCode = decision.reasonCode
     if (decision.decision === FALLBACK_DECISION.RETRY) {
+      /**
+       * 重试的原因必须打日志。没有这行的时候，`attempts: 2` 只能告诉你"重试过"，
+       * 却查不出为什么 —— 而每次都重试等于成本与耗时翻倍，是要治的问题，不是可以忽略的抖动。
+       */
+      console.error(
+        `[aiGateway] ${capability} 第 ${attempt} 次输出未过校验，将重试。字段级错误：`,
+        JSON.stringify(validation.errors.slice(0, 8))
+      )
       // 只在原始 Prompt 后追加错误清单，不累积多轮 —— 避免第二次的 Prompt 里带着第一次的噪音
       currentPrompt = decision.retryHint
         ? `${prompt}\n\n【上一次的输出有这些问题，请修正后重新输出完整 JSON】\n${decision.retryHint}`

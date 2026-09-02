@@ -29,7 +29,7 @@ const {
   searchKnowledgeSchema,
   REFUSAL_REASON
 } = require('../cloudfunctions/_shared/schemas/searchKnowledge')
-const { AI_SCHEMAS, schemaOf } = require('../cloudfunctions/_shared/schemas')
+const { schemaOf } = require('../cloudfunctions/_shared/schemas')
 const { AI_CAPABILITY } = require('../cloudfunctions/_shared/constants/aiCapabilities')
 const { USER_ONLY_FIELDS: VALIDATOR_USER_ONLY } =
   require('../cloudfunctions/_shared/service/requestValidator')
@@ -195,11 +195,11 @@ test('降级判定绝不给出第三次机会（不做死循环）', () => {
   }
 })
 
-test('Schema 汇总表：已实现的两个能力都能取到，未实现的取到 null', () => {
-  assert.equal(Object.keys(AI_SCHEMAS).length, 2, 'M2-02 只做 parseRequest 与 searchKnowledge')
+test('Schema 汇总表：注册表里已实现的能力都能取到 Schema，未实现的取到 null', () => {
   assert.equal(schemaOf(AI_CAPABILITY.PARSE_REQUEST), parseRequestSchema)
   assert.equal(schemaOf(AI_CAPABILITY.SEARCH_KNOWLEDGE), searchKnowledgeSchema)
-  assert.equal(schemaOf(AI_CAPABILITY.GENERATE_CHECKLIST), null)
+  assert.ok(schemaOf(AI_CAPABILITY.GENERATE_CHECKLIST), 'M2-12 起长输出清单也有 Schema')
+  assert.equal(schemaOf(AI_CAPABILITY.DRAFT_INVITE), null, '还没做的能力不该有 Schema')
   assert.equal(schemaOf('nope'), null)
 })
 

@@ -78,3 +78,18 @@ test('键的三段结构可读：城市:能力:哈希（排查时能一眼看出
   assert.strictEqual(parts[1], AI_CAPABILITY.SEARCH_KNOWLEDGE)
   assert.match(parts[2], /^[0-9a-f]{32}$/)
 })
+
+const checklistKey = (params, city = 'london') =>
+  cacheKeyOf({ capability: AI_CAPABILITY.GENERATE_CHECKLIST, city, params })
+
+test('落地清单按城市 + 出行类型缓存：换个到达时间照样命中（M2-12 第 2 条）', () => {
+  const monday = checklistKey({ travelType: '留学', arriveAt: '下周一' })
+  const friday = checklistKey({ travelType: '留学', arriveAt: '10 月 3 日晚上' })
+  assert.strictEqual(monday, friday, '同城同出行类型可复用，这是这条贵能力省额度的唯一手段')
+  assert.notStrictEqual(monday, checklistKey({ travelType: '旅游', arriveAt: '下周一' }))
+  assert.notStrictEqual(monday, checklistKey({ travelType: '留学' }, 'manchester'))
+})
+
+test('落地清单缺出行类型时不生成键：所有空调用会撞成同一条缓存', () => {
+  assert.strictEqual(checklistKey({ arriveAt: '下周一' }), null)
+})

@@ -40,9 +40,25 @@ const incCounter = async (openid, field, delta = 1) => {
   return updateByOpenid(openid, { [field]: getCommand().inc(delta) })
 }
 
+/**
+ * 某城市的用户（M2-11 的候选池）。
+ *
+ * 只按城市捞，**打分与过滤都在 service** —— 云数据库排不了"加权得分"这种序，
+ * 而单城用户在 M2 阶段是几十到几百人的量级，全捞回来打分完全可行。
+ * 上限是硬保险：一次异常查询把免费额度吃光比少推几个人严重得多。
+ */
+const listByCity = async ({ city, limit = 200 }) => {
+  const res = await collection()
+    .where(Object.assign({ city }, NOT_DELETED))
+    .limit(limit)
+    .get()
+  return res.data
+}
+
 module.exports = {
   findByOpenid,
   insert,
   updateByOpenid,
-  incCounter
+  incCounter,
+  listByCity
 }

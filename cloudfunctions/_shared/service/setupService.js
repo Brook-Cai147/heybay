@@ -13,6 +13,8 @@
  */
 
 const configsDao = require('../dao/configs')
+const knowledgeDao = require('../dao/knowledge')
+const { LONDON_SEEDS } = require('../data/londonKnowledge')
 
 /** M1 的两条初始配置。value 的字段含义见 D-34 */
 const CONFIG_SEEDS = adminOpenids => [
@@ -30,9 +32,20 @@ const CONFIG_SEEDS = adminOpenids => [
       timeZone: 'Europe/London',
       isOpen: true,
       activeLimitFree: 3,
-      activeLimitMember: 10
+      activeLimitMember: 10,
+      /**
+       * 高风险事实（M2-12）。落地清单里的紧急号码与使领馆信息**只能从这里取，不让模型编**
+       * （PRD 5.2 关于应急卡的同一原则）。号码写错一次的代价，用户承担不起。
+       * 地址与办公时间刻意只写"见官网"：这类信息会变，写死在配置里等于埋一个过期的坑。
+       */
+      emergency: {
+        police: '999（紧急）/ 101（非紧急报案）',
+        medical: 'NHS 111（非紧急咨询）/ 999（急救）',
+        fire: '999',
+        embassy: '中国驻英国大使馆领事部（伦敦）—— 地址、办公时间与预约方式见大使馆官网'
+      }
     },
-    desc: '开城配置：M1 只开伦敦，在架上限对所有人按 3 条（D-34：M3 迁往 cities 集合）'
+    desc: '开城配置：M1 只开伦敦，在架上限对所有人按 3 条（D-34：M3 迁往 cities 集合）；emergency 供 M2-12 注入'
   },
   {
     key: 'ai_daily_cost_limit',
@@ -86,7 +99,36 @@ const seedConfigs = async ({ adminOpenids } = {}) => {
   return results
 }
 
+/**
+ * 播种伦敦语料（M2-09）。按 refId 有则更新无则新建，可反复跑。
+ *
+ * **不打 `_isTest` 标记**：语料是内容资产，不是联调数据。M1-19 收尾会清掉所有 `_isTest` 数据，
+ * 语料要是被一起清了，兜底作答就会静默退化成"站里还没人聊过这个话题"。
+ *
+ * 和 `seedConfigs` 一样挂在 `cron` 上：写语料是特权动作，不该有端侧入口。
+ */
+const seedKnowledge = async ({ seeds = LONDON_SEEDS } = {}) => {
+  const results = { total: seeds.length, created: 0, updated: 0, failed: [] }
+
+  for (const doc of seeds) {
+    try {
+      const res = await knowledgeDao.upsertByRefId(doc, false)
+      if (res.action === 'created') results.created += 1
+      else results.updated += 1
+    } catch (err) {
+      results.failed.push({
+        refId: doc.refId,
+        errCode: err && err.errCode,
+        message: String(err && err.message).slice(0, 200)
+      })
+    }
+  }
+
+  return results
+}
+
 module.exports = {
   CONFIG_SEEDS,
-  seedConfigs
+  seedConfigs,
+  seedKnowledge
 }

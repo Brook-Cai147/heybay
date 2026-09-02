@@ -7,7 +7,7 @@
 
 const cloud = require('wx-server-sdk')
 
-/** 集合名统一在此登记，避免各处手写字符串拼错（M1-07 建的六个集合，M2-04/05 加 aiLogs、aiCache） */
+/** 集合名统一在此登记，避免各处手写字符串拼错（M1-07 建的六个集合，M2-04/05 加 aiLogs、aiCache，M2-09 加 knowledge） */
 const COLLECTION = Object.freeze({
   USERS: 'users',
   REQUESTS: 'requests',
@@ -16,7 +16,8 @@ const COLLECTION = Object.freeze({
   EVENTS: 'events',
   CONFIGS: 'configs',
   AI_LOGS: 'aiLogs',
-  AI_CACHE: 'aiCache'
+  AI_CACHE: 'aiCache',
+  KNOWLEDGE: 'knowledge'
 })
 
 /**

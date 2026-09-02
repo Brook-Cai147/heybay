@@ -11,6 +11,7 @@
  * 手动触发（云函数控制台的"云端测试"）时可传：
  *   `{ "timing": "instant" }` 只扫即时型；`{}` 扫全部
  *   `{ "action": "seedConfigs", "adminOpenids": ["..."] }` 重建初始配置（M1-19 从 `ping` 搬来）
+ *   `{ "action": "seedKnowledge" }` 播种伦敦语料（M2-09，按 refId 幂等，可反复跑）
  *
  * `_shared` 是 `npm run sync` 复制进来的副本，改共享代码后必须重新 sync 再上传。
  */
@@ -21,7 +22,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 
 const { TIMING_TYPE } = require('./_shared/constants/enums')
 const { scanExpired, SCAN_BATCH_LIMIT } = require('./_shared/service/expiryScan')
-const { seedConfigs } = require('./_shared/service/setupService')
+const { seedConfigs, seedKnowledge } = require('./_shared/service/setupService')
 
 /** 触发器名 → 扫描哪种时效类型 */
 const TRIGGER_TIMING = {
@@ -42,6 +43,18 @@ exports.main = async (event = {}) => {
     } catch (err) {
       console.error('[cron] 初始配置写入失败', err)
       return { ok: false, action: 'seedConfigs', message: String(err && err.message).slice(0, 200) }
+    }
+  }
+
+  /** 语料播种（M2-09）。同理放在这里：写语料是特权动作，不该有端侧入口 */
+  if (event.action === 'seedKnowledge') {
+    try {
+      const results = await seedKnowledge()
+      console.log('[cron] 语料播种完成', JSON.stringify(results))
+      return { ok: true, action: 'seedKnowledge', results }
+    } catch (err) {
+      console.error('[cron] 语料播种失败', err)
+      return { ok: false, action: 'seedKnowledge', message: String(err && err.message).slice(0, 200) }
     }
   }
 

@@ -94,7 +94,7 @@ const entry = ({
     note
   })
 
-/** 本步实现的两条 */
+/** 已实现的能力。M2-03 建表时只有两条，M2-11 / M2-12 各接了一条 */
 const IMPLEMENTED = [
   entry({
     capability: AI_CAPABILITY.PARSE_REQUEST,
@@ -122,11 +122,43 @@ const IMPLEMENTED = [
     cacheTtlSeconds: 24 * 60 * 60,
     fallback: FALLBACK_STRATEGY.KEYWORD_ONLY,
     note: '答不了就只给关键词检索到的原帖，不编造'
+  }),
+  entry({
+    capability: AI_CAPABILITY.MATCH_RESPONDERS,
+    implemented: true,
+    milestone: 'M2-11',
+    promptFile: 'matchReason.txt',
+    input: { required: ['requestId'], optional: [] },
+    modelTier: MODEL_TIER.CHEAP,
+    timeoutSeconds: 8,
+    // 不缓存：候选名单随人员活跃度天天变，缓存住等于把昨天的名单当今天的
+    cacheable: false,
+    fallback: FALLBACK_STRATEGY.MANUAL_FORM,
+    note: '打分用代码算，模型只把依据字段写成人话；理由不可信时退回模板拼接（PRD 5.4）'
+  }),
+  entry({
+    capability: AI_CAPABILITY.GENERATE_CHECKLIST,
+    implemented: true,
+    milestone: 'M2-12',
+    promptFile: 'generateChecklist.txt',
+    input: { required: ['city', 'arriveAt', 'travelType'], optional: [] },
+    modelTier: MODEL_TIER.LONG_OUTPUT,
+    /**
+     * 12 秒：长输出比短文本慢，但**上限受云函数执行超时约束** ——
+     * 校验失败会重试一次，两次调用加起来必须留在云函数的 30 秒之内（2×12 + 检索与记账仍有余量）。
+     * 设成 20 秒看起来更宽松，实际是把"重试一次"变成"云函数直接被掐断"。
+     */
+    timeoutSeconds: 12,
+    // 可缓存：同城市同出行类型的清单本就该一样，而这是每日限免 1 次的贵能力，缓存直接省额度
+    cacheable: true,
+    cacheTtlSeconds: 7 * 24 * 60 * 60,
+    fallback: FALLBACK_STRATEGY.MANUAL_FORM,
+    note: '每日限免 1 次；紧急号码等高风险事实由服务端注入，不让模型编（PRD 5.2）'
   })
 ]
 
 /**
- * 其余 12 项占位（PRD 5.2 全表）。登记但 `implemented: false`：
+ * 其余占位（PRD 5.2 全表）。登记但 `implemented: false`：
  * 好处是"14 项能力地图"在代码里是可枚举的事实，而不是文档里的一张表；
  * 谁提前接了没做的能力，`assertCallable` 会当场报错并告诉他这条排在哪个里程碑。
  */
@@ -139,19 +171,6 @@ const PLACEHOLDERS = [
     milestone: 'M2-13',
     fallback: FALLBACK_STRATEGY.MANUAL_FORM,
     note: '只写库不调模型，登记在册是为了让工具编排从同一张表取契约'
-  }),
-  placeholder({
-    capability: AI_CAPABILITY.MATCH_RESPONDERS,
-    milestone: 'M2-11',
-    fallback: FALLBACK_STRATEGY.MANUAL_FORM,
-    note: '必须产出可解释的推荐理由，不做无理由推荐（PRD 5.4）'
-  }),
-  placeholder({
-    capability: AI_CAPABILITY.GENERATE_CHECKLIST,
-    milestone: 'M2-12',
-    modelTier: MODEL_TIER.LONG_OUTPUT,
-    fallback: FALLBACK_STRATEGY.MANUAL_FORM,
-    note: '长输出，每日限免 1 次'
   }),
   placeholder({
     capability: AI_CAPABILITY.DRAFT_INVITE,

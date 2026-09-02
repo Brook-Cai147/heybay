@@ -88,6 +88,12 @@ const EVENTS = {
     params: ['capability', 'reason'],
     desc: 'AI 失败后降级为普通表单（M2-08 起启用，D-15 护栏的观测点）'
   },
+  ai_answer_feedback: {
+    group: EVENT_GROUP.AI_CALL,
+    status: ACTIVE,
+    params: ['capability', 'helpful'],
+    desc: '兜底答案的「有用 / 没用」反馈，PRD 5.5「兜底采纳率 ≥50%」的唯一数据源（M2-10 登记，按钮在 M2-13 的对话页）'
+  },
 
   // ③ 分发触达与响应归因
   request_card_clicked: {
