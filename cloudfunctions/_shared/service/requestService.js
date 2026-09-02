@@ -20,6 +20,8 @@ const { validateAndNormalize } = require('./requestValidator')
 const trackService = require('./trackService')
 const { publicUser, contactOf } = require('./userService')
 const usersDao = require('../dao/users')
+const aiLogsDao = require('../dao/aiLogs')
+const { computeAdoption } = require('../ai/adoption')
 
 /** 城市配置的 key 规则（D-34：M1~M2 城市配置暂存 configs，M3 迁 cities 集合） */
 const cityConfigKey = city => `city_${String(city).toLowerCase()}`
@@ -42,6 +44,41 @@ const loadCityConfig = async city => {
     fail(ERROR.CITY_NOT_OPEN, `${city} 还没有开城，暂时不能在这里发需求`)
   }
   return config
+}
+
+/**
+ * 发布成功后把 AI 解析的采纳情况回填进 `aiLogs`（M2-08）。
+ *
+ * 端侧发布时带上 `aiMeta: { logId, aiFilledFields }`（都来自 `aiGateway.parseRequest` 的返回）。
+ * 没带就是纯表单发布，直接跳过 —— 纯表单不该在 AI 的统计里留下痕迹，否则采纳率会被稀释。
+ *
+ * **这里刻意不上报 `ai_field_modified` 事件**，尽管 M2-08 的计划提到了"是否被修改"。
+ * 原因是同一个指标两处上报必然口径漂移：
+ *   `events.ai_field_modified` 由端侧在**用户真的改动那一刻**上报，含最终没发布的草稿——
+ *      它衡量的是"用户改不改"这个行为
+ *   `aiLogs.adoptionRate` 在**发布成功时**由服务端算，只覆盖真的发出去的单——
+ *      它衡量的是"AI 的建议最终留下了多少"
+ * 两个数分工明确、都需要，但绝不能混成一个。口径写进了 `architecture.md`。
+ *
+ * 整段包在 try 里：回填是统计需求，而这行代码之后需求单已经发布成功了。
+ * 让一个统计动作把已经成功的发布变成报错，是本末倒置。
+ */
+const backfillAiOutcome = async ({ requestId, params }) => {
+  const meta = params && params.aiMeta
+  if (!meta || !meta.logId) return null
+
+  const adoption = computeAdoption({
+    aiFilledFields: meta.aiFilledFields,
+    fieldSources: params.fieldSources
+  })
+
+  try {
+    await aiLogsDao.markOutcome(meta.logId, Object.assign({}, adoption, { requestId }))
+  } catch (err) {
+    console.error('[create] 回填 aiLogs 失败（不影响发布）', err && err.message)
+  }
+
+  return adoption
 }
 
 /**
@@ -126,6 +163,10 @@ const create = async ({ openid, params = {}, isTest = false }) => {
         isTest
       })
     }
+
+    // AI 解析的闭环（M2-08）：回填采纳情况。失败一律不影响发布
+    await backfillAiOutcome({ requestId, params })
+
     return ok({ requestId, status: REQUEST_STATUS.OPEN, expireAt, expireRule: rule })
   } catch (err) {
     try {

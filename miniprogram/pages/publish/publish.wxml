@@ -10,8 +10,24 @@
       maxlength="200"
       auto-height
     />
-    <button class="primary" bindtap="onOrganize">帮我整理</button>
-    <text class="card-tip">M1 是直接展开表单；M2 这一步会调 AI 解析成结构化需求单（解析失败也回落到这张表单）</text>
+    <button class="primary" loading="{{organizing}}" bindtap="onOrganize">帮我整理</button>
+    <text class="card-tip">说一句就行，我来整理成需求单；整理不出来也不影响，下面直接填一样能发。</text>
+  </view>
+
+  <!-- 解析结果：「我理解成这样，对吗？」（PRD 6.4） -->
+  <parse-result-card
+    wx:if="{{parse}}"
+    summary="{{parse.summary}}"
+    confidence="{{parse.confidence}}"
+    hint="{{parse.hint}}"
+    ai-field-labels="{{parse.aiFieldLabels}}"
+    user-only-labels="{{parse.userOnlyLabels}}"
+    bind:retry="onOrganize"
+  />
+
+  <!-- 降级说明：不是报错，是告诉用户「这次没帮上忙，但功能一项不少」（D-15） -->
+  <view class="card degrade" wx:if="{{degradeHint}}">
+    <text class="degrade-text">{{degradeHint}}</text>
   </view>
 
   <block wx:if="{{expanded}}">

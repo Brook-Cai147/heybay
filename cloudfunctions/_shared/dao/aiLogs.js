@@ -68,14 +68,41 @@ const sumCostByDay = async dayKey => {
   return res.list.length ? res.list[0].total : 0
 }
 
-/** 回填「用户是否采纳」（M2-08 用） */
-const markAdopted = async (logId, adopted) => {
-  await collection().doc(logId).update({ data: { adopted: adopted === true } })
+/**
+ * 回填一次解析的结果（M2-08）。发布成功后才知道用户到底采纳了多少，
+ * 所以这些字段在 `insert` 时留空，等这里补。
+ *
+ * "从解析到发布的耗时"由**这里自己算**（读一次原记录的 createdAt），不接端侧传来的时间戳 ——
+ * 端侧时钟不可信，而这个数是要拿来判断"AI 到底帮没帮上忙"的。多一次读换一个可信的数，值。
+ */
+const markOutcome = async (logId, outcome = {}) => {
+  let publishLatencyMs = null
+  try {
+    const existing = await collection().doc(logId).get()
+    const createdAt = existing.data && existing.data.createdAt
+    if (createdAt) publishLatencyMs = Date.now() - new Date(createdAt).getTime()
+  } catch (err) {
+    console.error('[aiLogs] 取原记录失败，耗时记 null', err && err.message)
+  }
+
+  await collection().doc(logId).update({
+    data: {
+      adopted: outcome.adopted === null || outcome.adopted === undefined ? null : outcome.adopted === true,
+      aiFieldCount: outcome.aiFieldCount || 0,
+      adoptedFields: outcome.adoptedFields || [],
+      modifiedFields: outcome.modifiedFields || [],
+      adoptionRate: outcome.adoptionRate === undefined ? null : outcome.adoptionRate,
+      publishLatencyMs,
+      requestId: outcome.requestId || null,
+      outcomeAt: serverDate()
+    }
+  })
+  return { publishLatencyMs }
 }
 
 module.exports = {
   insert,
   countUsedToday,
   sumCostByDay,
-  markAdopted
+  markOutcome
 }

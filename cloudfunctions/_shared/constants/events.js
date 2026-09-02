@@ -69,24 +69,24 @@ const EVENTS = {
     desc: '双向评价（M3）'
   },
 
-  // ② AI 调用 —— 占位，M2 由 aiGateway 填满
+  // ② AI 调用 —— M2-04 起由 aiGateway 与发布页填满
   ai_capability_called: {
     group: EVENT_GROUP.AI_CALL,
-    status: PLANNED,
+    status: ACTIVE,
     params: ['capability', 'durationMs', 'tokenIn', 'tokenOut', 'fromCache'],
-    desc: 'aiGateway 每次调用（M2）'
+    desc: 'aiGateway 每次调用（M2-08 起启用）'
   },
   ai_field_modified: {
     group: EVENT_GROUP.AI_CALL,
-    status: PLANNED,
+    status: ACTIVE,
     params: ['capability', 'field'],
-    desc: '用户改掉了 AI 给的建议值，PRD 5.5 字段修改率的数据源（M2）'
+    desc: '用户改掉了 AI 给的建议值，PRD 5.5 字段修改率的数据源（M2-08 起启用）'
   },
   ai_fallback_triggered: {
     group: EVENT_GROUP.AI_CALL,
-    status: PLANNED,
+    status: ACTIVE,
     params: ['capability', 'reason'],
-    desc: 'AI 失败后降级为普通表单（M2，D-15 护栏的观测点）'
+    desc: 'AI 失败后降级为普通表单（M2-08 起启用，D-15 护栏的观测点）'
   },
 
   // ③ 分发触达与响应归因

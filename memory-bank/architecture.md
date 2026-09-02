@@ -345,6 +345,36 @@ cloudfunctions/_shared/dao/       唯一接触云数据库 API 的地方。不�
 >
 > **新增两个集合（M1-07 的六个之外）**：`aiLogs`（索引 `openid+createdAt`、`capability+createdAt`）、`aiCache`（索引 `cacheKey`）。权限均为「所有用户不可读写」，与 M1-07 同档。`aiCache` 是对计划的补充 —— 进程内缓存在云函数上几乎无效（实例随时回收、多实例各存一份），不落库就达不到省钱省额度的目的。
 
+## M2-06~08 parseRequest 全链路（2026-09-02）
+
+- `cloudfunctions/_shared/ai/parseDraft.js`（新）— 解析结果规范化：四类字段抹空、品类白名单、来源标记推断、草稿级置信度。**纯函数** — `constants/enums.js`、`schemas/parseRequest.js` — `parseRequestService`
+- `cloudfunctions/_shared/service/parseRequestService.js`（新）— parseRequest 能力的编排；失败原样透传 `aiService` 的降级返回 — `aiService`、`ai/parseDraft.js` — `aiGateway`
+- `cloudfunctions/_shared/ai/adoption.js`（新）— 采纳率口径的唯一实现处。**纯函数** — `constants/enums.js` — `requestService.create`
+- `cloudfunctions/_shared/schemas/parseRequest.js`（扩展）— 抽出 `OUTPUT_FIELDS` 并导出 `PARSE_OUTPUT_FIELDS`；`fieldSources` 加 `keyWhitelist`
+- `cloudfunctions/_shared/dao/aiLogs.js`（扩展）— `markAdopted` → `markOutcome`：回填采纳字段、修改字段、采纳率、发布耗时、requestId
+- `cloudfunctions/_shared/service/requestService.js`（扩展）— `backfillAiOutcome`：发布成功后回填 `aiLogs`；没带 `aiMeta` 就跳过
+- `cloudfunctions/_shared/constants/events.js`（扩展）— 三条 AI 事件从 `planned` 转 `active`
+- `miniprogram/services/ai.js`（新）— 端侧唯一调 `aiGateway` 的地方，**永不抛错** — `services/cloud.js`、`utils/track.js` — 发布页（M2-13 起还有小螺对话页）
+- `miniprogram/components/parse-result-card/`（新）— 「我理解成这样，对吗？」卡片 + 「AI 协助」标识 — 无 — 发布页
+- `miniprogram/pages/publish/`（扩展）— 「帮我整理」接真实调用、解析结果填表、字段改动上报、四种失败统一降级
+- `miniprogram/models/labels.js`（扩展）— `FIELD_LABEL` 字段中文名
+- `tests/parseDraft.test.js`（新，9 条）、`tests/adoption.test.js`（新，7 条）
+
+### 采纳率口径（M2-08 定，勿改）
+
+**字段级采纳率 = 未被修改的 AI 建议字段数 / AI 给出建议的字段数**
+
+- 分子分母都只数 `parseDraft.aiFilledFields` 里的字段，四类禁填字段永远不进分母
+- 判定依据是提交时的 `fieldSources`：仍为 `ai` 算采纳，变成 `user` 或 `empty` 都算未采纳
+- **分母为 0 时采纳率是 `null` 而不是 0** ——「没得可采纳」与「给了但全被改」是两件事
+- 落点：`aiLogs.adoptionRate` / `adoptedFields` / `modifiedFields`，发布成功时回填
+
+> **同一个指标绝不两处上报**。`events.ai_field_modified` 由**端侧在用户改动那一刻**上报，含最终没发布的草稿，衡量"用户改不改"；`aiLogs.adoptionRate` 由**服务端在发布成功时**算，只覆盖真发出去的单，衡量"AI 的建议最终留下多少"。两个数分工不同、都需要，但混成一个就会得出一个谁也解释不清的百分比。
+>
+> **"从解析到发布的耗时"由 dao 自己读原记录的 `createdAt` 算**，不接端侧传来的时间戳 —— 端侧时钟不可信，而这个数要用来判断 AI 到底帮没帮上忙。多一次读换一个可信的数。
+>
+> **端侧的 `services/ai.js` 永不抛错**：额度用完、成本护栏、模型抽风、网络不通，页面要做的事完全一样（展开纯表单）。如果它抛错，每个调用点都得写一遍 try-catch，漏一个就变成一个红色报错弹窗 —— 而那正是 D-15 要避免的。
+
 
 
 

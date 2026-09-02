@@ -81,6 +81,26 @@ const CONTACT_TYPE_LABEL = {
 
 const freeze = Object.freeze
 
+/**
+ * 需求单字段的中文名（M2-07）。
+ * 用在解析结果卡片上告诉用户"我帮你填了哪几项、哪几项要你自己确认" ——
+ * 把 `expectTime` 这种键名直接给用户看是不可接受的。
+ */
+const FIELD_LABEL = {
+  category: '品类',
+  title: '标题',
+  detail: '具体需求',
+  timing: '时效',
+  instantDuration: '有效时长',
+  rewardType: '报酬方式',
+  headcount: '人数',
+  amount: '金额',
+  expectTime: '见面时间',
+  area: '见面地点',
+  contact: '联系方式',
+  summary: '理解摘要'
+}
+
 module.exports = {
   CATEGORY_LABEL: freeze(CATEGORY_LABEL),
   STATUS_LABEL: freeze(STATUS_LABEL),
@@ -91,5 +111,6 @@ module.exports = {
   GENDER_LABEL: freeze(GENDER_LABEL),
   TRUST_LEVEL_LABEL: freeze(TRUST_LEVEL_LABEL),
   CITY_LABEL: freeze(CITY_LABEL),
-  CONTACT_TYPE_LABEL: freeze(CONTACT_TYPE_LABEL)
+  CONTACT_TYPE_LABEL: freeze(CONTACT_TYPE_LABEL),
+  FIELD_LABEL: freeze(FIELD_LABEL)
 }

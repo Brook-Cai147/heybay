@@ -1,13 +1,17 @@
 /**
- * 发布页（M1-15）。PRD 6.2 的 P0 页面在 M1 的形态：一个能把需求发出去的纯表单。
+ * 发布页（M1-15 表单 / M2-07 接入 AI 解析）。PRD 6.2 的 P0 页面。
  *
- * 它同时就是 M2 里 AI 解析失败后的降级路径（D-15）—— 所以首屏刻意保留"一句话输入框 +
- * 帮我整理"的结构：M2 只需把「帮我整理」换成一次 aiGateway 调用，页面不用重做。
+ * PRD 6.4 的形态：**表单是解析后的结果，不是输入的起点**。首屏只有一个输入框，
+ * 点「帮我整理」调 `aiGateway.parseRequest`，解析结果填进下面这张表单，每一项都能改。
  *
  * 三条纪律：
  *   1. 枚举一律从 models/enums.js 取，**不写字符串字面量**
  *   2. 金额、见面时间、见面地点三项留空并高亮，配"这几项请你自己确认"（PRD 6.4 / 5.4）
  *   3. 偏好区只有「仅同性响应」，不提供任何异性偏好选项（D-09）
+ *
+ * 降级是这一页的重点（D-15）：解析失败、超时、额度耗尽、成本护栏四种情况，
+ * 表现完全一样 —— 展开纯表单 + 一行说明，**发布功能一项不少**。
+ * 所以 `services/ai.js` 永不抛错，这里不需要 try-catch 分支来兜四种失败。
  */
 
 const {
@@ -20,20 +24,34 @@ const {
   REWARD_TYPE_VALUES,
   VISIBILITY,
   VISIBILITY_VALUES,
-  PREFERENCE_FLAG
+  PREFERENCE_FLAG,
+  FIELD_SOURCE
 } = require('../../models/enums')
 const {
   CATEGORY_LABEL,
   TIMING_LABEL,
   INSTANT_DURATION_LABEL,
   REWARD_LABEL,
-  VISIBILITY_LABEL
+  VISIBILITY_LABEL,
+  FIELD_LABEL
 } = require('../../models/labels')
 const { validateRequestDraft } = require('../../models/schema')
 const requestService = require('../../services/request')
+const aiService = require('../../services/ai')
 const { track } = require('../../utils/track')
 
 const toOptions = (values, labels) => values.map(value => ({ value, label: labels[value] }))
+
+/** 四类只能本人填的字段（PRD 5.4）。与云侧 `requestValidator.USER_ONLY_FIELDS` 同一份清单 */
+const USER_ONLY_FIELDS = ['amount', 'expectTime', 'area', 'contact']
+
+/**
+ * 追问上限 2 轮（PRD 5.4）。第 3 次不再调模型，直接让用户用表单填。
+ * 理由：连着两次都没整理对，再试一次的期望收益远低于让用户多等一次网络往返。
+ */
+const ORGANIZE_MAX = 3
+
+const labelsOf = fields => fields.map(field => FIELD_LABEL[field] || field).join('、')
 
 Page({
   data: {
@@ -75,7 +93,20 @@ Page({
     errors: {},
     hints: [],
     submitting: false,
-    globalError: ''
+    globalError: '',
+
+    // ---- AI 解析（M2-07）----
+    organizing: false,
+    /** 已经调过几次「帮我整理」，到 ORGANIZE_MAX 就不再调（PRD 5.4 追问上限） */
+    organizeCount: 0,
+    /** 解析结果卡片的内容；null 表示没有解析结果（纯表单路径） */
+    parse: null,
+    /** 每个字段的来源标记：ai / user / empty。发布时随草稿一起提交 */
+    sources: {},
+    /** 本次解析的 logId 与 AI 填了哪些字段，发布时回传给服务端算采纳率（M2-08） */
+    aiMeta: null,
+    /** 降级说明：解析用不了时显示的一行话，不是报错 */
+    degradeHint: ''
   },
 
   onShow() {
@@ -89,24 +120,112 @@ Page({
   },
 
   /**
-   * 「帮我整理」：M1 直接展开完整表单，不调 AI。
-   * M2 在这里插入 parseRequest 调用并把结果填进表单（M2-07），页面结构不变。
+   * 「帮我整理」：调 AI 解析（M2-07）。
+   *
+   * 四种失败（模型抽风、超时、额度耗尽、成本护栏）在这里**没有分支** ——
+   * `services/ai.js` 已经把它们收敛成 `ok: false + message`，一律走同一条降级路径。
    */
-  onOrganize() {
-    this.setData({ expanded: true })
-    if (this.data.oneLine.trim() && !this.data.form.detail) {
-      // 一句话原文先落到"具体需求"里，用户不用重打一遍
-      this.setData({ 'form.detail': this.data.oneLine.trim() })
+  async onOrganize() {
+    if (this.data.organizing) return
+
+    const text = this.data.oneLine.trim()
+    if (!text) {
+      // 没写字就直接展开表单：用户可能本来就想自己填
+      this.expandPlainForm('')
+      return
     }
+
+    // 追问上限：到次数就不再调模型，直说并展开表单
+    if (this.data.organizeCount >= ORGANIZE_MAX) {
+      this.expandPlainForm('试了几次都没整理好，下面直接填吧，一样能发出去')
+      return
+    }
+
+    this.setData({ organizing: true, degradeHint: '' })
+    wx.showLoading({ title: '正在整理', mask: true })
+    try {
+      const res = await aiService.parseRequest(text, this.data.form.city)
+      this.setData({ organizeCount: this.data.organizeCount + 1 })
+      if (res.ok) {
+        this.applyParsed(res)
+      } else {
+        // 降级：把 message 原样当说明展示。服务端给的都是人话（D-15）
+        this.expandPlainForm(res.message)
+      }
+    } finally {
+      wx.hideLoading()
+      this.setData({ organizing: false })
+    }
+  },
+
+  /** 降级到纯表单：一句话原文先落进"具体需求"，用户不用重打一遍 */
+  expandPlainForm(degradeHint) {
+    const patch = { expanded: true, parse: null, aiMeta: null, degradeHint }
+    const text = this.data.oneLine.trim()
+    if (text && !this.data.form.detail) patch['form.detail'] = text
+    this.setData(patch)
+  },
+
+  /** 把解析结果填进表单，并记下每个字段的来源 */
+  applyParsed(res) {
+    const draft = res.draft || {}
+    const sources = Object.assign({}, res.fieldSources)
+    const patch = { expanded: true, degradeHint: '' }
+
+    for (const field of ['category', 'title', 'detail', 'timing', 'instantDuration', 'rewardType']) {
+      if (draft[field] !== null && draft[field] !== undefined && draft[field] !== '') {
+        patch[`form.${field}`] = draft[field]
+      }
+    }
+    if (draft.headcount) patch['form.headcount'] = String(draft.headcount)
+    // 一句话原文兜底进"具体需求"：模型没给 detail 时，原话比空白有用
+    if (!patch['form.detail'] && !this.data.form.detail) {
+      patch['form.detail'] = this.data.oneLine.trim()
+      sources.detail = FIELD_SOURCE.USER
+    }
+
+    // 四类字段一律不填（服务端已经抹空过，这里是端侧的第二道保险）
+    for (const field of USER_ONLY_FIELDS) sources[field] = FIELD_SOURCE.EMPTY
+
+    const aiFields = (res.aiFilledFields || []).filter(f => !USER_ONLY_FIELDS.includes(f))
+
+    patch.sources = sources
+    patch.parse = {
+      summary: draft.summary || '',
+      confidence: res.confidence || '',
+      hint: res.unclassified ? res.hint : '',
+      aiFieldLabels: labelsOf(aiFields),
+      userOnlyLabels: labelsOf(['amount', 'expectTime', 'area'])
+    }
+    patch.aiMeta = {
+      logId: res.meta && res.meta.logId,
+      aiFilledFields: res.aiFilledFields || []
+    }
+    this.setData(patch)
+  },
+
+  /**
+   * 用户改了一个 AI 填的字段：来源改成 user 并上报一条事件。
+   *
+   * 上报点选在**改动发生的那一刻**而不是发布时，因为「字段修改率」衡量的是用户改不改，
+   * 包括那些最终没发出去的草稿。发布时的字段级采纳率由服务端另算（M2-08），
+   * 两个数分工不同、不能混。
+   */
+  markFieldTouched(field) {
+    if (this.data.sources[field] !== FIELD_SOURCE.AI) return
+    this.setData({ [`sources.${field}`]: FIELD_SOURCE.USER })
+    track('ai_field_modified', { capability: 'parseRequest', field })
   },
 
   onFieldInput(e) {
     const { field } = e.currentTarget.dataset
+    this.markFieldTouched(field)
     this.setData({ [`form.${field}`]: e.detail.value, [`errors.${field}`]: '' })
   },
 
   onPick(e) {
     const { field, value } = e.currentTarget.dataset
+    if (this.data.form[field] !== value) this.markFieldTouched(field)
     this.setData({ [`form.${field}`]: value, [`errors.${field}`]: '' })
   },
 
@@ -125,9 +244,10 @@ Page({
   /**
    * 把表单拼成需求单草稿。
    *
-   * `fieldSources` 是给服务端看的字段来源标记（PRD 5.4）：M1 全部来自用户本人，
-   * 所以只有 `user` 与 `empty` 两种取值。M2 接入 AI 解析后，AI 给的字段标 `ai`，
-   * 而金额 / 见面时间 / 见面地点 / 联系方式这四项标了 `ai` 会被服务端直接拒绝。
+   * `fieldSources` 是给服务端看的字段来源标记（PRD 5.4）：
+   * AI 填过又没被改的字段标 `ai`，用户填的标 `user`，空的标 `empty`。
+   * 金额 / 见面时间 / 见面地点 / 联系方式这四项标了 `ai` 会被服务端直接拒绝 ——
+   * 所以它们在端侧就永远只可能是 `user` 或 `empty`。
    */
   buildDraft() {
     const form = this.data.form
@@ -160,11 +280,17 @@ Page({
       draft.headcount = form.headcount
     }
 
-    draft.fieldSources = {
-      amount: draft.amount ? 'user' : 'empty',
-      expectTime: draft.expectTime ? 'user' : 'empty',
-      area: draft.area ? 'user' : 'empty',
-      contact: 'empty'
+    // 先取解析时记下的来源，再把四类字段按实际填写情况覆盖成 user / empty
+    draft.fieldSources = Object.assign({}, this.data.sources, {
+      amount: draft.amount ? FIELD_SOURCE.USER : FIELD_SOURCE.EMPTY,
+      expectTime: draft.expectTime ? FIELD_SOURCE.USER : FIELD_SOURCE.EMPTY,
+      area: draft.area ? FIELD_SOURCE.USER : FIELD_SOURCE.EMPTY,
+      contact: FIELD_SOURCE.EMPTY
+    })
+
+    // 走过 AI 解析才带 aiMeta；纯表单发布不带，免得稀释采纳率的分母（M2-08）
+    if (this.data.aiMeta && this.data.aiMeta.logId) {
+      draft.aiMeta = this.data.aiMeta
     }
     return draft
   },

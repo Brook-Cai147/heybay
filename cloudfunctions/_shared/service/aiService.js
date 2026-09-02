@@ -27,6 +27,7 @@ const aiLogsDao = require('../dao/aiLogs')
 const aiCacheDao = require('../dao/aiCache')
 const eventsDao = require('../dao/events')
 const configsDao = require('../dao/configs')
+const trackService = require('./trackService')
 
 /** 联调期把 AI 调用也标成测试数据，和 M1 的口径一致，便于一次性清理 */
 const INCLUDE_TEST_DATA = true
@@ -64,6 +65,24 @@ const safeLog = async log => {
     return null
   }
 }
+
+/** 每次调用都上报一条埋点（事件字典 ② AI 组，PRD 7.3）。埋点不阻断业务 */
+const trackCall = ({ openid, capability, durationMs, tokenIn, tokenOut, fromCache }) =>
+  trackService.reportSafely({
+    openid,
+    name: 'ai_capability_called',
+    params: { capability, durationMs, tokenIn, tokenOut, fromCache },
+    isTest: INCLUDE_TEST_DATA
+  })
+
+/** 降级也要留痕：D-15 的护栏如果静默生效，就没人知道 AI 其实一直在失败 */
+const trackFallback = ({ openid, capability, reason }) =>
+  trackService.reportSafely({
+    openid,
+    name: 'ai_fallback_triggered',
+    params: { capability, reason: reason || 'unknown' },
+    isTest: INCLUDE_TEST_DATA
+  })
 
 /**
  * 把模型返回的文本解析成对象。
@@ -147,6 +166,7 @@ const fallbackResult = async ({
     result: AI_RESULT.FALLBACK,
     errorCode: reasonCode
   })
+  await trackFallback({ openid, capability, reason: reasonCode })
   return {
     ok: false,
     code: ERROR.AI_FALLBACK,
@@ -221,6 +241,14 @@ const invoke = async ({ openid, capability, params = {} }) => {
         quotaCounted: false,
         modelTier: record.modelTier,
         result: AI_RESULT.CACHED,
+        fromCache: true
+      })
+      await trackCall({
+        openid,
+        capability,
+        durationMs: 0,
+        tokenIn: 0,
+        tokenOut: 0,
         fromCache: true
       })
       return ok({
@@ -335,6 +363,14 @@ const invoke = async ({ openid, capability, params = {} }) => {
         latencyMs: totals.latencyMs,
         attempts: attempt,
         result: AI_RESULT.SUCCESS,
+        fromCache: false
+      })
+      await trackCall({
+        openid,
+        capability,
+        durationMs: totals.latencyMs,
+        tokenIn: totals.inputTokens,
+        tokenOut: totals.outputTokens,
         fromCache: false
       })
       return ok({

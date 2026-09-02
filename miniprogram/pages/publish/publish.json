@@ -1,3 +1,5 @@
 {
-  "usingComponents": {}
+  "usingComponents": {
+    "parse-result-card": "/components/parse-result-card/parse-result-card"
+  }
 }

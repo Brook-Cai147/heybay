@@ -1,0 +1,25 @@
+<view class="parse-card">
+  <view class="head">
+    <text class="title">我理解成这样，对吗？</text>
+    <!-- PRD 5.4 身份明示：用户必须一眼看出这是 AI 填的 -->
+    <text class="badge">AI 协助</text>
+  </view>
+
+  <text class="summary" wx:if="{{summary}}">{{summary}}</text>
+
+  <text class="warn" wx:if="{{hint}}">{{hint}}</text>
+  <text class="note" wx:if="{{!hint && CONFIDENCE_TEXT[confidence]}}">{{CONFIDENCE_TEXT[confidence]}}</text>
+
+  <view class="line" wx:if="{{aiFieldLabels.length}}">
+    <text class="line-label">我帮你填了</text>
+    <text class="line-value">{{aiFieldLabels}}</text>
+  </view>
+
+  <view class="line" wx:if="{{userOnlyLabels.length}}">
+    <text class="line-label">这几项请你自己确认</text>
+    <text class="line-value strong">{{userOnlyLabels}}</text>
+  </view>
+
+  <text class="tip">下面每一项都能改，改完再发。</text>
+  <button class="ghost" size="mini" bindtap="onRetry">换个说法重新整理</button>
+</view>

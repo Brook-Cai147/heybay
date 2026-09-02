@@ -19,19 +19,19 @@ const { createHandler } = require('./_shared/service/dispatch')
 const { ERROR } = require('./_shared/constants/errors')
 const { AI_CAPABILITY } = require('./_shared/constants/aiCapabilities')
 const aiService = require('./_shared/service/aiService')
+const parseRequestService = require('./_shared/service/parseRequestService')
 
 const badParams = message => ({ ok: false, code: ERROR.BAD_PARAMS, message })
 
 exports.main = createHandler({
-  /** 一句话 → 结构化需求单草稿。只解析，不建单（建单仍走 requestFlow.create） */
+  /**
+   * 一句话 → 结构化需求单草稿。只解析，不建单（建单仍走 requestFlow.create）。
+   * 编排在 parseRequestService：四类字段抹空、品类白名单、来源标记推断都在那一层。
+   */
   parseRequest: ({ openid, params }) => {
     const text = typeof params.text === 'string' ? params.text.trim() : ''
     if (!text) return badParams('先说一句你想找什么，我来帮你整理')
-    return aiService.invoke({
-      openid,
-      capability: AI_CAPABILITY.PARSE_REQUEST,
-      params: { text, city: params.city }
-    })
+    return parseRequestService.parse({ openid, params: { text, city: params.city } })
   },
 
   /** 基于站内语料的兜底作答。`snippets` 由 M2-09 的关键词检索给出，本步允许为空 */
