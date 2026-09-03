@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>喊呗 HeyBay · 产品资料</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#080F1A;color:#E9EEF6;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;padding:32px}
+  .box{max-width:560px;width:100%}
+  .mark{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#FF7A59,#FFC24D);
+    display:grid;place-items:center;font-weight:700;color:#231005;font-size:20px;margin-bottom:20px}
+  h1{font-size:30px;margin:0 0 8px;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:#8B9CB5;font-size:17px;font-weight:400}
+  p.sl{color:#8B9CB5;margin:0 0 30px}
+  a.item{display:block;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.1);
+    border-radius:14px;padding:17px 20px;margin-bottom:12px;transition:.18s;background:rgba(255,255,255,.025)}
+  a.item:hover{border-color:rgba(255,122,89,.45);background:rgba(255,122,89,.07)}
+  a.item b{display:block;font-size:16px;margin-bottom:4px}
+  a.item span{font-size:13.5px;color:#8B9CB5}
+  .first{border-color:rgba(255,122,89,.4);background:linear-gradient(150deg,rgba(255,122,89,.12),rgba(255,255,255,.02))}
+  footer{margin-top:26px;font-size:12.5px;color:#65778F;line-height:1.8;border-top:1px dashed rgba(255,255,255,.1);padding-top:18px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="mark">喊</div>
+  <h1>喊呗 <em>HeyBay</em></h1>
+  <p class="sl">在国外，喊一声就有人。</p>
+
+  <a class="item first" href="demo/"><b>交互演示原型 →</b><span>11 个可点的屏幕 + 逐屏设计旁注</span></a>
+  <a class="item" href="https://github.com/Brook-Cai147/heybay/blob/main/docs/prd-heybay-v2.md"><b>产品需求文档 PRD V2.0 →</b><span>定位、核心机制、AI 设计、信任安全、商业化、合规落地</span></a>
+  <a class="item" href="https://github.com/Brook-Cai147/heybay/blob/main/docs/v1-to-v2-changes.md"><b>V1.0 → V2.0 版本变动说明 →</b><span>V1.0 复盘的 14 个问题与逐条处置</span></a>
+  <a class="item" href="https://github.com/Brook-Cai147/heybay"><b>代码仓库 →</b><span>微信小程序原生 + 微信云开发：7 个云函数、10 个集合</span></a>
+
+  <footer>演示原型为 HTML 静态页，用于呈现产品的理想完整形态（含尚在排期中的功能），页面内数据均为演示样例。产品本体是真实的全栈微信小程序：微信原生前端 + 云函数后端 + 云数据库，数据库权限收为「所有用户不可读写」，一切数据访问只能走云函数。</footer>
+</div>
+</body>
+</html>
