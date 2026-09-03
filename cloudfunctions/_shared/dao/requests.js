@@ -38,12 +38,21 @@ const updateById = async (id, data, tx) => {
   return res.stats ? res.stats.updated : 1
 }
 
-/** 某人在某城市当前在架的需求单数量（发布前的上限校验用） */
-const countActiveByOwnerCity = async (ownerOpenid, city) => {
+/**
+ * 某人在某城市当前在架的需求单数量（发布前的上限校验用）。
+ *
+ * **必须按 `expireAt` 过滤**，与 `listOpenByCity` 用同一个"在架"口径：
+ * 过期扫描是定时任务（即时型 10 分钟一轮），总有一段时间里单子已过期而 `status` 还是 open。
+ * 不过滤的话，用户在广场上看到自己只挂着 1 条、发新单却被拦"最多挂 3 条" ——
+ * 同一个"在架"有两种口径，而用户能看到的那个才是对的。真机验证撞上过这条。
+ *
+ * @param {number} [nowMs] 判定时刻；不传则只按状态数
+ */
+const countActiveByOwnerCity = async (ownerOpenid, city, nowMs) => {
   const _ = getCommand()
-  const res = await collection()
-    .where(Object.assign({ ownerOpenid, city, status: _.in(ACTIVE_STATUSES) }, NOT_DELETED))
-    .count()
+  const where = Object.assign({ ownerOpenid, city, status: _.in(ACTIVE_STATUSES) }, NOT_DELETED)
+  if (nowMs) where.expireAt = _.gt(new Date(nowMs))
+  const res = await collection().where(where).count()
   return res.total
 }
 

@@ -1,0 +1,141 @@
+{
+  "runs": [
+    {
+      "at": "2026-09-03T07:39:06.563Z",
+      "goldenVersion": "2026-09-02",
+      "cases": 3,
+      "failedCalls": 0,
+      "fieldAccuracy": 100,
+      "checked": 9,
+      "userOnlyFilled": 0,
+      "unclassifiedRate": 0,
+      "avgLatencyMs": 1796,
+      "tokens": {
+        "input": 2765,
+        "output": 677
+      },
+      "failures": []
+    },
+    {
+      "at": "2026-09-03T07:40:50.839Z",
+      "goldenVersion": "2026-09-02",
+      "cases": 36,
+      "failedCalls": 1,
+      "fieldAccuracy": 89.2,
+      "checked": 74,
+      "userOnlyFilled": 0,
+      "unclassifiedRate": 0,
+      "avgLatencyMs": 1544,
+      "tokens": {
+        "input": 32251,
+        "output": 7588
+      },
+      "failures": [
+        {
+          "id": "c06",
+          "kind": "normal",
+          "diff": [
+            {
+              "field": "timing",
+              "expected": "scheduled",
+              "got": null,
+              "pass": false
+            }
+          ],
+          "userOnlyFilled": []
+        },
+        {
+          "id": "c08",
+          "kind": "normal",
+          "diff": [
+            {
+              "field": "instantDuration",
+              "expected": "today",
+              "got": "1h",
+              "pass": false
+            }
+          ],
+          "userOnlyFilled": []
+        },
+        {
+          "id": "c12",
+          "kind": "normal",
+          "diff": [
+            {
+              "field": "timing",
+              "expected": "instant",
+              "got": null,
+              "pass": false
+            }
+          ],
+          "userOnlyFilled": []
+        },
+        {
+          "id": "c14",
+          "kind": "normal",
+          "diff": [
+            {
+              "field": "rewardType",
+              "expected": "free",
+              "got": null,
+              "pass": false
+            }
+          ],
+          "userOnlyFilled": []
+        },
+        {
+          "id": "c16",
+          "kind": "normal",
+          "diff": [
+            {
+              "field": "timing",
+              "expected": "instant",
+              "got": null,
+              "pass": false
+            }
+          ],
+          "userOnlyFilled": []
+        },
+        {
+          "id": "c18",
+          "kind": "normal",
+          "diff": [
+            {
+              "field": "rewardType",
+              "expected": "free",
+              "got": null,
+              "pass": false
+            }
+          ],
+          "userOnlyFilled": []
+        },
+        {
+          "id": "c20",
+          "kind": "normal",
+          "diff": [
+            {
+              "field": "category",
+              "expected": "paid_guide",
+              "got": "companion",
+              "pass": false
+            }
+          ],
+          "userOnlyFilled": []
+        },
+        {
+          "id": "x01",
+          "kind": "rejected",
+          "diff": [
+            {
+              "field": "unclassified",
+              "expected": true,
+              "got": false,
+              "pass": false
+            }
+          ],
+          "userOnlyFilled": []
+        }
+      ]
+    }
+  ]
+}

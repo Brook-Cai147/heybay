@@ -96,9 +96,9 @@ test('枚举值不在白名单被拒（模型编了一个不存在的品类）',
 })
 
 test('必填缺失、类型不对、超长都能被指到具体字段', () => {
-  const missing = validate(parseRequestSchema, { title: '缺品类' })
+  const missing = validate(parseRequestSchema, { category: 'companion' })
   assert.equal(missing.valid, false)
-  assert.ok(missing.errors.some(e => e.code === VALIDATION_CODE.REQUIRED && e.path === 'category'))
+  assert.ok(missing.errors.some(e => e.code === VALIDATION_CODE.REQUIRED && e.path === 'title'))
 
   const wrongType = validParse()
   wrongType.headcount = '两个人'
@@ -109,6 +109,32 @@ test('必填缺失、类型不对、超长都能被指到具体字段', () => {
   tooLong.title = '一'.repeat(21)
   const longRes = validate(parseRequestSchema, tooLong)
   assert.ok(longRes.errors.some(e => e.code === VALIDATION_CODE.TOO_LONG && e.path === 'title'))
+})
+
+/**
+ * M2-15 首轮评测暴露的设计矛盾：Prompt 要求"归不进 8 类就把 category 留空"，
+ * 而 Schema 曾把 category 设成必填 —— 于是老实留空的那条被判"必填字段缺失"整条作废，
+ * 另一条为了满足必填硬塞了品类。**用 Schema 逼模型硬塞品类，正是 D-09 最怕的事。**
+ */
+test('归不进品类时 category 留空是合法输出，不是校验失败（D-09）', () => {
+  const unclassified = Object.assign(validParse(), {
+    category: null,
+    title: '想找人一起吃饭聊天',
+    summary: '这条我没法归进现有分类'
+  })
+  const res = validate(parseRequestSchema, unclassified)
+  assert.equal(res.valid, true, JSON.stringify(res.errors))
+  assert.equal(res.value.category, null)
+
+  // 空字符串是「留空」的第三种写法，同样要认
+  const emptyString = Object.assign(validParse(), { category: '' })
+  assert.equal(validate(parseRequestSchema, emptyString).valid, true)
+
+  // 但白名单外的值仍然要拒 —— 留空可以，自造品类不行
+  const invented = Object.assign(validParse(), { category: 'dating' })
+  const inventedRes = validate(parseRequestSchema, invented)
+  assert.equal(inventedRes.valid, false)
+  assert.ok(inventedRes.errors.some(e => e.path === 'category' && e.code === VALIDATION_CODE.ENUM))
 })
 
 test('多余字段不算错，只记 warning 并从结果里剥掉', () => {

@@ -29,7 +29,15 @@ const USER_ONLY_FIELDS = Object.freeze(['amount', 'expectTime', 'area', 'contact
  * 只给了中文说明。那是 Prompt 的锅，不是模型的锅。
  */
 const OUTPUT_FIELDS = Object.freeze({
-  category: { type: 'string', enum: REQUEST_CATEGORY_VALUES },
+  /**
+   * **允许为空**（`nullable`）且不在 `required` 里，这一点是刻意的：
+   * Prompt 要求"归不进 8 类就不要硬塞，category 留空"，如果这里把它设成必填，
+   * 就等于用 Schema 逼模型硬塞一个品类 —— 而擦边交友被硬塞进「搭子同行」
+   * 正是 D-09 最怕的那件事。M2-15 首轮评测的两条擦边用例就是这么暴露的：
+   * 一条被归进了品类，另一条老实留空却被判成"必填字段缺失"、整条解析作废。
+   * 归不进类由 `ai/parseDraft.js` 的 `unclassified` 分支处理，那是产品结果，不是校验失败。
+   */
+  category: { type: 'string', enum: REQUEST_CATEGORY_VALUES, nullable: true },
   title: { type: 'string', minLength: 1, maxLength: 20 },
   detail: { type: 'string', maxLength: 500, nullable: true },
   timing: { type: 'string', enum: TIMING_TYPE_VALUES, nullable: true },
@@ -53,12 +61,13 @@ const PARSE_OUTPUT_FIELDS = Object.freeze(Object.keys(OUTPUT_FIELDS))
 /**
  * `parseRequest` 的输出：一张待用户确认的需求单草稿。
  *
- * 设计上只有 `category` 与 `title` 是必填 —— 模型抽不出时效或报酬类型是常态，
+ * 只有 `title` 与 `fieldSources` 是必填。`category` 不必填 —— 理由见 `OUTPUT_FIELDS.category`
+ * 的注释：把它设成必填就是用 Schema 逼模型硬塞品类。模型抽不出时效或报酬类型同样是常态，
  * 强制必填只会让本可用的解析结果整条作废，降级成空表单反而更差。
  */
 const parseRequestSchema = Object.freeze({
   type: 'object',
-  required: ['category', 'title', 'fieldSources'],
+  required: ['title', 'fieldSources'],
   userOnlyFields: USER_ONLY_FIELDS,
   properties: Object.assign({}, OUTPUT_FIELDS, {
     /**

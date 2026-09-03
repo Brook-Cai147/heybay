@@ -91,7 +91,18 @@ const create = async ({ openid, params = {}, isTest = false }) => {
   const draft = validateAndNormalize(params)
   const city = await loadCityConfig(draft.city)
 
-  const activeCount = await requestsDao.countActiveByOwnerCity(openid, draft.city)
+  // 发布时间用服务端时间：端侧时钟不可信，而过期时间与在架判定都是从这里算起的
+  const nowMs = Date.now()
+
+  /**
+   * 在架数只数**还没过期**的单。
+   *
+   * 过期扫描是定时任务（即时型 10 分钟一轮），所以总有一段时间里单子实际已过期、
+   * `status` 还是 open。这段时间里不过滤 `expireAt` 的话，用户在广场上看到自己只挂着 1 条
+   *（广场按 `expireAt` 过滤），发新单却被告知"最多挂 3 条" —— 同一个"在架"有两种口径，
+   * 而用户能看到的那个口径才是对的。真机验证时就撞上了这条。
+   */
+  const activeCount = await requestsDao.countActiveByOwnerCity(openid, draft.city, nowMs)
   const limitCheck = checkActiveLimit(activeCount, { limit: city.activeLimitFree })
   if (!limitCheck.allowed) {
     fail(
@@ -100,8 +111,6 @@ const create = async ({ openid, params = {}, isTest = false }) => {
     )
   }
 
-  // 发布时间用服务端时间：端侧时钟不可信，而过期时间是从这里算起的
-  const nowMs = Date.now()
   const { expireAt, rule } = computeExpireAt({
     timing: draft.timing,
     expectTime: draft.expectTime,
