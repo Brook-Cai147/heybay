@@ -15,7 +15,7 @@
  */
 
 const { ok } = require('../constants/errors')
-const { REQUEST_CATEGORY_LABEL, VISIBILITY } = require('../constants/enums')
+const { REQUEST_CATEGORY_LABEL, VISIBILITY, REWARD_TYPE, FIELD_SOURCE } = require('../constants/enums')
 const orchestrator = require('../ai/orchestrator')
 const { TRAVEL_TYPE_VALUES } = require('./checklistService')
 const parseRequestService = require('./parseRequestService')
@@ -50,6 +50,27 @@ const AI_ASSISTED = true
  * 用户要改就去表单改 —— 这比在对话里再塞一个选择器实在。
  */
 const REQUIRED_FOR_CREATE = Object.freeze(['category', 'title', 'detail', 'timing', 'rewardType'])
+
+/**
+ * 缺了还能在对话里问一句补上的字段。**目前只有报酬类型。**
+ *
+ * 为什么需要这一层：模型几乎从不填 `rewardType`（用户那句话里通常真的没说），
+ * 而它是建单必填项 —— 结果是对话里的每一次解析都落到"去表单补齐"，
+ * 「一句话发单」这条主干路径实际上走不通。第一次真机验证就是这么暴露的。
+ *
+ * 但不能替用户默认一个：把"要不要给钱"默认成免费，是替用户改了他和另一个人的约定。
+ * 发布表单本身也没给 `rewardType` 默认值（`publish.js` 里是 `''`），对话不该比表单更擅自。
+ * 所以问一句，四个按钮。
+ */
+const CONVERSATIONAL_FIELDS = Object.freeze(['rewardType'])
+
+/**
+ * 对话里可以直接点选的报酬类型。**不含付费** —— 付费必须填参考金额，
+ * 而金额属于四类"AI 不得代填"字段（PRD 5.4），只能由本人在表单里填。
+ * 想选付费的人会被引到表单，这不是绕路，这是那条红线的正常后果。
+ */
+const CHAT_REWARD_TYPES = Object.freeze([REWARD_TYPE.FREE, REWARD_TYPE.MEAL, REWARD_TYPE.GOODS])
+const REWARD_NEEDS_FORM = REWARD_TYPE.PAID
 
 const missingForCreate = draft =>
   REQUIRED_FOR_CREATE.filter(field => {
@@ -153,27 +174,47 @@ const chat = async ({ openid, params = {} }) => {
       )
     }
     const category = REQUEST_CATEGORY_LABEL[res.draft.category] || '还没归类'
-    const missing = missingForCreate(res.draft)
+
+    /**
+     * 模型没写「具体需求」就拿用户原话兜底，并把来源标成 `user`（是他自己的话，不是 AI 编的）。
+     * 发布页的 `applyParsed` 早就这么做了（"原话比空白有用"），对话里不这么做只会让
+     * 同一份草稿在两个入口有两种结果。
+     */
+    const draft = Object.assign({}, res.draft)
+    const fieldSources = Object.assign({}, res.fieldSources)
+    if (draft.detail === null || draft.detail === undefined || String(draft.detail).trim() === '') {
+      draft.detail = text
+      fieldSources.detail = FIELD_SOURCE.USER
+    }
+
+    const missing = missingForCreate(draft)
+    // 缺的只是"能在对话里问一句"的字段 → 问，不要把人赶去表单
+    const askFields = missing.filter(field => CONVERSATIONAL_FIELDS.includes(field))
+    const mustUseForm = missing.filter(field => !CONVERSATIONAL_FIELDS.includes(field))
+
     return ok(
       Object.assign({}, base, {
         reply: reply(
           REPLY_KIND.DRAFT,
-          `${res.hint || res.draft.summary || '我理解成这样'}\n品类：${category}`,
+          `${res.hint || draft.summary || '我理解成这样'}\n品类：${category}`,
           {
             // 端侧拿它渲染确认卡片，并在确认时原样回传 —— 服务端不存会话状态
-            draft: res.draft,
-            fieldSources: res.fieldSources,
+            draft,
+            fieldSources,
             confidence: res.confidence,
             unclassified: res.unclassified,
             aiFilledFields: res.aiFilledFields,
             aiMeta: res.meta ? { logId: res.meta.logId, aiFilledFields: res.aiFilledFields } : null,
             /**
-             * 缺必填项时**不给"确认发布"按钮**，改为把这份草稿交给发布页补齐 ——
-             * 在对话里再造一套表单，就会有两处要维护、用户还分不清改哪份算
+             * 只有**问不了**的字段缺失时才交给发布页补齐 ——
+             * 在对话里再造一套表单会有两处要维护、用户还分不清改哪份算
              * （与 M2-07 解析卡片"不复制表单"是同一个判断）。
              */
             missingFields: missing,
-            handoff: missing.length ? 'publish' : '',
+            askFields,
+            rewardChoices: askFields.includes('rewardType') ? CHAT_REWARD_TYPES : [],
+            rewardNeedsForm: REWARD_NEEDS_FORM,
+            handoff: mustUseForm.length ? 'publish' : '',
             // **必须二次确认才建单**（计划第 3 条）
             needsConfirm: missing.length === 0
           }
@@ -294,5 +335,9 @@ const chat = async ({ openid, params = {} }) => {
 module.exports = {
   REPLY_KIND,
   GREETING,
+  REQUIRED_FOR_CREATE,
+  CONVERSATIONAL_FIELDS,
+  CHAT_REWARD_TYPES,
+  missingForCreate,
   chat
 }

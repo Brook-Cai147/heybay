@@ -12,7 +12,7 @@
  */
 
 const aiService = require('../../services/ai')
-const { CATEGORY_LABEL } = require('../../models/labels')
+const { CATEGORY_LABEL, REWARD_LABEL } = require('../../models/labels')
 const { track } = require('../../utils/track')
 
 /** 与发布页共用的交接 key（M2-13）。改这里要同时改 publish.js */
@@ -194,9 +194,10 @@ Page({
     const reply = res.reply || {}
     const patch = { clarifyCount: res.clarifyCount || 0 }
 
-    // 草稿：存起来等用户确认；缺必填项就不给"确认发布"，改为交给发布页
+    // 草稿：存起来等用户确认。**只有服务端说要去表单时才丢掉草稿** ——
+    // 缺的若只是报酬类型，问一句就能补上，没必要把人赶去表单
     if (reply.kind === 'draft') {
-      patch.pendingDraft = reply.missingFields && reply.missingFields.length
+      patch.pendingDraft = reply.handoff
         ? null
         : Object.assign({}, reply.draft, {
             fieldSources: reply.fieldSources,
@@ -223,11 +224,56 @@ Page({
       candidates: reply.candidates || [],
       travelTypeOptions: reply.travelTypeOptions || [],
       missingFields: reply.missingFields || [],
+      // 缺报酬类型时给四个按钮（含一个"付费→去表单"），标签在端侧、可选范围由服务端定
+      rewardOptions: (reply.rewardChoices || []).map(value => ({
+        value,
+        label: REWARD_LABEL[value] || value
+      })),
+      rewardNeedsForm: reply.rewardNeedsForm || '',
+      rewardNeedsFormLabel: REWARD_LABEL[reply.rewardNeedsForm] || '付费',
+      handoff: reply.handoff || '',
       needsConfirm: reply.needsConfirm === true,
       categoryLabel: reply.draft ? CATEGORY_LABEL[reply.draft.category] || '' : '',
       requestId: reply.requestId || ''
     })
   },
+
+  /**
+   * 选报酬类型。这是**对话里唯一替草稿补字段的地方**，且只补这一项 ——
+   * 再多补一项，这一页就开始长成第二个发布表单了。
+   *
+   * 选「付费」不在这里补：付费要填参考金额，而金额只能本人在表单里填（PRD 5.4）。
+   */
+  onPickReward(e) {
+    const value = e.currentTarget.dataset.value
+    const label = e.currentTarget.dataset.label
+    if (!value || !this.data.pendingDraft) return
+
+    const draft = Object.assign({}, this.data.pendingDraft, { rewardType: value })
+    this.setData({ pendingDraft: draft })
+    this.push(ROLE.ME, { kind: 'text', text: label })
+    this.push(ROLE.AI, {
+      kind: 'draft',
+      text: `好，报酬按「${label}」。要发出去吗？`,
+      aiAssisted: true,
+      needsConfirm: true,
+      missingFields: [],
+      rewardOptions: [],
+      handoff: ''
+    })
+  },
+
+  /** 选了「付费」：金额只能本人填，直接把草稿交给发布页 */
+  onPickRewardForm(e) {
+    this.push(ROLE.ME, { kind: 'text', text: e.currentTarget.dataset.label || '付费' })
+    this.push(ROLE.AI, {
+      kind: 'clarify',
+      text: '付费的话要你自己填一个参考金额，我不能替你定。去表单填更稳。',
+      aiAssisted: true
+    })
+    this.onHandoffPublish()
+  },
+
 
   /**
    * 确认发布。**这是 `createRequest` 唯一的触发点**（计划 M2-13 第 3 条）——

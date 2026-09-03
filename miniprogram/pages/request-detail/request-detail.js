@@ -90,6 +90,7 @@ Page({
     inviteCanSend: false,
     inviteTargets: [],
     inviteMessage: '',
+    invitePoolText: '',
     inviteDegraded: false,
     inviteDrafting: false,
     inviteSending: false,
@@ -363,6 +364,10 @@ Page({
       // 默认全不勾：默认勾上等于把"勾选"变成"取消勾选"，那就不是用户做的决定了
       inviteTargets: (res.targets || []).map(item => Object.assign({}, item, { checked: false })),
       inviteMessage: res.message || '',
+      // 名单为空时把候选池大小与跳过原因显示出来，否则分不清"这城里没人"和"人被规则挡了"
+      invitePoolText: (res.targets || []).length
+        ? ''
+        : `候选池 ${res.poolSize || 0} 人${(res.skipped || []).length ? `，被跳过 ${res.skipped.length} 人：${res.skipped.map(s => s.reason).join('、')}` : ''}`,
       inviteDegraded: res.degraded === true,
       l2Prompt: res.l2Prompt || null
     })

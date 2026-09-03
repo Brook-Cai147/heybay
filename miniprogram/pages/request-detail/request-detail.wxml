@@ -107,6 +107,7 @@
       <text class="tip" wx:if="{{!inviteTargets.length}}">AI 只出名单和文案，发给谁由你勾。一条都不会自己发出去。</text>
       <text class="tip" wx:if="{{inviteDegraded}}">这次模型没帮上忙，文案用的是按需求单套出来的模板，你可以照原样发。</text>
       <text class="warn" wx:if="{{inviteMessage}}">{{inviteMessage}}</text>
+      <text class="tip" wx:if="{{invitePoolText}}">{{invitePoolText}}</text>
 
       <view class="invite" wx:for="{{inviteTargets}}" wx:key="openid">
         <view class="invite-head" data-index="{{index}}" bindtap="onToggleTarget">

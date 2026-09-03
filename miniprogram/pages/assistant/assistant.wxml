@@ -48,14 +48,36 @@
           </view>
         </view>
 
-        <!-- 草稿：缺必填项时不给「确认发布」，改为交给发布页 -->
+        <!-- 草稿：能问的就在对话里问，问不了的才交给发布页 -->
         <view class="draft-ops" wx:if="{{item.kind === 'draft'}}">
-          <text class="draft-missing" wx:if="{{item.missingFields.length}}">还差几项才能发出去，去表单补齐更快。</text>
+          <text class="draft-missing" wx:if="{{item.rewardOptions.length}}">这次的报酬怎么算？选一个我就发。</text>
+          <text class="draft-missing" wx:if="{{item.handoff}}">还差几项才能发出去，去表单补齐更快。</text>
+
+          <block wx:if="{{item.rewardOptions.length}}">
+            <button
+              class="ghost"
+              size="mini"
+              wx:for="{{item.rewardOptions}}"
+              wx:for-item="rw"
+              wx:key="value"
+              data-value="{{rw.value}}"
+              data-label="{{rw.label}}"
+              bindtap="onPickReward"
+            >{{rw.label}}</button>
+            <button
+              class="ghost"
+              size="mini"
+              data-label="{{item.rewardNeedsFormLabel}}"
+              bindtap="onPickRewardForm"
+            >{{item.rewardNeedsFormLabel}}（去表单填金额）</button>
+          </block>
+
           <block wx:if="{{item.needsConfirm}}">
             <button class="primary" size="mini" bindtap="onConfirmDraft">确认发布</button>
             <button class="ghost" size="mini" bindtap="onDropDraft">先不发</button>
           </block>
-          <button class="ghost" size="mini" wx:else bindtap="onHandoffPublish">去表单补齐</button>
+
+          <button class="ghost" size="mini" wx:if="{{item.handoff}}" bindtap="onHandoffPublish">去表单补齐</button>
         </view>
 
         <!-- 认不出意图时的三个按钮 -->

@@ -98,6 +98,10 @@ const draft = async ({ openid, params = {} }) => {
       levelName: autonomy.AUTONOMY_INFO[level].name,
       targets: [],
       l2Prompt,
+      // 候选池大小与被跳过的原因一起回给端侧：名单为空时，用户要能看出是"这城里没人"
+      // 还是"人有但都被规则挡掉了"。只给一句"暂时没有合适的人"没法判断这两种情况
+      poolSize: matched.poolSize || 0,
+      skipped: matched.skipped || [],
       message: matched.message || '暂时没有可邀请的人'
     })
   }
