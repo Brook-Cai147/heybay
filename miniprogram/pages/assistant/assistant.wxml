@@ -48,28 +48,30 @@
           </view>
         </view>
 
-        <!-- 草稿：能问的就在对话里问，问不了的才交给发布页 -->
+        <!-- 草稿：能点选的就在对话里问，问不了的（金额/期望时间/地点/联系方式）才交给发布页 -->
         <view class="draft-ops" wx:if="{{item.kind === 'draft'}}">
-          <text class="draft-missing" wx:if="{{item.rewardOptions.length}}">这次的报酬怎么算？选一个我就发。</text>
-          <text class="draft-missing" wx:if="{{item.handoff}}">还差几项才能发出去，去表单补齐更快。</text>
+          <text class="draft-missing" wx:if="{{item.ask}}">{{item.ask.question}}</text>
+          <text class="draft-missing" wx:if="{{item.handoff}}">{{item.handoffReason || '还差几项才能发出去，去表单补齐更快。'}}</text>
 
-          <block wx:if="{{item.rewardOptions.length}}">
+          <block wx:if="{{item.ask}}">
             <button
               class="ghost"
               size="mini"
-              wx:for="{{item.rewardOptions}}"
-              wx:for-item="rw"
+              wx:for="{{item.ask.choices}}"
+              wx:for-item="opt"
               wx:key="value"
-              data-value="{{rw.value}}"
-              data-label="{{rw.label}}"
-              bindtap="onPickReward"
-            >{{rw.label}}</button>
+              data-field="{{item.ask.field}}"
+              data-value="{{opt.value}}"
+              data-label="{{opt.label}}"
+              bindtap="onPickAsk"
+            >{{opt.label}}</button>
             <button
               class="ghost"
               size="mini"
-              data-label="{{item.rewardNeedsFormLabel}}"
-              bindtap="onPickRewardForm"
-            >{{item.rewardNeedsFormLabel}}（去表单填金额）</button>
+              wx:if="{{item.ask.formChoice}}"
+              data-label="{{item.ask.formChoiceLabel}}"
+              bindtap="onPickAskForm"
+            >{{item.ask.formChoiceLabel}}</button>
           </block>
 
           <block wx:if="{{item.needsConfirm}}">

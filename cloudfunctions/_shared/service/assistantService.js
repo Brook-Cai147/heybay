@@ -15,8 +15,9 @@
  */
 
 const { ok } = require('../constants/errors')
-const { REQUEST_CATEGORY_LABEL, VISIBILITY, REWARD_TYPE, FIELD_SOURCE } = require('../constants/enums')
+const { REQUEST_CATEGORY_LABEL, VISIBILITY, FIELD_SOURCE } = require('../constants/enums')
 const orchestrator = require('../ai/orchestrator')
+const draftCompletion = require('../ai/draftCompletion')
 const { TRAVEL_TYPE_VALUES } = require('./checklistService')
 const parseRequestService = require('./parseRequestService')
 const fallbackAnswerService = require('./fallbackAnswerService')
@@ -45,38 +46,16 @@ const GREETING = '我是 AI 助手小螺。我能帮你把一句话整理成需�
 const AI_ASSISTED = true
 
 /**
- * 建单必填项（与 `requestValidator` 同一份清单，缺一项都发不出去）。
- * `visibility` 不在其中：对话里没有选可见范围的地方，助手一律按「城市社区公开」填，
- * 用户要改就去表单改 —— 这比在对话里再塞一个选择器实在。
+ * 组一条草稿气泡的负载。PARSE_REQUEST 与 `fill` 两条路都走这里 ——
+ * "还差什么、问哪一项、能不能确认发布"只能有一处算（`ai/draftCompletion.js`），
+ * 两处算就一定会不一致，而不一致的表现是"按钮显示了但发不出去"。
  */
-const REQUIRED_FOR_CREATE = Object.freeze(['category', 'title', 'detail', 'timing', 'rewardType'])
+const draftPayload = ({ draft, fieldSources, headline }) =>
+  Object.assign({ text: headline, draft, fieldSources }, draftCompletion.statusOf(draft))
 
-/**
- * 缺了还能在对话里问一句补上的字段。**目前只有报酬类型。**
- *
- * 为什么需要这一层：模型几乎从不填 `rewardType`（用户那句话里通常真的没说），
- * 而它是建单必填项 —— 结果是对话里的每一次解析都落到"去表单补齐"，
- * 「一句话发单」这条主干路径实际上走不通。第一次真机验证就是这么暴露的。
- *
- * 但不能替用户默认一个：把"要不要给钱"默认成免费，是替用户改了他和另一个人的约定。
- * 发布表单本身也没给 `rewardType` 默认值（`publish.js` 里是 `''`），对话不该比表单更擅自。
- * 所以问一句，四个按钮。
- */
-const CONVERSATIONAL_FIELDS = Object.freeze(['rewardType'])
-
-/**
- * 对话里可以直接点选的报酬类型。**不含付费** —— 付费必须填参考金额，
- * 而金额属于四类"AI 不得代填"字段（PRD 5.4），只能由本人在表单里填。
- * 想选付费的人会被引到表单，这不是绕路，这是那条红线的正常后果。
- */
-const CHAT_REWARD_TYPES = Object.freeze([REWARD_TYPE.FREE, REWARD_TYPE.MEAL, REWARD_TYPE.GOODS])
-const REWARD_NEEDS_FORM = REWARD_TYPE.PAID
-
-const missingForCreate = draft =>
-  REQUIRED_FOR_CREATE.filter(field => {
-    const value = draft ? draft[field] : null
-    return value === undefined || value === null || String(value).trim() === ''
-  })
+/** 还差东西时那句开场白 */
+const payloadHeadlineFor = missing =>
+  draftCompletion.formOnlyOf(missing).length ? '还差一项我给不了，得你自己填：' : '还差一项：'
 
 const reply = (kind, text, extra = {}) =>
   Object.assign({ kind, text, aiAssisted: AI_ASSISTED }, extra)
@@ -187,37 +166,23 @@ const chat = async ({ openid, params = {} }) => {
       fieldSources.detail = FIELD_SOURCE.USER
     }
 
-    const missing = missingForCreate(draft)
-    // 缺的只是"能在对话里问一句"的字段 → 问，不要把人赶去表单
-    const askFields = missing.filter(field => CONVERSATIONAL_FIELDS.includes(field))
-    const mustUseForm = missing.filter(field => !CONVERSATIONAL_FIELDS.includes(field))
+    const payload = draftPayload({
+      draft,
+      fieldSources,
+      headline: `${res.hint || draft.summary || '我理解成这样'}\n品类：${category}`
+    })
 
     return ok(
       Object.assign({}, base, {
         reply: reply(
           REPLY_KIND.DRAFT,
-          `${res.hint || draft.summary || '我理解成这样'}\n品类：${category}`,
-          {
-            // 端侧拿它渲染确认卡片，并在确认时原样回传 —— 服务端不存会话状态
-            draft,
-            fieldSources,
+          payload.text,
+          Object.assign({}, payload, {
             confidence: res.confidence,
             unclassified: res.unclassified,
             aiFilledFields: res.aiFilledFields,
-            aiMeta: res.meta ? { logId: res.meta.logId, aiFilledFields: res.aiFilledFields } : null,
-            /**
-             * 只有**问不了**的字段缺失时才交给发布页补齐 ——
-             * 在对话里再造一套表单会有两处要维护、用户还分不清改哪份算
-             * （与 M2-07 解析卡片"不复制表单"是同一个判断）。
-             */
-            missingFields: missing,
-            askFields,
-            rewardChoices: askFields.includes('rewardType') ? CHAT_REWARD_TYPES : [],
-            rewardNeedsForm: REWARD_NEEDS_FORM,
-            handoff: mustUseForm.length ? 'publish' : '',
-            // **必须二次确认才建单**（计划第 3 条）
-            needsConfirm: missing.length === 0
-          }
+            aiMeta: res.meta ? { logId: res.meta.logId, aiFilledFields: res.aiFilledFields } : null
+          })
         )
       })
     )
@@ -225,15 +190,16 @@ const chat = async ({ openid, params = {} }) => {
 
   if (step.tool === orchestrator.TOOL.CREATE_REQUEST) {
     const draft = step.draft
-    const missing = missingForCreate(draft)
+    const missing = draftCompletion.missingForCreate(draft)
     if (missing.length) {
+      const payload = draftPayload({
+        draft,
+        fieldSources: draft.fieldSources || {},
+        headline: payloadHeadlineFor(missing)
+      })
       return ok(
         Object.assign({}, base, {
-          reply: reply(REPLY_KIND.SOFT_FAIL, '还差几项才能发出去，去表单补一下更快。', {
-            missingFields: missing,
-            handoff: 'publish',
-            draft
-          })
+          reply: reply(REPLY_KIND.DRAFT, payload.text, payload)
         })
       )
     }
@@ -332,12 +298,62 @@ const chat = async ({ openid, params = {} }) => {
   })
 }
 
+/**
+ * 用户点了一个选项，把它填进草稿。**不调模型，纯逻辑，零成本。**
+ *
+ * 为什么要有这个 action，而不是让端侧自己往草稿里塞：
+ * "还差什么 / 接下来问哪一项 / 能不能确认发布" 必须只有服务端一处算。
+ * 端侧自己判断的话，`missingForCreate` 的规则就得在端侧再写一遍，
+ * 而它必须和 `requestValidator` 一致 —— 那就是三处同一份规则，迟早漂移。
+ *
+ * **白名单是这个接口的全部安全性**：只接受 `CONVERSATIONAL_FIELDS` 里的三项。
+ * 金额、期望时间、地点、联系方式一律不接（PRD 5.4），否则这个接口就成了
+ * 绕过"四类字段只能本人在表单填"的后门。
+ */
+const fill = async ({ params = {} }) => {
+  const applied = draftCompletion.applyChoice({
+    draft: params.draft,
+    fieldSources: params.fieldSources || (params.draft && params.draft.fieldSources) || {},
+    field: String(params.field || ''),
+    value: params.value
+  })
+
+  if (!applied.ok) {
+    if (applied.reason === 'no_draft') {
+      return ok({ reply: reply(REPLY_KIND.SOFT_FAIL, '这份草稿丢了，重新说一句吧。') })
+    }
+    if (applied.reason === 'field_not_allowed') {
+      return ok({
+        reply: reply(REPLY_KIND.SOFT_FAIL, '这一项我不能替你填，去表单填更稳。', {
+          draft: params.draft,
+          handoff: 'publish'
+        })
+      })
+    }
+    return ok({
+      reply: reply(REPLY_KIND.SOFT_FAIL, '这个选项我不认得，再点一次？', { draft: params.draft })
+    })
+  }
+
+  const payload = draftPayload({
+    draft: applied.draft,
+    fieldSources: applied.fieldSources,
+    headline: ''
+  })
+  const headline = payload.needsConfirm
+    ? '好，齐了。要发出去吗？'
+    : payload.handoff
+      ? payload.handoffReason || '还差一项得你自己填，去表单更快。'
+      : payloadHeadlineFor(payload.missingFields)
+
+  return ok({
+    reply: reply(REPLY_KIND.DRAFT, headline, Object.assign({}, payload, { text: headline }))
+  })
+}
+
 module.exports = {
   REPLY_KIND,
   GREETING,
-  REQUIRED_FOR_CREATE,
-  CONVERSATIONAL_FIELDS,
-  CHAT_REWARD_TYPES,
-  missingForCreate,
-  chat
+  chat,
+  fill
 }

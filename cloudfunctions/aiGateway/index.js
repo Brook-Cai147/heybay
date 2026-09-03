@@ -90,6 +90,23 @@ exports.main = createHandler({
   assistantGreeting: () => ({ ok: true, greeting: assistantService.GREETING }),
 
   /**
+   * 用户点了草稿里的一个选项（报酬类型 / 有效时长 / 人数）。**不调模型。**
+   * 只接受这三项：金额、期望时间、地点、联系方式一律不接（PRD 5.4），
+   * 否则这个接口就成了绕过"四类字段只能本人在表单填"的后门。
+   */
+  assistantFill: ({ openid, params }) =>
+    assistantService.fill({
+      openid,
+      params: {
+        draft: params.draft,
+        fieldSources: params.fieldSources,
+        field: params.field,
+        value: params.value
+      }
+    }),
+
+
+  /**
    * 自主性阶梯（M2-14 / D-14）。档位、每档能做什么不能做什么、当前档位与"为什么是这一档"
    * 全从服务端取 —— 档位说明是产品主张，不该在端侧再抄一份。
    */

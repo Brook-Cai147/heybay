@@ -12,7 +12,7 @@
  */
 
 const aiService = require('../../services/ai')
-const { CATEGORY_LABEL, REWARD_LABEL } = require('../../models/labels')
+const { CATEGORY_LABEL, REWARD_LABEL, INSTANT_DURATION_LABEL } = require('../../models/labels')
 const { track } = require('../../utils/track')
 
 /** 与发布页共用的交接 key（M2-13）。改这里要同时改 publish.js */
@@ -224,47 +224,64 @@ Page({
       candidates: reply.candidates || [],
       travelTypeOptions: reply.travelTypeOptions || [],
       missingFields: reply.missingFields || [],
-      // 缺报酬类型时给四个按钮（含一个"付费→去表单"），标签在端侧、可选范围由服务端定
-      rewardOptions: (reply.rewardChoices || []).map(value => ({
-        value,
-        label: REWARD_LABEL[value] || value
-      })),
-      rewardNeedsForm: reply.rewardNeedsForm || '',
-      rewardNeedsFormLabel: REWARD_LABEL[reply.rewardNeedsForm] || '付费',
+      // 选项由服务端给（可选范围是产品规则），中文标签在端侧（labels.js 是标签的唯一真源）
+      ask: this.decorateAsk(reply.ask),
       handoff: reply.handoff || '',
+      handoffReason: reply.handoffReason || '',
       needsConfirm: reply.needsConfirm === true,
       categoryLabel: reply.draft ? CATEGORY_LABEL[reply.draft.category] || '' : '',
       requestId: reply.requestId || ''
     })
   },
 
-  /**
-   * 选报酬类型。这是**对话里唯一替草稿补字段的地方**，且只补这一项 ——
-   * 再多补一项，这一页就开始长成第二个发布表单了。
-   *
-   * 选「付费」不在这里补：付费要填参考金额，而金额只能本人在表单里填（PRD 5.4）。
-   */
-  onPickReward(e) {
-    const value = e.currentTarget.dataset.value
-    const label = e.currentTarget.dataset.label
-    if (!value || !this.data.pendingDraft) return
-
-    const draft = Object.assign({}, this.data.pendingDraft, { rewardType: value })
-    this.setData({ pendingDraft: draft })
-    this.push(ROLE.ME, { kind: 'text', text: label })
-    this.push(ROLE.AI, {
-      kind: 'draft',
-      text: `好，报酬按「${label}」。要发出去吗？`,
-      aiAssisted: true,
-      needsConfirm: true,
-      missingFields: [],
-      rewardOptions: [],
-      handoff: ''
-    })
+  /** 给服务端的选项配上中文标签。人数没有标签表，直接拼「N 人」 */
+  decorateAsk(ask) {
+    if (!ask || !ask.field) return null
+    const labelOf = value => {
+      if (ask.field === 'rewardType') return REWARD_LABEL[value] || value
+      if (ask.field === 'instantDuration') return INSTANT_DURATION_LABEL[value] || value
+      if (ask.field === 'headcount') return `${value} 人`
+      return String(value)
+    }
+    return {
+      field: ask.field,
+      question: ask.question || '',
+      choices: (ask.choices || []).map(value => ({ value, label: labelOf(value) })),
+      formChoice: ask.formChoice || '',
+      formChoiceLabel: ask.formChoice ? `${REWARD_LABEL[ask.formChoice] || '付费'}（去表单填金额）` : ''
+    }
   },
 
-  /** 选了「付费」：金额只能本人填，直接把草稿交给发布页 */
-  onPickRewardForm(e) {
+
+  /**
+   * 点了草稿里的一个选项。**服务端算"还差什么、下一项问谁"**，这里只负责渲染 ——
+   * 那套规则必须和 `requestValidator` 一致，端侧再写一遍迟早漂移。
+   */
+  async onPickAsk(e) {
+    const field = e.currentTarget.dataset.field
+    const value = e.currentTarget.dataset.value
+    const label = e.currentTarget.dataset.label
+    if (!field || !this.data.pendingDraft || this.data.sending) return
+
+    this.push(ROLE.ME, { kind: 'text', text: label })
+    this.setData({ sending: true })
+    const res = await aiService.assistantFill({
+      draft: this.data.pendingDraft,
+      fieldSources: this.data.pendingDraft.fieldSources,
+      field,
+      value
+    })
+    this.setData({ sending: false })
+
+    if (!res.ok) {
+      this.push(ROLE.AI, { kind: 'soft_fail', text: res.message, aiAssisted: true })
+      return
+    }
+    this.renderReply(res)
+  },
+
+  /** 选了「付费」：参考金额只能本人填（PRD 5.4），直接把草稿交给发布页 */
+  onPickAskForm(e) {
     this.push(ROLE.ME, { kind: 'text', text: e.currentTarget.dataset.label || '付费' })
     this.push(ROLE.AI, {
       kind: 'clarify',
@@ -273,6 +290,7 @@ Page({
     })
     this.onHandoffPublish()
   },
+
 
 
   /**

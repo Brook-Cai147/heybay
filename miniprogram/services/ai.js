@@ -113,6 +113,21 @@ const assistantChat = async (input = {}) => {
   }
 }
 
+/**
+ * 用户点了草稿里的一个选项（报酬类型 / 有效时长 / 人数）。不调模型，纯逻辑。
+ *
+ * 为什么不在端侧直接改草稿：「还差什么、接下来问哪一项、能不能确认发布」的规则
+ * 必须和服务端的 `requestValidator` 一致，只能有一处算。端侧自己判断迟早漂移。
+ */
+const assistantFill = async ({ draft, fieldSources, field, value }) => {
+  try {
+    const res = await callAction(FUNCTION_NAME, 'assistantFill', { draft, fieldSources, field, value })
+    return Object.assign({ ok: true }, res)
+  } catch (err) {
+    return softFail('assistantFill', err)
+  }
+}
+
 /** 首屏身份声明。取不到就用端侧兜底文案，不能让首屏空着（PRD 5.4 身份明示） */
 const assistantGreeting = async () => {
   try {
@@ -202,6 +217,7 @@ module.exports = {
   generateChecklist,
   matchResponders,
   assistantChat,
+  assistantFill,
   assistantGreeting,
   autonomyInfo,
   setAutonomy,
