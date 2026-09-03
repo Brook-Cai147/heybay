@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>喊呗 HeyBay · 产品演示</title>
+<meta name="description" content="喊呗 HeyBay —— 海外旅行场景下的异地找人小程序。V2.0 产品演示与设计说明。">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="#top">
+    <span class="brand-mark">喊</span>
+    <span class="brand-text">喊呗 <em>HeyBay</em></span>
+  </a>
+  <div class="nav-links">
+    <a href="#prototype">交互原型</a>
+    <a href="#evolution">版本演进</a>
+    <a href="#mechanism">核心机制</a>
+    <a href="#ai">AI 设计</a>
+    <a href="#trust">信任与安全</a>
+    <a href="#business">指标与商业化</a>
+    <a href="#tech">技术架构</a>
+  </div>
+  <span class="nav-pill">HTML 演示版</span>
+</nav>
+
+<header class="hero" id="top">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <p class="eyebrow">微信小程序 · V2.0 · 首发伦敦</p>
+      <h1>在国外，<br><span class="grad">喊一声就有人。</span></h1>
+      <p class="lede">
+        喊呗是面向海外旅行者与当地华人 / 留学生的<strong>异地找人</strong>平台。
+        旅行者把落地后的具体需求喊出来，当地人顺路接下来。
+        产品的原子单位不是帖子，而是一张<strong>会被接、会闭环、会被评价的需求单</strong>。
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#prototype">进入交互原型</a>
+        <a class="btn btn-ghost" href="#evolution">看 V1 → V2 做了什么</a>
+      </div>
+      <div class="hero-stats">
+        <div><b>8</b><span>需求品类白名单</span></div>
+        <div><b>4</b><span>层信任体系</span></div>
+        <div><b>89.2%</b><span>AI 字段抽取准确率</span></div>
+        <div><b>0</b><span>平台资金归集</span></div>
+      </div>
+    </div>
+    <aside class="notice">
+      <div class="notice-head"><span class="dot"></span>关于这个页面</div>
+      <p><strong>你正在看的是 HTML 演示版</strong>，用来完整呈现产品的理想形态——包含已上线、在建、以及排期在 P1/P2 的全部功能。</p>
+      <p>而<strong>喊呗本体是一个真实的全栈微信小程序</strong>：微信原生前端 + 微信云开发后端 + 云数据库，
+      7 个云函数、10 个集合、真实模型 API 接入，数据库权限收为「所有用户不可读写」，
+      一切数据访问只能走云函数，状态变更全程走事务。</p>
+      <p class="notice-foot">已完成 M1（主干闭环 19 步）+ M2（AI 主干 16 步），M3 进行中。此页面的数据为演示样例。</p>
+    </aside>
+  </div>
+</header>
+
+<section class="section" id="prototype">
+  <div class="sec-head">
+    <span class="sec-num">01</span>
+    <h2>交互原型</h2>
+    <p>点左侧手机里的按钮，或用下面的胶囊切换页面。AI 解析、选定响应者、约定单、兜底作答都可以真的点。</p>
+  </div>
+
+  <div class="proto-chips" id="chips"></div>
+
+  <div class="proto">
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-status">
+          <span>9:41</span>
+          <span class="phone-status-r">伦敦 · 5G ▮▮▮</span>
+        </div>
+        <div class="phone-nav" id="phoneNav">
+          <button class="phone-back" id="phoneBack" aria-label="返回">‹</button>
+          <span id="phoneTitle">喊呗</span>
+        </div>
+        <div class="phone-body" id="screen"></div>
+        <div class="tabbar" id="tabbar"></div>
+      </div>
+      <p class="phone-cap">演示数据；真实产品中这些列表来自云数据库，动作全部经云函数事务写入。</p>
+    </div>
+
+    <aside class="notes" id="notes"></aside>
+  </div>
+</section>
+
+<section class="section alt" id="evolution">
+  <div class="sec-head">
+    <span class="sec-num">02</span>
+    <h2>V1.0「同路人」→ V2.0「喊呗」</h2>
+    <p>V1.0 建了一个内容社区的容器，却期待它自己长出撮合与交易。V2.0 的工作重心不是加功能，而是补上那条主干。</p>
+  </div>
+
+  <div class="vs">
+    <div class="vs-col v1">
+      <h3>V1.0 同路人</h3>
+      <ul>
+        <li>海外旅行搭子社区</li>
+        <li>原子单位是<b>帖子</b>，发完就没人知道后来发生了什么</li>
+        <li>城市社区只是内容分区</li>
+        <li>口号写了「轻量化担保交易」，功能为零</li>
+        <li>信任 = 一个「已认证」标签 + 举报</li>
+        <li>先审后发，海外时差下即时需求全部失效</li>
+        <li>发了没人理 → 用户当天流失，无兜底</li>
+        <li>11 个页面纯前端，<b>无后端</b></li>
+      </ul>
+    </div>
+    <div class="vs-arrow">
+      <span>把需求结构化</span><span>把审核放快</span><span>把流量收拢到城市</span><span>密度不足时用 AI 兜住</span>
+    </div>
+    <div class="vs-col v2">
+      <h3>V2.0 喊呗 HeyBay</h3>
+      <ul>
+        <li>海外旅行场景下的<b>异地求助撮合平台</b></li>
+        <li>原子单位是<b>需求单</b>：可被接、可闭环、可评价、可度量</li>
+        <li>城市 = <b>供给容器</b>，当地先有人入驻才有能力承接需求</li>
+        <li><b>明确不碰资金</b>：托管「约定单」而不是托管钱</li>
+        <li>四层信任 + 双向评价 + 四档徽章与证据清单</li>
+        <li><b>分级审核</b>：信任分 ≥30 先发后审，机审毫秒级</li>
+        <li>小螺作为<b>供给的兜底层</b>，无人响应时先把需求兜住</li>
+        <li>小程序 + 云开发全栈：7 云函数 / 10 集合 / 事务写入</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="sub">被修正与被移除的 V1.0 设计</h3>
+  <div class="cards-3">
+    <div class="card"><h4>微信支付（原标注"后续迭代"）</h4><p><b>明确移除。</b>跨境结算需企业资质与外汇备案，形成预付资金池涉及无证经营支付业务的法律风险。改为线下结算 + 约定单。</p></div>
+    <div class="card"><h4>「同步小红书」</h4><p><b>重定义为「生成小红书图文」。</b>小红书没有开放给第三方的发布 API，市面宣称一键同步的实质都是生成文案 + 存图 + 手动发布。写清技术不可行，比留一个做不出来的需求更负责。</p></div>
+    <div class="card"><h4>签到送积分</h4><p><b>重定义为增信任务体系。</b>原积分体系有 banner 无设计，获取、消耗、价值锚定全部缺失。现在完成任务得到的是曝光加成与信任分进度。</p></div>
+    <div class="card"><h4>「本地居民」作为供给端</h4><p><b>移除。</b>非华人本地居民既不用微信也不读中文界面。供给端明确为当地华人、留学生、长期旅居者。</p></div>
+    <div class="card"><h4>首页与「组圈」职责重叠</h4><p><b>拆开。</b>首页 = 需求广场，城市 Tab = 社区与供给池。三处搜索框合并为一个统一搜索页，四个 Tab 范围一致。</p></div>
+    <div class="card"><h4>用户无节制自建小组</h4><p><b>加上健康度与数量上限。</b>建组上限 = 城市周活跃用户数 ÷ 20，伦敦初期就是 0~2 个。冷启动期不允许提前把流量碎片化。</p></div>
+  </div>
+
+  <div class="callout danger">
+    <h4>长期明确不做（写入产品原则，用于抵御功能蔓延）</h4>
+    <ol>
+      <li><b>交友与约会属性</b>——一旦擦边交友进入，真实求助需求会被淹没，供给端流失，生态不可逆地变差。性别字段只能用于「仅同性响应」，<b>不提供「仅异性响应」选项</b>，从数据结构层面消灭擦边需求。</li>
+      <li><b>平台代收资金</b>——长期结论，不是阶段性妥协。</li>
+      <li><b>AI 全自动代替用户与真人协商（L3）</b>——责任无法归属，AI 承诺会造成真实损失。</li>
+      <li><b>采集身份证件影像</b>——GDPR 下一次泄露的后果远大于产品收益。</li>
+    </ol>
+  </div>
+</section>
+
+<section class="section" id="mechanism">
+  <div class="sec-head">
+    <span class="sec-num">03</span>
+    <h2>核心机制</h2>
+    <p>撮合是一个密度游戏：单位时间、单位城市内，必须有足够多的「可被响应的具体需求」和「愿意响应的在地供给」相遇。</p>
+  </div>
+
+  <h3 class="sub">需求单状态机</h3>
+  <div class="flow">
+    <div class="flow-row">
+      <span class="node">草稿</span><i>发布</i>
+      <span class="node hot">招募中</span><i>有人响应</i>
+      <span class="node hot">待选定</span><i>选定</i>
+      <span class="node ok">已确定</span><i>双方确认</i>
+      <span class="node ok">已完成</span><i>互评</i>
+      <span class="node ok">已评价</span>
+    </div>
+    <div class="flow-row sub-row">
+      <span class="node mute">已过期</span><small>预约型在期望时间后 24h、即时型按有效时长自动过期 → 归档进城市知识库</small>
+    </div>
+    <div class="flow-row sub-row">
+      <span class="node mute">已取消</span><small>任一方取消（记录取消方）</small>
+      <span class="node mute">撤销选定</span><small>退回「待选定」重新挑人，原有响应全部保留</small>
+      <span class="node mute">已下架</span><small>违规</small>
+    </div>
+  </div>
+
+  <div class="cards-3">
+    <div class="card accent"><h4>需求单必然会终结</h4><p>不存在永久挂着的需求。这一条直接解决 V1.0 的死水内容堆积——社区里永远只陈列「还有效的事」。</p></div>
+    <div class="card accent"><h4>过期不等于浪费</h4><p>过期需求单连同响应内容进入城市知识库，成为小螺的检索语料。<b>稀疏期的失败也在积累资产。</b></p></div>
+    <div class="card accent"><h4>取消不重罚</h4><p>信任分主要看双方真实互评。按取消次数扣分是在惩罚正常行为，还会诱导用户不点取消、把单子挂到过期——那是更坏的结果。</p></div>
+  </div>
+
+  <h3 class="sub">约定单：托管共识，不托管钱</h3>
+  <div class="split">
+    <div class="split-l">
+      <div class="agreement-demo">
+        <div class="ag-head">约定单 · 只读凭证</div>
+        <dl>
+          <div><dt>谁</dt><dd>林悦 ↔ 陈默</dd></div>
+          <div><dt>什么时间</dt><dd>9 月 12 日 10:00</dd></div>
+          <div><dt>在哪</dt><dd>大英博物馆正门（街区级）</dd></div>
+          <div><dt>做什么</dt><dd>陪同参观约 3 小时，中文讲解</dd></div>
+          <div><dt>约定报酬</dt><dd>£25（参考区间）</dd></div>
+          <div><dt>如何支付</dt><dd>线下现金 / 转账，平台不代收</dd></div>
+        </dl>
+        <p class="ag-foot">双方均可见，不可单方修改；修改需双方重新确认并留版本记录。</p>
+      </div>
+    </div>
+    <div class="split-r">
+      <p>它替代了 V1.0 的「担保交易」。发生纠纷时，<b>约定单 + 聊天记录 + 评价</b>构成判定依据，处理结果体现为信任分与封禁，而非退款。</p>
+      <p>这套「信誉担保」提供了资金担保约 <b>80%</b> 的信任价值，而风险与合规成本接近于零。数据结构（约定单、金额字段、状态机）同时为将来真正的担保交易预留了升级空间。</p>
+      <p class="quote">平台托管的是共识与凭证，不是钱。</p>
+    </div>
+  </div>
+
+  <h3 class="sub">反死水：五个层面同时施压</h3>
+  <div class="layers">
+    <div><b>需求层</b>强制时效 + 自动过期</div>
+    <div><b>分发层</b>精准推送 + 小组广播 + 二次改写投放</div>
+    <div><b>容器层</b>小组健康度 + 建组上限，强制流量收拢</div>
+    <div><b>兜底层</b>无人响应时 AI 直接作答，挽回流失</div>
+    <div><b>运营层</b>每日城市话题 + 每周精华 + 学校 BD</div>
+  </div>
+  <p class="foot-note">配套内容播种：伦敦上线前预置 30 条社区内容 + 100 条问答语料。<b>冷启动期的社区可以是人工的，但不能是空的。</b></p>
+
+  <h3 class="sub">开城标准：四项同时达标才复制下一城</h3>
+  <div class="gates">
+    <div><b>≥50</b><span>认证本地响应者</span></div>
+    <div><b>≥30</b><span>周需求单</span></div>
+    <div><b>≥60%</b><span>需求单首响率</span></div>
+    <div><b>≥40%</b><span>响应者次月留存</span></div>
+  </div>
+  <p class="foot-note">个人开发者的运营带宽只够一座城；3 城试点等于把密度除以 3。冷启动<b>渠道</b>用学校（UCL/KCL/IC/LSE），产品<b>结构</b>用城市——旅行者只知道城市不知道学校。</p>
+</section>
+
+<section class="section alt" id="ai">
+  <div class="sec-head">
+    <span class="sec-num">04</span>
+    <h2>AI 设计：小螺</h2>
+    <p class="big-quote">在喊呗里，AI 不是效率工具，<b>AI 是供给的兜底层</b>。</p>
+    <p>推导过程：最致命的流失点不是「匹配不精准」，而是「发了需求没人理，用户当天就走了」——旅行者在当地只停留几天，这类流失不可挽回。冷启动期供给必然稀疏，运营短期解决不了。所以 AI 的第一价值不是提效，而是在真人供给缺席时先把这个用户的需求兜住。</p>
+  </div>
+
+  <div class="cards-3">
+    <div class="card"><h4>兜底而非替代</h4><p>真人响应永远优先展示，AI 答案只在无响应或用户主动询问时出现，且明确标注来源。</p></div>
+    <div class="card"><h4>从模糊到结构化</h4><p>AI 承担翻译工作，用户不需要学会填表——这是把需求方门槛降到最低的唯一办法。</p></div>
+    <div class="card"><h4>自主性由用户选</h4><p>而不是由产品单方决定。默认最保守档，用户按信任程度自行上调，随时可回退。</p></div>
+  </div>
+
+  <h3 class="sub">自主性阶梯：把「该不该自动」变成可调节的产品维度</h3>
+  <p class="lead-note">全自动有风险、纯手动没价值。正确答案不是在两者之间取折中点，而是把自主性本身产品化为一个<b>可解释、可调节、可回退</b>的档位。</p>
+  <div class="ladder">
+    <div class="rung"><span class="lv">L0</span><b>只读建议</b><p>解析需求、给攻略与清单、答疑。<em>不对外发送任何内容。</em></p><span class="who">新用户前 3 单</span></div>
+    <div class="rung on"><span class="lv">L1</span><b>一键代发</b><p>生成邀请文案 + 候选人名单，等你勾选后统一发出。<em>不自动发送。</em></p><span class="who">全局默认档</span></div>
+    <div class="rung"><span class="lv">L2</span><b>自动分发</b><p>自动向匹配响应者推送<b>结构化需求卡片</b>；2h 无响应自动改写文案二次投放（≤2 次）。<em>不进 1v1 私信、不模拟真人语气。</em></p><span class="who">用户手动开启</span></div>
+    <div class="rung off"><span class="lv">L3</span><b>自动协商</b><p>本产品<b>永不实现</b>，并把理由展示给用户：责任无法归属、AI 承诺会造成真实损失、身份不明示已属需披露行为、个人开发者无力承担纠纷成本。</p><span class="who">不提供</span></div>
+  </div>
+  <p class="foot-note">L1 → L2 的引导不藏在设置页里等用户发现，而是在「L1 发送邀请后获得响应」这个正反馈时刻提示：<b>在信任已建立的时刻请求更多授权。</b></p>
+
+  <h3 class="sub">14 项 Agent 工具</h3>
+  <div class="tools">
+    <span class="p0">parseRequest 一句话→需求单</span><span class="p0">createRequest 确认后建单</span><span class="p0">searchKnowledge 城市语料检索</span>
+    <span class="p0">moderate 内容风险分级</span><span class="p0">riskHint 私信反诈提示</span>
+    <span>matchResponders 可解释匹配</span><span>draftInvite 邀请文案</span><span>broadcast 分发与二次投放</span>
+    <span>generateChecklist 落地清单</span><span>generateXhsPost 小红书图文</span><span>emergencyCard 应急求助卡</span>
+    <span>dailyTopic 城市话题与周精华</span><span class="p2">summarizeReviews 评价聚合</span><span class="p2">translate 翻译与破冰</span>
+  </div>
+  <p class="foot-note"><span class="tag-legend p0"></span>P0 <span class="tag-legend"></span>P1 <span class="tag-legend p2"></span>P2 · 所有模型调用统一走 <code>aiGateway</code>，8 步编排：额度 → 缓存 → 组 Prompt → 调模型 → 校验 → 重试一次 → 降级 → 记账。能力由注册表驱动，加一项能力是加一行而不是加一个 <code>if</code>。</p>
+
+  <h3 class="sub">护栏与红线</h3>
+  <div class="rails">
+    <div><b>四类字段禁止代填</b><p>金额、见面时间、见面地点、联系方式。AI 只能留空，必须由人填写。Schema、规范化层、发布校验三道防线。</p></div>
+    <div><b>事实性边界</b><p>签证、医疗、法律、移民问题<b>在服务端前置拦截</b>——不调模型、不占额度，直接给官方链接。</p></div>
+    <div><b>身份明示</b><p>一切对外内容强制带「AI 协助」标识；L2 分发只能是系统卡片而非聊天气泡，强制带「由小螺代为分发」。</p></div>
+    <div><b>来源标注</b><p>兜底答案必须标注来源：「根据伦敦小组 3 条历史回答，请自行核实」。</p></div>
+    <div><b>可解释性</b><p>每条推荐必须给出依据字段，不允许「猜你喜欢」式无理由推荐。名单由代码排序，理由由模型写，理由里的每个数字都必须能追溯回依据字段。</p></div>
+    <div><b>频控与可回退</b><p>同一响应者每日被触达 ≤3 次，被拒 2 次进 7 天冷却；任何 AI 生成内容可一键改手动，L2 可随时关闭且立即生效。</p></div>
+  </div>
+
+  <h3 class="sub">离线评测：没有用户也能证明 AI 质量</h3>
+  <div class="split">
+    <div class="split-l">
+      <div class="eval">
+        <div class="eval-row"><span>字段抽取准确率</span><b class="pass">89.2%</b><em>达标线 85%</em></div>
+        <div class="eval-row"><span>四类禁填字段误填</span><b class="pass">0 次</b><em>红线</em></div>
+        <div class="eval-row"><span>黄金标注语料</span><b>36 条</b><em>人工标注</em></div>
+        <div class="eval-row"><span>兜底作答人工判分</span><b>10 题</b><em>方法如实记录</em></div>
+      </div>
+    </div>
+    <div class="split-r">
+      <p>依赖真实流量的三项指标（发布转化率 +20%、首响率 +30%、打扰投诉率 ≤2%）在没有真实用户前<b>无法验证</b>，因此推后到 M5，不在当前阶段假装已达成。</p>
+      <p>当前阶段改用离线评测集：<code>npm run eval:parse</code> 输出三个数与逐条 diff。这一项不需要任何用户即可度量。</p>
+      <p class="quote">评测抓出的真问题：Prompt 要求「归不进 8 类就留空」，而 Schema 把 category 设成必填——擦边交友因此被硬塞进「搭子同行」，正撞产品红线。两条擦边用例把它抓了出来。</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="trust">
+  <div class="sec-head">
+    <span class="sec-num">05</span>
+    <h2>信任与安全</h2>
+    <p>这是一个促成陌生人在异国线下见面的产品，安全是核心差异化而非附加项，因此定为 P0 并写入产品定位。</p>
+  </div>
+
+  <h3 class="sub">四层信任，全部零资质门槛，全程不收证件</h3>
+  <div class="trust-layers">
+    <div><span class="lvl">L1</span><b>基础身份</b><p>微信授权登录 + 常驻城市自选 + 性别自填（可留空）</p><span class="cred low">可信度 低</span></div>
+    <div><span class="lvl">L2</span><b>自证</b><p>.edu 邮箱验证码（只存「已验证 + 学校名」）· 社媒绑定 · 自我介绍完整度</p><span class="cred mid">可信度 中</span></div>
+    <div><span class="lvl">L3</span><b>履约</b><p>真实完成单数 · 双向评价 · 平均响应时长 · 被举报率</p><span class="cred high">可信度 高</span></div>
+    <div><span class="lvl">L4</span><b>社区背书</b><p>组长/老用户背书，每月限 2 次，被背书者违规则背书人连带扣分</p><span class="cred high">可信度 高</span></div>
+  </div>
+
+  <div class="cards-3">
+    <div class="card"><h4>为什么不收证件</h4><p>护照、签证、学生证属身份证件类敏感个人信息。GDPR 下处理这类数据需要合法性基础、数据保护影响评估、加密存储与最小化留存——个人开发者不具备承担这一责任的能力。<b>V2.0 完全不采集证件影像。</b></p></div>
+    <div class="card"><h4>不显示裸分数</h4><p>信任分 0~100 内部计算，对外只显示四档徽章 + <b>可展开的证据清单</b>：「已完成 12 单｜好评率 100%｜平均 18 分钟响应｜UCL 邮箱已验证」。让用户看到「他凭什么可信」，而不是一个不可解释的数字。</p></div>
+    <div class="card"><h4>注册零门槛，只在三处拦截</h4><p>① 接付费地陪 / 翻译类单 → L2 + 信任分 ≥40；② 发或接住宿类单 → L2 + 至少 1 条好评；③ 首次发起线下见面确认 → 强制阅读安全提示。<b>其余全程不拦。</b></p></div>
+    <div class="card"><h4>用收益框架而非恐惧框架</h4><p>增信引导不说「为了安全请认证」（暗示危险），而说「补全后被选中的概率高 <b>2.6 倍</b>」，并让高信任分用户在响应列表天然靠前——让增信的动机来自竞争。</p></div>
+    <div class="card"><h4>不采集手机号</h4><p>微信手机号快速验证接口对个人主体不开放；自建短信通道面向海外号码成本与合规都不划算。云函数拿到的 openid 本身就是微信校验过的可信身份，手机号不额外提供可信度。</p></div>
+    <div class="card"><h4>不存紧急联系人</h4><p>行程报备走微信自带分享把行程卡片发给朋友或群，<b>不在后台存储第三方联系人字段</b>——零成本、零合规负担，效果等同。</p></div>
+  </div>
+
+  <h3 class="sub">安全机制：事前 / 事中 / 事后</h3>
+  <div class="safety">
+    <div>
+      <h4>事前</h4>
+      <ul>
+        <li>仅同性响应开关（默认关闭，女性首次发单时主动提示）</li>
+        <li>地点只到街区 / 地铁站级，疑似门牌地址提示拦截</li>
+        <li>选定后强制展示一次安全提示卡</li>
+        <li>住宿类要求双方均 L2 + 独立安全须知</li>
+      </ul>
+    </div>
+    <div>
+      <h4>事中</h4>
+      <ul>
+        <li>行程报备：一键生成卡片经微信分享给朋友</li>
+        <li>一键 SOS：英国 999 / 欧盟 112 / 美国 911 + 使领馆</li>
+        <li>反诈提示：出现「先转账」「押金」「退出平台交易」等模式时<b>向双方</b>弹出，避免误伤正常沟通</li>
+      </ul>
+    </div>
+    <div>
+      <h4>事后</h4>
+      <ul>
+        <li>双向评价，互评前互不可见；7 天未评视为默认好评但不计入好评率</li>
+        <li>拉黑后互相不可见、不可响应、不可私信</li>
+        <li>六类举报，人身安全类直接冻结接单能力</li>
+        <li>处罚阶梯：提示 → 限流 → 禁接单 7 天 → 永久封禁</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <h4>联系方式交换：全站只有一个下发点</h4>
+    <p>联系方式由用户在「我的」里自填，<b>发布需求时不需要、也不允许挂在需求单上</b>——那等于向全城公开个人账号。只在需求单进入「已确定」之后、在需求方与被选定的响应者之间双向下发；广场、列表、卡片一律不含。用户可随时清空，但<b>已经看到的收不回</b>，界面如实说明这一点。</p>
+  </div>
+
+  <div class="callout danger">
+    <h4>反擦边交友治理：从数据结构层面消灭</h4>
+    <p><b>① 品类白名单</b>只有 8 类，没有「交友」「同城」「聊天」选项，归不进 8 类的需求无法发布。<b>② 语义拦截</b>覆盖变体、谐音、拼音缩写。<b>③ 偏好字段单向可用</b>，只有「仅同性响应」，不提供「仅异性响应」。<b>④ 举报独立分类</b>，优先级仅次于人身安全。<b>⑤ 处罚从重</b>，跳过提示直接禁接单 7 天，二次永久封禁。</p>
+    <p class="quote">社区规范首屏：喊呗解决的是「办事」，不是「处对象」。让规则以产品价值观的方式表达，比藏在协议里有效。</p>
+  </div>
+</section>
+
+<section class="section alt" id="business">
+  <div class="sec-head">
+    <span class="sec-num">06</span>
+    <h2>指标与商业化</h2>
+  </div>
+
+  <div class="metrics">
+    <div class="metric star">
+      <span class="mlabel">北极星指标</span>
+      <b>每周成功撮合数</b>
+      <p>需求单被接 + 双方确认完成。同时依赖供需两侧，<b>无法靠单侧刷量做高</b>。</p>
+    </div>
+    <div class="metric">
+      <span class="mlabel">护栏 1</span>
+      <b>需求单首响率 ≥60%</b>
+      <p>发布后 2h 内至少 1 条响应。它是撮合数的领先指标，能在撮合完成前就暴露密度问题。</p>
+    </div>
+    <div class="metric">
+      <span class="mlabel">护栏 2</span>
+      <b>响应者次月留存 ≥40%</b>
+      <p>需求方是流动的（旅行者用完即走），供给方才是留存的根基。供给一旦流失，产品立刻回到死水状态。</p>
+    </div>
+    <div class="metric no">
+      <span class="mlabel">明确不作为核心指标</span>
+      <b>DAU · 发帖量 · 小组数</b>
+      <p>V1.0 的看板以这三项为主。它们都能靠「看内容」刷出来，与撮合成功<b>无因果关系</b>。</p>
+    </div>
+  </div>
+
+  <h3 class="sub">核心漏斗</h3>
+  <div class="funnel">
+    <div><b>浏览 → 发布</b><span>≥25%</span></div>
+    <div><b>发布 → 首响</b><span>≥60%</span></div>
+    <div><b>有响应 → 选定</b><span>≥80%</span></div>
+    <div><b>选定 → 完成</b><span>≥70%</span></div>
+    <div><b>完成 → 评价</b><span>≥60%</span></div>
+    <div><b>30 天二次发单</b><span>≥20%</span></div>
+  </div>
+
+  <h3 class="sub">四阶段商业化：前置结论是不碰资金</h3>
+  <div class="stages">
+    <div><span class="st">阶段 0</span><b>验证期（0~6 个月）不赚钱</b><p>唯一目标是把伦敦的每周成功撮合数跑起来。任何收费都会在密度不足时杀死冷启动。</p></div>
+    <div><span class="st">阶段 1</span><b>会员订阅 ¥18/月</b><p>向需求方卖「更快被响应、更容易被选中」：置顶曝光、在架上限 3→10、完整信用档案、高级筛选、AI 高成本能力放开。</p></div>
+    <div><span class="st">阶段 2</span><b>供给端变现</b><p>认证徽章年费、接单曝光包、个人服务主页（做本地向导 IP）。供给端有真实收益动机，付费意愿显著高于旅行者。</p></div>
+    <div><span class="st">阶段 3</span><b>本地商家与生态</b><p>城市入驻位、内容推广位、留学生活服务 CPA 分成。收入天花板最高且完全不碰资金。</p></div>
+    <div class="off"><span class="st">阶段 4</span><b>担保交易（条件成熟才做）</b><p>需企业主体、支付资质、专职客服与风控。个人开发者阶段明确不做，但数据结构已预留升级空间。</p></div>
+  </div>
+
+  <div class="callout">
+    <h4>定价原则：不给「AI 调用次数」定价，给「结果」定价</h4>
+    <p>会员权益的对外表述是「更快被人响应、更容易被选中」，AI 额度只是实现手段，不作为卖点陈列。一旦让用户按次数计算 AI 成本，付费意愿会立刻崩塌，而且会把产品价值锚定在「AI 工具」而非「撮合服务」上。</p>
+    <p>成本侧：短文本能力完全给得起免费（日活 500 量级月 AI 成本几十元）。真正贵的是长输出和图像生成——因此小红书图文只做模板套图不做 AI 绘图，行程生成设每日限额。<b>月运营成本可控制在 200 元以内</b>，达到阶段 1 后单城即可覆盖成本。</p>
+  </div>
+</section>
+
+<section class="section" id="tech">
+  <div class="sec-head">
+    <span class="sec-num">07</span>
+    <h2>技术架构：这是一个真实的全栈小程序</h2>
+    <p>你现在看的是 HTML 演示版。喊呗本体是微信原生小程序 + 微信云开发，有服务端边界、有数据库、有事务、有真实模型调用。</p>
+  </div>
+
+  <div class="arch">
+    <div class="arch-layer">
+      <span class="al">端</span>
+      <div class="arch-items">
+        <span>微信小程序原生</span><span>五 Tab + 自定义 tabBar</span><span>端侧枚举与字段校验</span><span>图片上传前压缩</span>
+      </div>
+      <p>不用 Taro / uni-app：只有一个交付端，跨端能力用不上。</p>
+    </div>
+    <div class="arch-layer">
+      <span class="al">云函数（7）</span>
+      <div class="arch-items">
+        <span class="fn">login</span><span class="fn">requestFlow</span><span class="fn">responseFlow</span><span class="fn">aiGateway</span><span class="fn">moderation</span><span class="fn">track</span><span class="fn">cron</span>
+      </div>
+      <p>登录建档 / 发布与完成 / 响应与选定 / 全项目唯一模型出口 / 三层内容安全 / 埋点 / 定时任务。状态变更一律走事务，状态与审计日志同生共死。</p>
+    </div>
+    <div class="arch-layer">
+      <span class="al">数据（10 集合）</span>
+      <div class="arch-items">
+        <span>users</span><span>requests</span><span>responses</span><span>events</span><span>configs</span><span>auditLogs</span><span>aiLogs</span><span>aiCache</span><span>knowledge</span><span>invites</span>
+      </div>
+      <p><b>数据库权限收为「所有用户不可读写」</b>——端侧读写全部被拒，一切数据访问只能走云函数。10 条索引覆盖广场分页与过期扫描。</p>
+    </div>
+    <div class="arch-layer">
+      <span class="al">模型</span>
+      <div class="arch-items">
+        <span>OpenAI 兼容协议</span><span>三个环境变量换供应商</span><span>AI_EXTRA_BODY 承载厂商专有字段</span><span>响应 Schema 校验 + 重试一次 + 降级</span>
+      </div>
+      <p>代码不绑任何一家厂商。额度、缓存、成本记账统一在 <code>aiGateway</code> 内完成。</p>
+    </div>
+  </div>
+
+  <h3 class="sub">明确的技术不可行项（写进文档避免返工）</h3>
+  <div class="cards-3">
+    <div class="card dim"><h4>小红书内容同步</h4><p>无开放发布 API，只能生成内容 + 复制 + 引导手动发布。</p></div>
+    <div class="card dim"><h4>跳转外部 App</h4><p>小程序无法一键打开小红书，只能复制到剪贴板。</p></div>
+    <div class="card dim"><h4>无授权主动推送</h4><p>只能依赖订阅消息，<b>一次授权对应一条推送</b>，因此 L2 分发的触达率上限受授权率约束。</p></div>
+    <div class="card dim"><h4>境外精准定位</h4><p>精度与授权率均低于国内，城市采用「自动定位 + 手动选择」双轨，且所有逻辑以手动选择为准。</p></div>
+    <div class="card dim"><h4>向量库</h4><p>冷启动期语料只有几百条，向量检索的质量提升观察不到，却多一个必须维护同步的组件。起步用关键词 + 标签过滤，升级条件：单城语料 &gt;2000 条或兜底采纳率 &lt;50%。</p></div>
+    <div class="card dim"><h4>独立 Web 后台</h4><p>运营后台做成小程序内的管理员页面（openid 白名单 + 云函数二次校验），只做四件事：待审、举报、用户、看板。</p></div>
+  </div>
+
+  <div class="callout warn">
+    <h4>最大的落地障碍：个人主体拿不到 UGC 类目</h4>
+    <p>小程序涉及发帖、评论、私聊等 UGC 功能需要「社交-社区/论坛」类目，而该类目<b>不向个人主体开放</b>，后台入口为灰态。这个优先级高于任何功能设计。</p>
+    <p>解法是 <b>A + B 双 Demo</b>：<b>Demo A</b> 完整前后端 + 数据库，以<b>微信小程序体验版</b>发布——体验版无需提交审核即可分享给受邀成员，不受类目限制，是零成本、零合规风险又能拿到真实用户数据的唯一路径，且天然适配「伦敦单城小范围运营」；<b>Demo B</b> 是升级路径原型，演示具备主体与资质后的形态（担保交易、商家入驻、多城联动），明确标注为 Roadmap 演示。</p>
+    <p>升级触发条件：伦敦跑到阶段 1 的收入验证，再启动主体注册 → ICP 备案 → 类目申请 → 正式发布。届时 Demo A 的代码与数据可直接迁移。</p>
+  </div>
+
+  <h3 class="sub">进度</h3>
+  <div class="milestones">
+    <div class="ms done"><b>M1</b><span>主干闭环（不含 AI）</span><i>19 / 19</i></div>
+    <div class="ms done"><b>M2</b><span>AI 主干与小螺</span><i>16 / 16</i></div>
+    <div class="ms doing"><b>M3</b><span>机审 · 城市社区 · 信任分 · 约定单 · 私信 · 双向评价</span><i>1 / 16</i></div>
+    <div class="ms"><b>M4</b><span>安全体系 · 管理员四件事 · 订阅消息 · 语料播种</span><i>未开始</i></div>
+    <div class="ms"><b>M5</b><span>L2 分发 · 行程清单 · 小红书图文 · 应急卡 · 会员 · A/B</span><i>未开始</i></div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div>
+    <p class="f-brand">喊呗 <em>HeyBay</em> · 小螺</p>
+    <p>在国外，喊一声就有人。<span class="en">Holler once, someone's already there.</span></p>
+  </div>
+  <p class="f-note">本页面为 HTML 演示版，用于呈现产品的理想完整形态，含尚在排期中的 P1 / P2 功能；页面内数据均为演示样例。产品本体为微信小程序 + 微信云开发全栈应用。</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
