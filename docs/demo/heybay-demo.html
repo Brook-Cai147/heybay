@@ -1,0 +1,2116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>喊呗 HeyBay · 产品演示</title>
+<meta name="description" content="喊呗 HeyBay —— 海外旅行场景下的异地找人小程序。V2.0 产品演示与设计说明。">
+<style>
+:root{
+  --ink:#080F1A;
+  --ink-2:#0E1826;
+  --ink-3:#141F31;
+  --line:rgba(255,255,255,.09);
+  --line-2:rgba(255,255,255,.16);
+  --text:#E9EEF6;
+  --muted:#8B9CB5;
+  --muted-2:#65778F;
+  --coral:#FF7A59;
+  --amber:#FFC24D;
+  --teal:#2DD4BF;
+  --red:#F4645F;
+  --grad:linear-gradient(135deg,#FF7A59 0%,#FFC24D 100%);
+  --radius:18px;
+  --shadow:0 24px 60px -20px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--ink);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+a{color:inherit;text-decoration:none}
+b,strong{color:#fff;font-weight:600}
+em{font-style:normal}
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.9em;background:rgba(255,255,255,.07);
+  padding:.1em .4em;border-radius:5px;color:var(--amber);
+}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ---------- nav ---------- */
+.nav{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;gap:24px;
+  padding:14px 40px;
+  background:rgba(8,15,26,.82);
+  backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.brand-mark{
+  width:32px;height:32px;border-radius:10px;background:var(--grad);
+  display:grid;place-items:center;font-weight:700;font-size:16px;color:#231005;
+}
+.brand-text{font-weight:600;letter-spacing:.02em}
+.brand-text em{color:var(--muted);font-size:13px;font-weight:400;margin-left:2px}
+.nav-links{display:flex;gap:22px;margin-left:auto;font-size:14px;color:var(--muted)}
+.nav-links a{transition:color .2s}
+.nav-links a:hover{color:#fff}
+.nav-pill{
+  font-size:12px;padding:4px 11px;border-radius:999px;
+  border:1px solid rgba(255,194,77,.35);color:var(--amber);
+  background:rgba(255,194,77,.08);white-space:nowrap;
+}
+
+/* ---------- hero ---------- */
+.hero{position:relative;padding:90px 40px 80px;overflow:hidden}
+.hero-glow{
+  position:absolute;inset:-30% 20% auto -10%;height:700px;
+  background:radial-gradient(45% 50% at 30% 40%,rgba(255,122,89,.22),transparent 70%),
+             radial-gradient(40% 45% at 70% 30%,rgba(45,212,191,.14),transparent 70%);
+  filter:blur(20px);pointer-events:none;
+}
+.hero-inner{
+  position:relative;max-width:1200px;margin:0 auto;
+  display:grid;grid-template-columns:1.35fr .95fr;gap:56px;align-items:start;
+}
+.eyebrow{color:var(--amber);font-size:13px;letter-spacing:.14em;margin-bottom:18px}
+.hero h1{font-size:clamp(38px,5vw,64px);line-height:1.15;font-weight:700;letter-spacing:-.02em}
+.lede{margin-top:22px;color:var(--muted);font-size:17px;max-width:620px}
+.hero-actions{display:flex;gap:14px;margin-top:32px;flex-wrap:wrap}
+.btn{
+  display:inline-block;padding:12px 24px;border-radius:12px;font-size:15px;
+  font-weight:500;transition:transform .18s,box-shadow .18s,background .18s;
+}
+.btn-primary{background:var(--grad);color:#2A1206;box-shadow:0 12px 30px -12px rgba(255,122,89,.7)}
+.btn-primary:hover{transform:translateY(-2px)}
+.btn-ghost{border:1px solid var(--line-2);color:var(--text)}
+.btn-ghost:hover{background:rgba(255,255,255,.06)}
+.hero-stats{display:flex;gap:38px;margin-top:46px;flex-wrap:wrap}
+.hero-stats div{display:flex;flex-direction:column}
+.hero-stats b{font-size:26px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-stats span{font-size:12.5px;color:var(--muted-2)}
+.notice{
+  background:linear-gradient(160deg,rgba(255,194,77,.09),rgba(255,255,255,.02));
+  border:1px solid rgba(255,194,77,.24);border-radius:var(--radius);
+  padding:24px 26px;font-size:14px;color:var(--muted);
+}
+.notice-head{
+  display:flex;align-items:center;gap:9px;color:var(--amber);
+  font-weight:600;font-size:13px;letter-spacing:.06em;margin-bottom:12px;
+}
+.notice .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 4px rgba(255,194,77,.18)}
+.notice p+p{margin-top:11px}
+.notice-foot{border-top:1px solid rgba(255,194,77,.2);padding-top:11px;color:var(--muted-2);font-size:13px}
+/* ---------- sections ---------- */
+.section{padding:86px 40px;max-width:1200px;margin:0 auto}
+.section.alt{position:relative;max-width:none}
+.section.alt::before{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,0));
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);pointer-events:none;
+}
+.section.alt>*{max-width:1200px;margin-left:auto;margin-right:auto;position:relative}
+.sec-head{margin-bottom:44px;max-width:820px}
+.sec-num{
+  display:inline-block;font-size:12px;letter-spacing:.2em;color:var(--coral);
+  border:1px solid rgba(255,122,89,.3);border-radius:6px;padding:2px 8px;margin-bottom:14px;
+}
+.sec-head h2{font-size:clamp(26px,3vw,36px);font-weight:650;letter-spacing:-.01em}
+.sec-head p{color:var(--muted);margin-top:14px;font-size:16px}
+.big-quote{font-size:20px!important;color:var(--text)!important;margin-top:16px!important}
+.big-quote b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{
+  font-size:19px;font-weight:600;margin:56px 0 20px;
+  padding-left:13px;border-left:3px solid var(--coral);line-height:1.4;
+}
+.lead-note{color:var(--muted);margin-bottom:22px;max-width:900px}
+.foot-note{color:var(--muted-2);font-size:13.5px;margin-top:18px;max-width:980px}
+.quote{
+  border-left:2px solid var(--amber);padding-left:14px;color:var(--amber);
+  font-size:14.5px;margin-top:14px;
+}
+
+/* ---------- prototype ---------- */
+.proto-chips{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:30px}
+.chip{
+  font-size:13px;padding:7px 15px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);
+  transition:all .18s;
+}
+.chip:hover{color:#fff;border-color:var(--line-2)}
+.chip.on{background:var(--grad);color:#2A1206;border-color:transparent;font-weight:600}
+.proto{display:grid;grid-template-columns:auto 1fr;gap:52px;align-items:start}
+.phone-wrap{position:sticky;top:86px}
+.phone{
+  width:372px;height:756px;border-radius:44px;position:relative;
+  background:#F4F6F9;color:#1B2430;overflow:hidden;
+  border:11px solid #1A2130;box-shadow:var(--shadow),0 0 0 1px rgba(255,255,255,.1);
+  display:flex;flex-direction:column;
+}
+.phone-notch{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:104px;height:22px;border-radius:999px;background:#1A2130;z-index:9;
+}
+.phone-status{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  padding:12px 22px 4px;font-size:11.5px;color:#4A5568;font-weight:600;flex-shrink:0;
+}
+.phone-status-r{font-weight:500;letter-spacing:.02em}
+.phone-nav{
+  display:flex;align-items:center;gap:6px;padding:8px 18px 10px;
+  font-size:16px;font-weight:600;flex-shrink:0;background:#F4F6F9;
+  border-bottom:1px solid rgba(0,0,0,.05);
+}
+.phone-back{
+  border:0;background:none;font-size:24px;line-height:1;cursor:pointer;
+  color:#1B2430;padding:0 4px 3px 0;display:none;
+}
+.phone-back.show{display:block}
+.phone-body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.phone-body::-webkit-scrollbar{width:0}
+.tabbar{
+  display:flex;flex-shrink:0;background:#fff;border-top:1px solid rgba(0,0,0,.07);
+  padding:7px 0 11px;
+}
+.tabbar button{
+  flex:1;border:0;background:none;cursor:pointer;font-size:10.5px;color:#96A2B4;
+  display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit;
+}
+.tabbar button i{font-size:19px;font-style:normal;line-height:1}
+.tabbar button.on{color:#FF6A45;font-weight:600}
+.tabbar button.mid i{
+  width:34px;height:34px;border-radius:50%;background:var(--grad);color:#fff;
+  display:grid;place-items:center;font-size:19px;margin-top:-11px;
+  box-shadow:0 6px 16px -4px rgba(255,122,89,.75);
+}
+.phone-cap{margin-top:16px;font-size:12px;color:var(--muted-2);max-width:372px;text-align:center}
+
+/* ---------- notes panel ---------- */
+.notes{padding-top:4px}
+.notes h3{font-size:20px;font-weight:650;margin-bottom:6px}
+.notes .n-sub{color:var(--muted-2);font-size:13px;letter-spacing:.05em;margin-bottom:22px}
+.note{
+  border:1px solid var(--line);border-radius:14px;padding:17px 19px;
+  background:rgba(255,255,255,.025);margin-bottom:13px;
+}
+.note b{display:block;font-size:14.5px;margin-bottom:6px;color:#fff}
+.note p{font-size:13.8px;color:var(--muted)}
+.note.key{border-color:rgba(255,122,89,.35);background:rgba(255,122,89,.07)}
+.note.key b{color:var(--coral)}
+.note.warn{border-color:rgba(244,100,95,.3);background:rgba(244,100,95,.06)}
+.note.warn b{color:#FF8F8B}
+.note-tip{font-size:12.5px;color:var(--muted-2);margin-top:16px}
+/* ---------- in-phone UI ---------- */
+.s-pad{padding:14px 16px 26px}
+.s-city{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.s-city .cty{display:flex;align-items:center;gap:5px;font-size:17px;font-weight:700}
+.s-city .cty small{font-size:11px;color:#8C98A9;font-weight:500}
+.s-city .srch{
+  flex:1;margin-left:14px;background:#fff;border-radius:999px;padding:7px 13px;
+  font-size:12.5px;color:#A3AEBD;border:1px solid rgba(0,0,0,.05);
+}
+.s-filters{display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;margin-bottom:4px}
+.s-filters::-webkit-scrollbar{height:0}
+.s-filters span{
+  flex-shrink:0;font-size:12px;padding:5px 12px;border-radius:999px;
+  background:#fff;color:#5B6878;border:1px solid rgba(0,0,0,.06);cursor:pointer;
+}
+.s-filters span.on{background:#1B2430;color:#fff;border-color:#1B2430}
+.s-banner{
+  background:linear-gradient(120deg,#FFEDE6,#FFF7E6);border-radius:14px;
+  padding:11px 14px;font-size:12.5px;color:#8A5A38;margin-bottom:14px;
+  display:flex;align-items:center;gap:9px;
+}
+.s-banner b{color:#C4562F}
+.rq{
+  background:#fff;border-radius:16px;padding:14px;margin-bottom:11px;
+  box-shadow:0 2px 10px -4px rgba(20,30,45,.12);cursor:pointer;
+  border:1px solid rgba(0,0,0,.04);transition:transform .16s;
+}
+.rq:active{transform:scale(.985)}
+.rq-top{display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap}
+.cat{font-size:11px;padding:2.5px 8px;border-radius:6px;background:#FFEDE6;color:#C4562F;font-weight:600}
+.cat.b{background:#E6F5F3;color:#128577}
+.cat.c{background:#EDEEFF;color:#5257C4}
+.cat.d{background:#FDE8E8;color:#C33B36}
+.timer{font-size:11px;color:#E0623F;background:#FFF1EC;padding:2.5px 7px;border-radius:6px;font-weight:600}
+.timer.plan{color:#4A7BC4;background:#EDF3FC}
+.rq h4{font-size:15px;font-weight:650;line-height:1.45;margin-bottom:5px}
+.rq p{font-size:12.8px;color:#71808F;line-height:1.6}
+.rq-meta{display:flex;gap:12px;font-size:11.5px;color:#93A0B0;margin-top:9px;flex-wrap:wrap}
+.rq-foot{
+  display:flex;align-items:center;justify-content:space-between;margin-top:11px;
+  padding-top:10px;border-top:1px solid rgba(0,0,0,.05);
+}
+.who-mini{display:flex;align-items:center;gap:6px;font-size:12px;color:#5B6878}
+.av{width:22px;height:22px;border-radius:50%;background:var(--grad);display:grid;place-items:center;font-size:10px;color:#fff;font-weight:600;flex-shrink:0}
+.av.t{background:linear-gradient(135deg,#2DD4BF,#3B82F6)}
+.av.p{background:linear-gradient(135deg,#A78BFA,#EC4899)}
+.av.lg{width:46px;height:46px;font-size:17px}
+.pay{font-size:13px;font-weight:700;color:#E0623F}
+.pay.free{color:#128577}
+.badge{font-size:10.5px;padding:2px 7px;border-radius:5px;font-weight:600;white-space:nowrap}
+.badge.b1{background:#F0F2F5;color:#78859A}
+.badge.b2{background:#E6F5F3;color:#128577}
+.badge.b3{background:#EAF0FF;color:#3B62C4}
+.badge.b4{background:linear-gradient(120deg,#FFEDD5,#FDE68A);color:#9A5B0B}
+.badge.ai{background:#F3EEFF;color:#6D4BC9}
+.s-card{background:#fff;border-radius:16px;padding:15px;margin-bottom:12px;border:1px solid rgba(0,0,0,.04)}
+.s-t{font-size:13px;font-weight:700;color:#3A4757;margin:16px 0 9px;display:flex;align-items:center;justify-content:space-between}
+.s-t span{font-size:11.5px;color:#98A4B3;font-weight:500}
+.s-hint{font-size:12px;color:#8C98A9;line-height:1.65}
+.s-input{
+  width:100%;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:13px;
+  font-size:14px;font-family:inherit;resize:none;background:#fff;color:#1B2430;line-height:1.6;
+}
+.s-input:focus{outline:none;border-color:#FF9A7E;box-shadow:0 0 0 3px rgba(255,122,89,.12)}
+.s-btn{
+  width:100%;border:0;border-radius:13px;padding:13px;font-size:14.5px;font-weight:600;
+  background:var(--grad);color:#fff;cursor:pointer;font-family:inherit;
+  box-shadow:0 8px 20px -8px rgba(255,122,89,.7);
+}
+.s-btn:disabled{opacity:.5;box-shadow:none;cursor:default}
+.s-btn.ghost{background:#fff;color:#3A4757;border:1px solid rgba(0,0,0,.1);box-shadow:none}
+.s-btn.dark{background:#1B2430;box-shadow:none}
+.s-btn.sm{padding:9px;font-size:13px;border-radius:11px}
+.s-row{display:flex;gap:9px}
+.chips-ex{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 14px}
+.chips-ex button{
+  border:1px dashed rgba(0,0,0,.14);background:#fff;border-radius:999px;
+  padding:5px 11px;font-size:11.5px;color:#5B6878;cursor:pointer;font-family:inherit;
+}
+.thinking{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#8C98A9;padding:8px 0}
+.thinking i{
+  width:13px;height:13px;border-radius:50%;border:2px solid #FFD3C6;border-top-color:#FF7A59;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.parsed{border:1px solid #FFD9CC;border-radius:16px;overflow:hidden;background:#fff}
+.parsed-h{background:linear-gradient(120deg,#FFF3EE,#FFF9EE);padding:11px 14px;font-size:12.5px;color:#8A5A38}
+.parsed-h b{color:#C4562F}
+.f-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid rgba(0,0,0,.05);font-size:13px}
+.f-row .k{width:66px;color:#8C98A9;font-size:12px;flex-shrink:0}
+.f-row .v{flex:1;font-weight:600}
+.f-row .ed{font-size:11.5px;color:#4A7BC4}
+.f-row.blank{background:#FFFBEB}
+.f-row.blank .v{color:#B08A2E;font-weight:500}
+.f-row.blank .k{color:#B08A2E}
+.parsed-f{padding:11px 14px;background:#FFFBEB;font-size:11.8px;color:#8A6A2E;border-top:1px solid rgba(0,0,0,.05)}
+.reach{
+  margin-top:12px;background:#EEF6FF;border-radius:12px;padding:11px 13px;
+  font-size:12.5px;color:#3B62C4;display:flex;align-items:center;gap:8px;
+}
+.reach b{color:#274B9E}
+.det-h{background:#fff;padding:16px;border-bottom:1px solid rgba(0,0,0,.05)}
+.det-h h3{font-size:18px;font-weight:700;line-height:1.4;margin:9px 0 10px}
+.det-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 12px;font-size:12.5px;margin-top:12px}
+.det-grid div{display:flex;flex-direction:column;gap:2px}
+.det-grid .k{font-size:11px;color:#98A4B3}
+.det-grid .v{font-weight:600;color:#2C3A4B}
+.resp{background:#fff;border-radius:14px;padding:13px;margin-bottom:10px;border:1px solid rgba(0,0,0,.05)}
+.resp-top{display:flex;align-items:center;gap:9px}
+.resp-top .nm{flex:1}
+.resp-top .nm b{font-size:13.5px;display:block}
+.resp-top .nm small{font-size:11px;color:#93A0B0}
+.resp .say{font-size:12.8px;color:#4E5C6E;margin-top:9px;line-height:1.6}
+.evi-line{font-size:11.5px;color:#7E8B9B;margin-top:7px;display:flex;flex-wrap:wrap;gap:4px 10px}
+.ai-reason{
+  margin-top:9px;background:#F8F5FF;border-radius:10px;padding:9px 11px;
+  font-size:11.8px;color:#6D4BC9;line-height:1.6;
+}
+.ai-reason b{color:#57369E}
+.pick{display:flex;gap:8px;margin-top:11px}
+.ag{border:1px solid #C8E6E1;border-radius:16px;overflow:hidden;background:#fff;margin-bottom:12px}
+.ag-h{background:#EAF7F5;padding:11px 14px;font-size:12.5px;color:#0E6E62;font-weight:600;display:flex;justify-content:space-between}
+.ag .f-row{border-top:1px solid rgba(0,0,0,.05)}
+.contact{
+  background:#FFF8E6;border:1px solid #F2DFAE;border-radius:14px;padding:13px;
+  font-size:12.5px;color:#8A6A2E;margin-bottom:12px;
+}
+.contact b{display:block;color:#1B2430;font-size:14px;margin:6px 0}
+.warn-card{
+  background:#FFF1EF;border:1px solid #F6CFC9;border-radius:14px;padding:13px;
+  font-size:12.5px;color:#A33F38;line-height:1.7;margin-bottom:12px;
+}
+.warn-card b{display:block;margin-bottom:5px;color:#8C2F29}
+.sos{
+  display:flex;align-items:center;justify-content:center;gap:7px;background:#C33B36;color:#fff;
+  border:0;border-radius:13px;padding:12px;width:100%;font-size:14px;font-weight:600;
+  cursor:pointer;font-family:inherit;
+}
+.bub-wrap{padding:14px 16px 20px;display:flex;flex-direction:column;gap:12px}
+.bub{max-width:80%;padding:11px 13px;border-radius:14px;font-size:13px;line-height:1.65}
+.bub.you{background:#fff;align-self:flex-start;border-bottom-left-radius:5px;border:1px solid rgba(0,0,0,.05)}
+.bub.me{background:#FF7A59;color:#fff;align-self:flex-end;border-bottom-right-radius:5px}
+.bub.ai{background:#fff;align-self:flex-start;border-bottom-left-radius:5px;border:1px solid #E6DBFF}
+.bub.ai .ai-tag{
+  display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:#6D4BC9;
+  background:#F3EEFF;padding:2px 7px;border-radius:5px;margin-bottom:7px;font-weight:600;
+}
+/* 全局 b,strong 被设成白色，白底气泡里要覆盖回深色，否则加粗字看不见 */
+.bub.ai b,.bub.you b{color:#1B2430}
+.bub.me b{color:#fff}
+/* 发现 · 本地内容卡 */
+.note-card{display:flex;gap:11px;align-items:center;background:#fff;border-radius:16px;padding:13px 14px;margin-bottom:11px;border:1px solid rgba(0,0,0,.05)}
+.note-card.fresh{border-color:#FF9A7E;box-shadow:0 6px 18px -8px rgba(255,122,89,.5)}
+.note-card .emj{font-size:28px;flex-shrink:0}
+.note-card .nc-body{flex:1;min-width:0}
+.note-card .nc-body b{display:block;color:#1B2430;font-size:13.5px;line-height:1.4}
+.note-card .nc-body small{display:block;color:#8C98A9;font-size:11.5px;margin-top:4px}
+.note-card .nc-body small em{font-style:normal;color:#C4562F}
+.note-card .nc-go{flex-shrink:0;border:1px solid rgba(0,0,0,.12);background:#fff;color:#4E5C6E;border-radius:999px;padding:7px 13px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap}
+/* 小螺输入条 */
+.compose{display:flex;gap:9px;padding:10px 16px 18px;align-items:center}
+.compose input{flex:1;min-width:0;border:1px solid rgba(0,0,0,.12);border-radius:999px;padding:11px 15px;font-size:13.5px;font-family:inherit;color:#1B2430;outline:none}
+.compose input:focus{border-color:#FF9A7E;box-shadow:0 0 0 3px rgba(255,122,89,.12)}
+.compose .cbtn{flex-shrink:0;border:0;border-radius:999px;padding:11px 17px;font-size:13.5px;font-weight:600;background:var(--grad);color:#fff;cursor:pointer;font-family:inherit}
+/* 小螺内联需求单草稿 */
+.luo-draft{margin-top:4px}
+.luo-draft .ld-h{font-weight:700;color:#1B2430;margin-bottom:7px;font-size:13px}
+.luo-draft .ld-row{display:flex;gap:8px;padding:5px 0;font-size:12.5px;border-top:1px dashed rgba(0,0,0,.08)}
+.luo-draft .ld-row:first-of-type{border-top:0}
+.luo-draft .ld-row .k{color:#8C98A9;flex:0 0 58px}
+.luo-draft .ld-row .v{color:#1B2430;flex:1}
+.luo-draft .ld-row.need{background:#FFF7EC;margin:3px 0;padding:5px 7px;border-radius:7px}
+.luo-draft .ld-row.need .k,.luo-draft .ld-row.need .v{color:#C98A2E;font-weight:600}
+.src{margin-top:9px;padding-top:8px;border-top:1px dashed rgba(0,0,0,.1);font-size:11px;color:#93A0B0;line-height:1.6}
+.risk{
+  align-self:center;background:#FFF1EF;border:1px solid #F6CFC9;color:#A33F38;
+  font-size:11.5px;padding:9px 12px;border-radius:11px;max-width:92%;line-height:1.6;
+}
+.risk b{color:#8C2F29}
+.q-chips{display:flex;flex-wrap:wrap;gap:7px;padding:0 16px 16px}
+.q-chips button{
+  border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:999px;
+  padding:6px 12px;font-size:11.8px;color:#4E5C6E;cursor:pointer;font-family:inherit;
+}
+.notif{display:flex;gap:11px;background:#fff;padding:13px 15px;border-bottom:1px solid rgba(0,0,0,.05);cursor:pointer}
+.notif .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:17px;flex-shrink:0}
+.notif .ic.o{background:#FFEDE6}
+.notif .ic.g{background:#E6F5F3}
+.notif .ic.p{background:#F3EEFF}
+.notif .ic.b{background:#EAF0FF}
+.notif .tx{flex:1;min-width:0}
+.notif .tx b{font-size:13.5px;display:flex;align-items:center;gap:6px}
+.notif .tx p{font-size:12.3px;color:#7E8B9B;margin-top:3px;line-height:1.55}
+.notif .tm{font-size:10.5px;color:#A9B4C2;flex-shrink:0}
+.unread{width:7px;height:7px;border-radius:50%;background:#FF4D4F;display:inline-block}
+.mine-head{
+  background:linear-gradient(150deg,#1B2430,#2A3648);color:#fff;padding:20px 16px 24px;
+}
+.mine-top{display:flex;align-items:center;gap:13px}
+.mine-top .nm b{font-size:17px;display:block}
+.mine-top .nm small{font-size:11.5px;color:#A9B7CA}
+.trust-ring{
+  margin-left:auto;text-align:center;background:rgba(255,255,255,.1);
+  border-radius:12px;padding:7px 12px;
+}
+.trust-ring b{display:block;font-size:16px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.trust-ring small{font-size:10px;color:#A9B7CA}
+.mine-stats{display:flex;margin-top:18px;background:rgba(255,255,255,.07);border-radius:13px;padding:11px 0}
+.mine-stats div{flex:1;text-align:center;border-right:1px solid rgba(255,255,255,.09)}
+.mine-stats div:last-child{border:0}
+.mine-stats b{display:block;font-size:16px}
+.mine-stats small{font-size:10.5px;color:#A9B7CA}
+.evi{background:#fff;border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.05)}
+.evi div{display:flex;align-items:center;gap:9px;padding:11px 14px;font-size:12.8px;border-top:1px solid rgba(0,0,0,.04)}
+.evi div:first-child{border:0}
+.evi .ok{color:#128577}
+.evi .todo{color:#B08A2E;margin-left:auto;font-size:11.5px}
+.lad{display:flex;gap:7px;margin-bottom:11px}
+.lad button{
+  flex:1;border:1px solid rgba(0,0,0,.1);background:#fff;border-radius:11px;padding:9px 4px;
+  font-size:12px;cursor:pointer;font-family:inherit;color:#5B6878;
+}
+.lad button b{display:block;font-size:13px;color:#1B2430}
+.lad button.on{border-color:#FF7A59;background:#FFF3EF;color:#C4562F}
+.lad button.on b{color:#C4562F}
+.lad button:disabled{opacity:.45;cursor:not-allowed;background:#F4F6F9}
+.menu{background:#fff;border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.05)}
+.menu a{display:flex;align-items:center;gap:10px;padding:13px 15px;font-size:13.5px;border-top:1px solid rgba(0,0,0,.04);cursor:pointer}
+.menu a:first-child{border:0}
+.menu a .ar{margin-left:auto;color:#C2CBD6}
+.menu a .tagm{font-size:10.5px;background:#FFEDE6;color:#C4562F;padding:2px 6px;border-radius:5px}
+.stars{display:flex;gap:7px;font-size:29px;color:#E2E7EE;cursor:pointer;justify-content:center;margin:6px 0 14px}
+.stars span.on{color:#FFB020}
+.tagpick{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.tagpick button{
+  border:1px solid rgba(0,0,0,.1);background:#fff;border-radius:999px;padding:6px 12px;
+  font-size:12px;color:#5B6878;cursor:pointer;font-family:inherit;
+}
+.tagpick button.on{border-color:#FF7A59;background:#FFF3EF;color:#C4562F;font-weight:600}
+.zones{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:14px}
+.zones div{
+  background:#fff;border-radius:13px;padding:11px 4px;text-align:center;font-size:11px;
+  color:#4E5C6E;border:1px solid rgba(0,0,0,.05);cursor:pointer;
+}
+.zones div i{display:block;font-size:19px;font-style:normal;margin-bottom:4px}
+.people{display:flex;gap:9px;overflow-x:auto;padding-bottom:8px}
+.people::-webkit-scrollbar{height:0}
+.pc{
+  flex-shrink:0;width:118px;background:#fff;border-radius:14px;padding:12px 10px;
+  text-align:center;border:1px solid rgba(0,0,0,.05);
+}
+.pc .av{margin:0 auto 8px}
+.pc b{font-size:12.5px;display:block}
+.pc small{font-size:10.5px;color:#93A0B0;display:block;margin:3px 0 7px;line-height:1.5}
+.hot{background:#fff;border-radius:14px;padding:13px 15px;border:1px solid rgba(0,0,0,.05)}
+.hot li{list-style:none;display:flex;gap:9px;font-size:12.8px;padding:6px 0;align-items:center}
+.hot li em{
+  width:17px;height:17px;border-radius:5px;background:#F0F2F5;color:#78859A;
+  font-size:10.5px;display:grid;place-items:center;flex-shrink:0;font-weight:700;
+}
+.hot li:nth-child(1) em{background:#FFEDE6;color:#C4562F}
+.hot li:nth-child(2) em{background:#FFF4E0;color:#B08A2E}
+.hot li span{margin-left:auto;color:#A9B4C2;font-size:11px}
+.kpi{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.kpi div{background:#fff;border-radius:13px;padding:12px 13px;border:1px solid rgba(0,0,0,.05)}
+.kpi b{display:block;font-size:21px;color:#1B2430}
+.kpi small{font-size:11px;color:#93A0B0}
+.kpi .up{color:#128577;font-size:11px;font-weight:600}
+.kpi .down{color:#C33B36;font-size:11px;font-weight:600}
+.queue{background:#fff;border-radius:13px;padding:12px 14px;border:1px solid rgba(0,0,0,.05);margin-bottom:9px}
+.queue-t{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:650}
+.queue-t em{font-size:11px;background:#FFEDE6;color:#C4562F;padding:2px 7px;border-radius:5px;font-weight:600}
+.queue p{font-size:12px;color:#7E8B9B;margin-top:7px;line-height:1.6}
+.bar{height:6px;border-radius:999px;background:#EEF1F5;overflow:hidden;margin-top:9px}
+.bar i{display:block;height:100%;background:var(--grad)}
+.modal{
+  position:absolute;inset:0;background:rgba(10,18,30,.55);z-index:20;
+  display:flex;align-items:flex-end;padding:14px;animation:fade .2s;
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal-in{background:#fff;border-radius:20px;padding:19px;width:100%;animation:up .25s}
+@keyframes up{from{transform:translateY(24px)}to{transform:translateY(0)}}
+.modal-in h4{font-size:16px;font-weight:700;margin-bottom:11px}
+.modal-in ul{margin:0 0 14px 16px;font-size:12.8px;color:#4E5C6E;line-height:1.85}
+.toast{
+  position:absolute;left:50%;bottom:96px;transform:translateX(-50%);
+  background:rgba(20,28,40,.92);color:#fff;font-size:12.5px;padding:9px 16px;
+  border-radius:999px;z-index:30;animation:fade .2s;white-space:nowrap;max-width:88%;
+}
+/* ---------- page blocks ---------- */
+.vs{display:grid;grid-template-columns:1fr auto 1fr;gap:26px;align-items:stretch}
+.vs-col{border:1px solid var(--line);border-radius:var(--radius);padding:24px 26px;background:rgba(255,255,255,.02)}
+.vs-col h3{font-size:17px;margin-bottom:16px;font-weight:650}
+.vs-col.v1{opacity:.72}
+.vs-col.v1 h3{color:var(--muted)}
+.vs-col.v2{border-color:rgba(255,122,89,.32);background:linear-gradient(160deg,rgba(255,122,89,.08),rgba(255,255,255,.02))}
+.vs-col.v2 h3{color:var(--coral)}
+.vs-col ul{list-style:none}
+.vs-col li{font-size:14px;color:var(--muted);padding:8px 0 8px 18px;position:relative;border-top:1px solid var(--line)}
+.vs-col li:first-child{border:0}
+.vs-col li::before{content:"";position:absolute;left:0;top:16px;width:6px;height:6px;border-radius:50%;background:var(--muted-2)}
+.vs-col.v2 li::before{background:var(--coral)}
+.vs-arrow{display:flex;flex-direction:column;justify-content:center;gap:10px;text-align:center;padding:0 4px}
+.vs-arrow span{
+  font-size:12px;color:var(--amber);border:1px dashed rgba(255,194,77,.35);
+  border-radius:999px;padding:5px 12px;white-space:nowrap;
+}
+.cards-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:22px;background:rgba(255,255,255,.025)}
+.card h4{font-size:15px;font-weight:650;margin-bottom:9px}
+.card p{font-size:13.8px;color:var(--muted)}
+.card.accent{border-color:rgba(45,212,191,.28);background:rgba(45,212,191,.06)}
+.card.accent h4{color:var(--teal)}
+.card.dim{opacity:.82}
+.card.dim h4{color:var(--muted)}
+.callout{
+  margin-top:26px;border:1px solid var(--line);border-left:3px solid var(--teal);
+  border-radius:14px;padding:22px 26px;background:rgba(45,212,191,.05);
+}
+.callout h4{font-size:15.5px;margin-bottom:11px;color:var(--teal)}
+.callout p,.callout li{font-size:14px;color:var(--muted)}
+.callout p+p{margin-top:10px}
+.callout ol{margin-left:18px}
+.callout ol li{padding:5px 0}
+.callout.danger{border-left-color:var(--red);background:rgba(244,100,95,.05)}
+.callout.danger h4{color:#FF8F8B}
+.callout.warn{border-left-color:var(--amber);background:rgba(255,194,77,.05)}
+.callout.warn h4{color:var(--amber)}
+.flow{border:1px solid var(--line);border-radius:var(--radius);padding:24px;background:rgba(255,255,255,.02);margin-bottom:26px}
+.flow-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.flow-row+.flow-row{margin-top:16px;padding-top:16px;border-top:1px dashed var(--line)}
+.flow-row i{font-style:normal;font-size:11.5px;color:var(--muted-2)}
+.flow-row small{font-size:12.5px;color:var(--muted-2)}
+.node{
+  font-size:13px;padding:6px 14px;border-radius:9px;border:1px solid var(--line-2);
+  background:rgba(255,255,255,.05);white-space:nowrap;
+}
+.node.hot{border-color:rgba(255,122,89,.5);background:rgba(255,122,89,.13);color:#FFB59F}
+.node.ok{border-color:rgba(45,212,191,.45);background:rgba(45,212,191,.12);color:#87E9DC}
+.node.mute{color:var(--muted-2);background:rgba(255,255,255,.02)}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+.split-r p{color:var(--muted);font-size:14.5px}
+.split-r p+p{margin-top:13px}
+.agreement-demo{border:1px solid rgba(45,212,191,.3);border-radius:var(--radius);overflow:hidden;background:rgba(45,212,191,.05)}
+.ag-head{padding:13px 20px;background:rgba(45,212,191,.12);color:var(--teal);font-weight:600;font-size:14px}
+.agreement-demo dl div{display:flex;gap:16px;padding:11px 20px;border-top:1px solid var(--line);font-size:14px}
+.agreement-demo dt{width:82px;color:var(--muted-2);flex-shrink:0;font-size:13px}
+.agreement-demo dd{color:#fff}
+.ag-foot{padding:12px 20px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted-2)}
+.layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.layers div{
+  border:1px solid var(--line);border-radius:13px;padding:16px 18px;
+  font-size:13.5px;color:var(--muted);background:rgba(255,255,255,.02);
+}
+.layers b{display:block;color:var(--coral);font-size:14px;margin-bottom:5px}
+.gates{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.gates div{
+  border:1px solid rgba(45,212,191,.25);border-radius:14px;padding:20px;text-align:center;
+  background:rgba(45,212,191,.05);
+}
+.gates b{display:block;font-size:27px;color:var(--teal)}
+.gates span{font-size:13px;color:var(--muted)}
+.ladder{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.rung{border:1px solid var(--line);border-radius:var(--radius);padding:20px;background:rgba(255,255,255,.025);position:relative}
+.rung .lv{
+  font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--muted-2);
+  border:1px solid var(--line-2);border-radius:6px;padding:2px 8px;
+}
+.rung b{display:block;font-size:16px;margin:11px 0 8px}
+.rung p{font-size:13.5px;color:var(--muted)}
+.rung p em{color:var(--muted-2)}
+.rung .who{display:block;margin-top:12px;font-size:12px;color:var(--muted-2);border-top:1px solid var(--line);padding-top:10px}
+.rung.on{border-color:rgba(255,122,89,.45);background:rgba(255,122,89,.08)}
+.rung.on .lv{color:var(--coral);border-color:rgba(255,122,89,.5)}
+.rung.on .who{color:var(--coral)}
+.rung.off{opacity:.65;border-style:dashed}
+.rung.off b{color:var(--red)}
+.tools{display:flex;flex-wrap:wrap;gap:9px}
+.tools span{
+  font-size:12.8px;padding:7px 13px;border-radius:9px;border:1px solid var(--line);
+  background:rgba(255,255,255,.03);color:var(--muted);
+}
+.tools span.p0{border-color:rgba(255,122,89,.4);color:#FFB59F;background:rgba(255,122,89,.08)}
+.tools span.p2{opacity:.6}
+.tag-legend{display:inline-block;width:9px;height:9px;border-radius:3px;background:rgba(255,255,255,.16);margin-right:4px}
+.tag-legend.p0{background:rgba(255,122,89,.7)}
+.tag-legend.p2{background:rgba(255,255,255,.08)}
+.rails{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+.rails div{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:rgba(255,255,255,.02)}
+.rails b{display:block;font-size:14.5px;margin-bottom:7px;color:var(--amber)}
+.rails p{font-size:13.5px;color:var(--muted)}
+.eval{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:rgba(255,255,255,.02)}
+.eval-row{display:flex;align-items:center;gap:12px;padding:15px 20px;border-top:1px solid var(--line);font-size:14px}
+.eval-row:first-child{border:0}
+.eval-row span{flex:1;color:var(--muted)}
+.eval-row b{font-size:19px}
+.eval-row b.pass{color:var(--teal)}
+.eval-row em{font-size:11.5px;color:var(--muted-2);width:66px;text-align:right}
+.trust-layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-bottom:26px}
+.trust-layers>div{border:1px solid var(--line);border-radius:var(--radius);padding:20px;background:rgba(255,255,255,.025)}
+.trust-layers .lvl{font-size:12px;font-weight:700;color:var(--coral);letter-spacing:.08em}
+.trust-layers b{display:block;font-size:16px;margin:8px 0}
+.trust-layers p{font-size:13.3px;color:var(--muted)}
+.cred{display:inline-block;margin-top:12px;font-size:11.5px;padding:2px 9px;border-radius:6px}
+.cred.low{background:rgba(255,255,255,.07);color:var(--muted-2)}
+.cred.mid{background:rgba(255,194,77,.14);color:var(--amber)}
+.cred.high{background:rgba(45,212,191,.15);color:var(--teal)}
+.safety{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.safety>div{border:1px solid var(--line);border-radius:var(--radius);padding:20px 24px;background:rgba(255,255,255,.02)}
+.safety h4{font-size:15px;color:var(--coral);margin-bottom:12px}
+.safety ul{list-style:none}
+.safety li{font-size:13.5px;color:var(--muted);padding:7px 0 7px 15px;position:relative}
+.safety li::before{content:"";position:absolute;left:0;top:15px;width:5px;height:5px;border-radius:50%;background:var(--muted-2)}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.metric{border:1px solid var(--line);border-radius:var(--radius);padding:22px;background:rgba(255,255,255,.025)}
+.mlabel{font-size:11.5px;letter-spacing:.1em;color:var(--muted-2)}
+.metric b{display:block;font-size:18px;margin:9px 0 10px}
+.metric p{font-size:13.5px;color:var(--muted)}
+.metric.star{border-color:rgba(255,122,89,.4);background:linear-gradient(160deg,rgba(255,122,89,.1),rgba(255,255,255,.02))}
+.metric.star .mlabel{color:var(--coral)}
+.metric.star b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:21px}
+.metric.no{opacity:.7;border-style:dashed}
+.metric.no b{color:var(--muted);text-decoration:line-through}
+.funnel{display:flex;gap:10px;flex-wrap:wrap}
+.funnel div{
+  flex:1;min-width:135px;border:1px solid var(--line);border-radius:13px;padding:16px;
+  background:rgba(255,255,255,.02);text-align:center;
+}
+.funnel b{display:block;font-size:13px;color:var(--muted)}
+.funnel span{display:block;font-size:20px;margin-top:6px;color:var(--teal);font-weight:600}
+.stages{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.stages>div{border:1px solid var(--line);border-radius:var(--radius);padding:20px;background:rgba(255,255,255,.025)}
+.stages .st{font-size:11.5px;letter-spacing:.1em;color:var(--amber)}
+.stages b{display:block;font-size:15.5px;margin:8px 0 9px}
+.stages p{font-size:13.3px;color:var(--muted)}
+.stages>div.off{opacity:.6;border-style:dashed}
+.arch{display:grid;gap:14px}
+.arch-layer{
+  border:1px solid var(--line);border-radius:var(--radius);padding:20px 24px;
+  background:rgba(255,255,255,.025);display:grid;grid-template-columns:120px 1fr;gap:18px;align-items:start;
+}
+.arch-layer .al{
+  font-size:13px;font-weight:650;color:var(--coral);
+  border-right:1px solid var(--line);padding-right:14px;
+}
+.arch-items{display:flex;flex-wrap:wrap;gap:8px;grid-column:2}
+.arch-items span{
+  font-size:12.5px;padding:5px 11px;border-radius:8px;border:1px solid var(--line);
+  background:rgba(255,255,255,.03);color:var(--muted);
+}
+.arch-items span.fn{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  border-color:rgba(45,212,191,.35);color:var(--teal);background:rgba(45,212,191,.08);
+}
+.arch-layer p{grid-column:2;font-size:13.3px;color:var(--muted-2);margin-top:2px}
+.milestones{display:grid;gap:10px}
+.ms{
+  display:grid;grid-template-columns:56px 1fr auto;gap:16px;align-items:center;
+  border:1px solid var(--line);border-radius:13px;padding:15px 20px;background:rgba(255,255,255,.02);
+}
+.ms b{font-size:15px;color:var(--muted)}
+.ms span{font-size:13.5px;color:var(--muted)}
+.ms i{font-style:normal;font-size:13px;color:var(--muted-2)}
+.ms.done{border-color:rgba(45,212,191,.3);background:rgba(45,212,191,.06)}
+.ms.done b,.ms.done i{color:var(--teal)}
+.ms.doing{border-color:rgba(255,194,77,.35);background:rgba(255,194,77,.06)}
+.ms.doing b,.ms.doing i{color:var(--amber)}
+
+/* ---------- footer ---------- */
+.footer{
+  border-top:1px solid var(--line);padding:44px 40px 60px;
+  max-width:1200px;margin:0 auto;display:grid;gap:20px;
+}
+.f-brand{font-size:19px;font-weight:650}
+.f-brand em{color:var(--muted);font-size:14px;font-weight:400}
+.footer p{color:var(--muted);font-size:14px}
+.footer .en{color:var(--muted-2);margin-left:10px;font-size:13px}
+.f-note{font-size:12.5px!important;color:var(--muted-2)!important;border-top:1px dashed var(--line);padding-top:18px;line-height:1.8}
+
+/* ---------- responsive ---------- */
+@media (max-width:1080px){
+  .hero-inner,.proto,.vs,.split{grid-template-columns:1fr}
+  .vs-arrow{flex-direction:row;flex-wrap:wrap;justify-content:center}
+  .phone-wrap{position:static;justify-self:center}
+  .nav-links{display:none}
+}
+@media (max-width:640px){
+  .nav,.hero,.section,.footer{padding-left:18px;padding-right:18px}
+  .hero{padding-top:52px}
+  .section{padding-top:60px;padding-bottom:60px}
+  .phone{width:100%;max-width:360px;height:700px}
+  .arch-layer{grid-template-columns:1fr}
+  .arch-layer .al{border:0;padding:0}
+  .arch-items,.arch-layer p{grid-column:1}
+  .hero-stats{gap:22px}
+}
+
+/* ===== 交互补丁：小螺输入条固定底部 + 可点元素给出手型 ===== */
+.luo-screen{display:flex;flex-direction:column;height:100%}
+.luo-screen .bub-wrap{flex:1 1 auto;overflow-y:auto;min-height:0}
+.luo-screen .q-chips{flex:0 0 auto}
+.luo-screen .compose{flex:0 0 auto;border-top:1px solid rgba(0,0,0,.06);background:#fff}
+.s-filters span,.zones div,.hot li,.pc,.s-city .cty,.city-click,.note-card{cursor:pointer}
+.hot li:active,.zones div:active,.pc:active,.note-card:active{opacity:.6}
+/* 笔记卡右侧的小箭头 */
+.note-card .nc-arrow{flex-shrink:0;color:#C3CBD6;font-size:20px}
+/* 笔记详情 */
+.note-detail .nd-cover{height:132px;background:linear-gradient(135deg,#FFE1D6,#FFF1EC);display:flex;align-items:center;justify-content:center;font-size:52px}
+.note-detail .nd-title{font-size:17px;font-weight:800;margin:14px 0 10px;line-height:1.4;color:#1B2430}
+.note-detail .nd-by{display:flex;align-items:center;gap:7px;font-size:12px;color:#8C98A9;margin-bottom:12px}
+.note-detail .nd-by .av{width:22px;height:22px;font-size:11px}
+.note-detail .nd-body{font-size:13.5px;line-height:1.8;color:#3A4757}
+
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="#top">
+    <span class="brand-mark">喊</span>
+    <span class="brand-text">喊呗 <em>HeyBay</em></span>
+  </a>
+  <div class="nav-links">
+    <a href="#prototype">交互原型</a>
+    <a href="#evolution">版本演进</a>
+    <a href="#mechanism">核心机制</a>
+    <a href="#ai">AI 设计</a>
+    <a href="#trust">信任与安全</a>
+    <a href="#business">指标与商业化</a>
+    <a href="#tech">技术架构</a>
+  </div>
+  <span class="nav-pill">HTML 演示版</span>
+</nav>
+
+<header class="hero" id="top">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <p class="eyebrow">微信小程序 · V2.0 · 首发伦敦</p>
+      <h1>在国外，<br><span class="grad">喊一声就有人。</span></h1>
+      <p class="lede">
+        喊呗是面向海外旅行者与当地华人 / 留学生的<strong>异地找人</strong>平台。
+        旅行者把落地后的具体需求喊出来，当地人顺路接下来。
+        产品的原子单位不是帖子，而是一张<strong>会被接、会闭环、会被评价的需求单</strong>。
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#prototype">进入交互原型</a>
+        <a class="btn btn-ghost" href="#evolution">看 V1 → V2 做了什么</a>
+      </div>
+      <div class="hero-stats">
+        <div><b>8</b><span>需求品类白名单</span></div>
+        <div><b>4</b><span>层信任体系</span></div>
+        <div><b>89.2%</b><span>AI 字段抽取准确率</span></div>
+        <div><b>0</b><span>平台资金归集</span></div>
+      </div>
+    </div>
+    <aside class="notice">
+      <div class="notice-head"><span class="dot"></span>关于这个页面</div>
+      <p><strong>你正在看的是 HTML 演示版</strong>，用来完整呈现产品的理想形态——包含已上线、在建、以及排期在 P1/P2 的全部功能。</p>
+      <p>而<strong>喊呗本体是一个真实的全栈微信小程序</strong>：微信原生前端 + 微信云开发后端 + 云数据库，
+      7 个云函数、10 个集合、真实模型 API 接入，数据库权限收为「所有用户不可读写」，
+      一切数据访问只能走云函数，状态变更全程走事务。</p>
+      <p class="notice-foot">已完成 M1（主干闭环 19 步）+ M2（AI 主干 16 步），M3 进行中。此页面的数据为演示样例。</p>
+    </aside>
+  </div>
+</header>
+
+<section class="section" id="prototype">
+  <div class="sec-head">
+    <span class="sec-num">01</span>
+    <h2>交互原型</h2>
+    <p>点左侧手机里的按钮，或用下面的胶囊切换页面。AI 解析、选定响应者、约定单、兜底作答都可以真的点。</p>
+  </div>
+
+  <div class="proto-chips" id="chips"></div>
+
+  <div class="proto">
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-status">
+          <span>9:41</span>
+          <span class="phone-status-r">伦敦 · 5G ▮▮▮</span>
+        </div>
+        <div class="phone-nav" id="phoneNav">
+          <button class="phone-back" id="phoneBack" aria-label="返回">‹</button>
+          <span id="phoneTitle">喊呗</span>
+        </div>
+        <div class="phone-body" id="screen"></div>
+        <div class="tabbar" id="tabbar"></div>
+      </div>
+      <p class="phone-cap">演示数据；真实产品中这些列表来自云数据库，动作全部经云函数事务写入。</p>
+    </div>
+
+    <aside class="notes" id="notes"></aside>
+  </div>
+</section>
+
+<section class="section alt" id="evolution">
+  <div class="sec-head">
+    <span class="sec-num">02</span>
+    <h2>V1.0「同路人」→ V2.0「喊呗」</h2>
+    <p>V1.0 建了一个内容社区的容器，却期待它自己长出撮合与交易。V2.0 的工作重心不是加功能，而是补上那条主干。</p>
+  </div>
+
+  <div class="vs">
+    <div class="vs-col v1">
+      <h3>V1.0 同路人</h3>
+      <ul>
+        <li>海外旅行搭子社区</li>
+        <li>原子单位是<b>帖子</b>，发完就没人知道后来发生了什么</li>
+        <li>城市社区只是内容分区</li>
+        <li>口号写了「轻量化担保交易」，功能为零</li>
+        <li>信任 = 一个「已认证」标签 + 举报</li>
+        <li>先审后发，海外时差下即时需求全部失效</li>
+        <li>发了没人理 → 用户当天流失，无兜底</li>
+        <li>11 个页面纯前端，<b>无后端</b></li>
+      </ul>
+    </div>
+    <div class="vs-arrow">
+      <span>把需求结构化</span><span>把审核放快</span><span>把流量收拢到城市</span><span>密度不足时用 AI 兜住</span>
+    </div>
+    <div class="vs-col v2">
+      <h3>V2.0 喊呗 HeyBay</h3>
+      <ul>
+        <li>海外旅行场景下的<b>异地求助撮合平台</b></li>
+        <li>原子单位是<b>需求单</b>：可被接、可闭环、可评价、可度量</li>
+        <li>城市 = <b>供给容器</b>，当地先有人入驻才有能力承接需求</li>
+        <li><b>明确不碰资金</b>：托管「约定单」而不是托管钱</li>
+        <li>四层信任 + 双向评价 + 四档徽章与证据清单</li>
+        <li><b>分级审核</b>：信任分 ≥30 先发后审，机审毫秒级</li>
+        <li>小螺作为<b>供给的兜底层</b>，无人响应时先把需求兜住</li>
+        <li>小程序 + 云开发全栈：7 云函数 / 10 集合 / 事务写入</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="sub">被修正与被移除的 V1.0 设计</h3>
+  <div class="cards-3">
+    <div class="card"><h4>微信支付（原标注"后续迭代"）</h4><p><b>明确移除。</b>跨境结算需企业资质与外汇备案，形成预付资金池涉及无证经营支付业务的法律风险。改为线下结算 + 约定单。</p></div>
+    <div class="card"><h4>「同步小红书」</h4><p><b>重定义为「生成小红书图文」。</b>小红书没有开放给第三方的发布 API，市面宣称一键同步的实质都是生成文案 + 存图 + 手动发布。写清技术不可行，比留一个做不出来的需求更负责。</p></div>
+    <div class="card"><h4>签到送积分</h4><p><b>重定义为增信任务体系。</b>原积分体系有 banner 无设计，获取、消耗、价值锚定全部缺失。现在完成任务得到的是曝光加成与信任分进度。</p></div>
+    <div class="card"><h4>「本地居民」作为供给端</h4><p><b>移除。</b>非华人本地居民既不用微信也不读中文界面。供给端明确为当地华人、留学生、长期旅居者。</p></div>
+    <div class="card"><h4>首页与「组圈」职责重叠</h4><p><b>拆开。</b>首页 = 需求广场，城市 Tab = 社区与供给池。三处搜索框合并为一个统一搜索页，四个 Tab 范围一致。</p></div>
+    <div class="card"><h4>用户无节制自建小组</h4><p><b>加上健康度与数量上限。</b>建组上限 = 城市周活跃用户数 ÷ 20，伦敦初期就是 0~2 个。冷启动期不允许提前把流量碎片化。</p></div>
+  </div>
+
+  <div class="callout danger">
+    <h4>长期明确不做（写入产品原则，用于抵御功能蔓延）</h4>
+    <ol>
+      <li><b>交友与约会属性</b>——一旦擦边交友进入，真实求助需求会被淹没，供给端流失，生态不可逆地变差。性别字段只能用于「仅同性响应」，<b>不提供「仅异性响应」选项</b>，从数据结构层面消灭擦边需求。</li>
+      <li><b>平台代收资金</b>——长期结论，不是阶段性妥协。</li>
+      <li><b>AI 全自动代替用户与真人协商（L3）</b>——责任无法归属，AI 承诺会造成真实损失。</li>
+      <li><b>采集身份证件影像</b>——GDPR 下一次泄露的后果远大于产品收益。</li>
+    </ol>
+  </div>
+</section>
+
+<section class="section" id="mechanism">
+  <div class="sec-head">
+    <span class="sec-num">03</span>
+    <h2>核心机制</h2>
+    <p>撮合是一个密度游戏：单位时间、单位城市内，必须有足够多的「可被响应的具体需求」和「愿意响应的在地供给」相遇。</p>
+  </div>
+
+  <h3 class="sub">需求单状态机</h3>
+  <div class="flow">
+    <div class="flow-row">
+      <span class="node">草稿</span><i>发布</i>
+      <span class="node hot">招募中</span><i>有人响应</i>
+      <span class="node hot">待选定</span><i>选定</i>
+      <span class="node ok">已确定</span><i>双方确认</i>
+      <span class="node ok">已完成</span><i>互评</i>
+      <span class="node ok">已评价</span>
+    </div>
+    <div class="flow-row sub-row">
+      <span class="node mute">已过期</span><small>预约型在期望时间后 24h、即时型按有效时长自动过期 → 归档进城市知识库</small>
+    </div>
+    <div class="flow-row sub-row">
+      <span class="node mute">已取消</span><small>任一方取消（记录取消方）</small>
+      <span class="node mute">撤销选定</span><small>退回「待选定」重新挑人，原有响应全部保留</small>
+      <span class="node mute">已下架</span><small>违规</small>
+    </div>
+  </div>
+
+  <div class="cards-3">
+    <div class="card accent"><h4>需求单必然会终结</h4><p>不存在永久挂着的需求。这一条直接解决 V1.0 的死水内容堆积——社区里永远只陈列「还有效的事」。</p></div>
+    <div class="card accent"><h4>过期不等于浪费</h4><p>过期需求单连同响应内容进入城市知识库，成为小螺的检索语料。<b>稀疏期的失败也在积累资产。</b></p></div>
+    <div class="card accent"><h4>取消不重罚</h4><p>信任分主要看双方真实互评。按取消次数扣分是在惩罚正常行为，还会诱导用户不点取消、把单子挂到过期——那是更坏的结果。</p></div>
+  </div>
+
+  <h3 class="sub">约定单：托管共识，不托管钱</h3>
+  <div class="split">
+    <div class="split-l">
+      <div class="agreement-demo">
+        <div class="ag-head">约定单 · 只读凭证</div>
+        <dl>
+          <div><dt>谁</dt><dd>林悦 ↔ 陈默</dd></div>
+          <div><dt>什么时间</dt><dd>9 月 12 日 10:00</dd></div>
+          <div><dt>在哪</dt><dd>大英博物馆正门（街区级）</dd></div>
+          <div><dt>做什么</dt><dd>陪同参观约 3 小时，中文讲解</dd></div>
+          <div><dt>约定报酬</dt><dd>£25（参考区间）</dd></div>
+          <div><dt>如何支付</dt><dd>线下现金 / 转账，平台不代收</dd></div>
+        </dl>
+        <p class="ag-foot">双方均可见，不可单方修改；修改需双方重新确认并留版本记录。</p>
+      </div>
+    </div>
+    <div class="split-r">
+      <p>它替代了 V1.0 的「担保交易」。发生纠纷时，<b>约定单 + 聊天记录 + 评价</b>构成判定依据，处理结果体现为信任分与封禁，而非退款。</p>
+      <p>这套「信誉担保」提供了资金担保约 <b>80%</b> 的信任价值，而风险与合规成本接近于零。数据结构（约定单、金额字段、状态机）同时为将来真正的担保交易预留了升级空间。</p>
+      <p class="quote">平台托管的是共识与凭证，不是钱。</p>
+    </div>
+  </div>
+
+  <h3 class="sub">反死水：五个层面同时施压</h3>
+  <div class="layers">
+    <div><b>需求层</b>强制时效 + 自动过期</div>
+    <div><b>分发层</b>精准推送 + 小组广播 + 二次改写投放</div>
+    <div><b>容器层</b>小组健康度 + 建组上限，强制流量收拢</div>
+    <div><b>兜底层</b>无人响应时 AI 直接作答，挽回流失</div>
+    <div><b>运营层</b>每日城市话题 + 每周精华 + 学校 BD</div>
+  </div>
+  <p class="foot-note">配套内容播种：伦敦上线前预置 30 条社区内容 + 100 条问答语料。<b>冷启动期的社区可以是人工的，但不能是空的。</b></p>
+
+  <h3 class="sub">开城标准：四项同时达标才复制下一城</h3>
+  <div class="gates">
+    <div><b>≥50</b><span>认证本地响应者</span></div>
+    <div><b>≥30</b><span>周需求单</span></div>
+    <div><b>≥60%</b><span>需求单首响率</span></div>
+    <div><b>≥40%</b><span>响应者次月留存</span></div>
+  </div>
+  <p class="foot-note">个人开发者的运营带宽只够一座城；3 城试点等于把密度除以 3。冷启动<b>渠道</b>用学校（UCL/KCL/IC/LSE），产品<b>结构</b>用城市——旅行者只知道城市不知道学校。</p>
+</section>
+
+<section class="section alt" id="ai">
+  <div class="sec-head">
+    <span class="sec-num">04</span>
+    <h2>AI 设计：小螺</h2>
+    <p class="big-quote">在喊呗里，AI 不是效率工具，<b>AI 是供给的兜底层</b>。</p>
+    <p>推导过程：最致命的流失点不是「匹配不精准」，而是「发了需求没人理，用户当天就走了」——旅行者在当地只停留几天，这类流失不可挽回。冷启动期供给必然稀疏，运营短期解决不了。所以 AI 的第一价值不是提效，而是在真人供给缺席时先把这个用户的需求兜住。</p>
+  </div>
+
+  <div class="cards-3">
+    <div class="card"><h4>兜底而非替代</h4><p>真人响应永远优先展示，AI 答案只在无响应或用户主动询问时出现，且明确标注来源。</p></div>
+    <div class="card"><h4>从模糊到结构化</h4><p>AI 承担翻译工作，用户不需要学会填表——这是把需求方门槛降到最低的唯一办法。</p></div>
+    <div class="card"><h4>自主性由用户选</h4><p>而不是由产品单方决定。默认最保守档，用户按信任程度自行上调，随时可回退。</p></div>
+  </div>
+
+  <h3 class="sub">自主性阶梯：把「该不该自动」变成可调节的产品维度</h3>
+  <p class="lead-note">全自动有风险、纯手动没价值。正确答案不是在两者之间取折中点，而是把自主性本身产品化为一个<b>可解释、可调节、可回退</b>的档位。</p>
+  <div class="ladder">
+    <div class="rung"><span class="lv">L0</span><b>只读建议</b><p>解析需求、给攻略与清单、答疑。<em>不对外发送任何内容。</em></p><span class="who">新用户前 3 单</span></div>
+    <div class="rung on"><span class="lv">L1</span><b>一键代发</b><p>生成邀请文案 + 候选人名单，等你勾选后统一发出。<em>不自动发送。</em></p><span class="who">全局默认档</span></div>
+    <div class="rung"><span class="lv">L2</span><b>自动分发</b><p>自动向匹配响应者推送<b>结构化需求卡片</b>；2h 无响应自动改写文案二次投放（≤2 次）。<em>不进 1v1 私信、不模拟真人语气。</em></p><span class="who">用户手动开启</span></div>
+    <div class="rung off"><span class="lv">L3</span><b>自动协商</b><p>本产品<b>永不实现</b>，并把理由展示给用户：责任无法归属、AI 承诺会造成真实损失、身份不明示已属需披露行为、个人开发者无力承担纠纷成本。</p><span class="who">不提供</span></div>
+  </div>
+  <p class="foot-note">L1 → L2 的引导不藏在设置页里等用户发现，而是在「L1 发送邀请后获得响应」这个正反馈时刻提示：<b>在信任已建立的时刻请求更多授权。</b></p>
+
+  <h3 class="sub">14 项 Agent 工具</h3>
+  <div class="tools">
+    <span class="p0">parseRequest 一句话→需求单</span><span class="p0">createRequest 确认后建单</span><span class="p0">searchKnowledge 城市语料检索</span>
+    <span class="p0">moderate 内容风险分级</span><span class="p0">riskHint 私信反诈提示</span>
+    <span>matchResponders 可解释匹配</span><span>draftInvite 邀请文案</span><span>broadcast 分发与二次投放</span>
+    <span>generateChecklist 落地清单</span><span>generateXhsPost 小红书图文</span><span>emergencyCard 应急求助卡</span>
+    <span>dailyTopic 城市话题与周精华</span><span class="p2">summarizeReviews 评价聚合</span><span class="p2">translate 翻译与破冰</span>
+  </div>
+  <p class="foot-note"><span class="tag-legend p0"></span>P0 <span class="tag-legend"></span>P1 <span class="tag-legend p2"></span>P2 · 所有模型调用统一走 <code>aiGateway</code>，8 步编排：额度 → 缓存 → 组 Prompt → 调模型 → 校验 → 重试一次 → 降级 → 记账。能力由注册表驱动，加一项能力是加一行而不是加一个 <code>if</code>。</p>
+
+  <h3 class="sub">护栏与红线</h3>
+  <div class="rails">
+    <div><b>四类字段禁止代填</b><p>金额、见面时间、见面地点、联系方式。AI 只能留空，必须由人填写。Schema、规范化层、发布校验三道防线。</p></div>
+    <div><b>事实性边界</b><p>签证、医疗、法律、移民问题<b>在服务端前置拦截</b>——不调模型、不占额度，直接给官方链接。</p></div>
+    <div><b>身份明示</b><p>一切对外内容强制带「AI 协助」标识；L2 分发只能是系统卡片而非聊天气泡，强制带「由小螺代为分发」。</p></div>
+    <div><b>来源标注</b><p>兜底答案必须标注来源：「根据伦敦小组 3 条历史回答，请自行核实」。</p></div>
+    <div><b>可解释性</b><p>每条推荐必须给出依据字段，不允许「猜你喜欢」式无理由推荐。名单由代码排序，理由由模型写，理由里的每个数字都必须能追溯回依据字段。</p></div>
+    <div><b>频控与可回退</b><p>同一响应者每日被触达 ≤3 次，被拒 2 次进 7 天冷却；任何 AI 生成内容可一键改手动，L2 可随时关闭且立即生效。</p></div>
+  </div>
+
+  <h3 class="sub">离线评测：没有用户也能证明 AI 质量</h3>
+  <div class="split">
+    <div class="split-l">
+      <div class="eval">
+        <div class="eval-row"><span>字段抽取准确率</span><b class="pass">89.2%</b><em>达标线 85%</em></div>
+        <div class="eval-row"><span>四类禁填字段误填</span><b class="pass">0 次</b><em>红线</em></div>
+        <div class="eval-row"><span>黄金标注语料</span><b>36 条</b><em>人工标注</em></div>
+        <div class="eval-row"><span>兜底作答人工判分</span><b>10 题</b><em>方法如实记录</em></div>
+      </div>
+    </div>
+    <div class="split-r">
+      <p>依赖真实流量的三项指标（发布转化率 +20%、首响率 +30%、打扰投诉率 ≤2%）在没有真实用户前<b>无法验证</b>，因此推后到 M5，不在当前阶段假装已达成。</p>
+      <p>当前阶段改用离线评测集：<code>npm run eval:parse</code> 输出三个数与逐条 diff。这一项不需要任何用户即可度量。</p>
+      <p class="quote">评测抓出的真问题：Prompt 要求「归不进 8 类就留空」，而 Schema 把 category 设成必填——擦边交友因此被硬塞进「搭子同行」，正撞产品红线。两条擦边用例把它抓了出来。</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="trust">
+  <div class="sec-head">
+    <span class="sec-num">05</span>
+    <h2>信任与安全</h2>
+    <p>这是一个促成陌生人在异国线下见面的产品，安全是核心差异化而非附加项，因此定为 P0 并写入产品定位。</p>
+  </div>
+
+  <h3 class="sub">四层信任，全部零资质门槛，全程不收证件</h3>
+  <div class="trust-layers">
+    <div><span class="lvl">L1</span><b>基础身份</b><p>微信授权登录 + 常驻城市自选 + 性别自填（可留空）</p><span class="cred low">可信度 低</span></div>
+    <div><span class="lvl">L2</span><b>自证</b><p>.edu 邮箱验证码（只存「已验证 + 学校名」）· 社媒绑定 · 自我介绍完整度</p><span class="cred mid">可信度 中</span></div>
+    <div><span class="lvl">L3</span><b>履约</b><p>真实完成单数 · 双向评价 · 平均响应时长 · 被举报率</p><span class="cred high">可信度 高</span></div>
+    <div><span class="lvl">L4</span><b>社区背书</b><p>组长/老用户背书，每月限 2 次，被背书者违规则背书人连带扣分</p><span class="cred high">可信度 高</span></div>
+  </div>
+
+  <div class="cards-3">
+    <div class="card"><h4>为什么不收证件</h4><p>护照、签证、学生证属身份证件类敏感个人信息。GDPR 下处理这类数据需要合法性基础、数据保护影响评估、加密存储与最小化留存——个人开发者不具备承担这一责任的能力。<b>V2.0 完全不采集证件影像。</b></p></div>
+    <div class="card"><h4>不显示裸分数</h4><p>信任分 0~100 内部计算，对外只显示四档徽章 + <b>可展开的证据清单</b>：「已完成 12 单｜好评率 100%｜平均 18 分钟响应｜UCL 邮箱已验证」。让用户看到「他凭什么可信」，而不是一个不可解释的数字。</p></div>
+    <div class="card"><h4>注册零门槛，只在三处拦截</h4><p>① 接付费地陪 / 翻译类单 → L2 + 信任分 ≥40；② 发或接住宿类单 → L2 + 至少 1 条好评；③ 首次发起线下见面确认 → 强制阅读安全提示。<b>其余全程不拦。</b></p></div>
+    <div class="card"><h4>用收益框架而非恐惧框架</h4><p>增信引导不说「为了安全请认证」（暗示危险），而说「补全后被选中的概率高 <b>2.6 倍</b>」，并让高信任分用户在响应列表天然靠前——让增信的动机来自竞争。</p></div>
+    <div class="card"><h4>不采集手机号</h4><p>微信手机号快速验证接口对个人主体不开放；自建短信通道面向海外号码成本与合规都不划算。云函数拿到的 openid 本身就是微信校验过的可信身份，手机号不额外提供可信度。</p></div>
+    <div class="card"><h4>不存紧急联系人</h4><p>行程报备走微信自带分享把行程卡片发给朋友或群，<b>不在后台存储第三方联系人字段</b>——零成本、零合规负担，效果等同。</p></div>
+  </div>
+
+  <h3 class="sub">安全机制：事前 / 事中 / 事后</h3>
+  <div class="safety">
+    <div>
+      <h4>事前</h4>
+      <ul>
+        <li>仅同性响应开关（默认关闭，女性首次发单时主动提示）</li>
+        <li>地点只到街区 / 地铁站级，疑似门牌地址提示拦截</li>
+        <li>选定后强制展示一次安全提示卡</li>
+        <li>住宿类要求双方均 L2 + 独立安全须知</li>
+      </ul>
+    </div>
+    <div>
+      <h4>事中</h4>
+      <ul>
+        <li>行程报备：一键生成卡片经微信分享给朋友</li>
+        <li>一键 SOS：英国 999 / 欧盟 112 / 美国 911 + 使领馆</li>
+        <li>反诈提示：出现「先转账」「押金」「退出平台交易」等模式时<b>向双方</b>弹出，避免误伤正常沟通</li>
+      </ul>
+    </div>
+    <div>
+      <h4>事后</h4>
+      <ul>
+        <li>双向评价，互评前互不可见；7 天未评视为默认好评但不计入好评率</li>
+        <li>拉黑后互相不可见、不可响应、不可私信</li>
+        <li>六类举报，人身安全类直接冻结接单能力</li>
+        <li>处罚阶梯：提示 → 限流 → 禁接单 7 天 → 永久封禁</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <h4>联系方式交换：全站只有一个下发点</h4>
+    <p>联系方式由用户在「我的」里自填，<b>发布需求时不需要、也不允许挂在需求单上</b>——那等于向全城公开个人账号。只在需求单进入「已确定」之后、在需求方与被选定的响应者之间双向下发；广场、列表、卡片一律不含。用户可随时清空，但<b>已经看到的收不回</b>，界面如实说明这一点。</p>
+  </div>
+
+  <div class="callout danger">
+    <h4>反擦边交友治理：从数据结构层面消灭</h4>
+    <p><b>① 品类白名单</b>只有 8 类，没有「交友」「同城」「聊天」选项，归不进 8 类的需求无法发布。<b>② 语义拦截</b>覆盖变体、谐音、拼音缩写。<b>③ 偏好字段单向可用</b>，只有「仅同性响应」，不提供「仅异性响应」。<b>④ 举报独立分类</b>，优先级仅次于人身安全。<b>⑤ 处罚从重</b>，跳过提示直接禁接单 7 天，二次永久封禁。</p>
+    <p class="quote">社区规范首屏：喊呗解决的是「办事」，不是「处对象」。让规则以产品价值观的方式表达，比藏在协议里有效。</p>
+  </div>
+</section>
+
+<section class="section alt" id="business">
+  <div class="sec-head">
+    <span class="sec-num">06</span>
+    <h2>指标与商业化</h2>
+  </div>
+
+  <div class="metrics">
+    <div class="metric star">
+      <span class="mlabel">北极星指标</span>
+      <b>每周成功撮合数</b>
+      <p>需求单被接 + 双方确认完成。同时依赖供需两侧，<b>无法靠单侧刷量做高</b>。</p>
+    </div>
+    <div class="metric">
+      <span class="mlabel">护栏 1</span>
+      <b>需求单首响率 ≥60%</b>
+      <p>发布后 2h 内至少 1 条响应。它是撮合数的领先指标，能在撮合完成前就暴露密度问题。</p>
+    </div>
+    <div class="metric">
+      <span class="mlabel">护栏 2</span>
+      <b>响应者次月留存 ≥40%</b>
+      <p>需求方是流动的（旅行者用完即走），供给方才是留存的根基。供给一旦流失，产品立刻回到死水状态。</p>
+    </div>
+    <div class="metric no">
+      <span class="mlabel">明确不作为核心指标</span>
+      <b>DAU · 发帖量 · 小组数</b>
+      <p>V1.0 的看板以这三项为主。它们都能靠「看内容」刷出来，与撮合成功<b>无因果关系</b>。</p>
+    </div>
+  </div>
+
+  <h3 class="sub">核心漏斗</h3>
+  <div class="funnel">
+    <div><b>浏览 → 发布</b><span>≥25%</span></div>
+    <div><b>发布 → 首响</b><span>≥60%</span></div>
+    <div><b>有响应 → 选定</b><span>≥80%</span></div>
+    <div><b>选定 → 完成</b><span>≥70%</span></div>
+    <div><b>完成 → 评价</b><span>≥60%</span></div>
+    <div><b>30 天二次发单</b><span>≥20%</span></div>
+  </div>
+
+  <h3 class="sub">四阶段商业化：前置结论是不碰资金</h3>
+  <div class="stages">
+    <div><span class="st">阶段 0</span><b>验证期（0~6 个月）不赚钱</b><p>唯一目标是把伦敦的每周成功撮合数跑起来。任何收费都会在密度不足时杀死冷启动。</p></div>
+    <div><span class="st">阶段 1</span><b>会员订阅 ¥18/月</b><p>向需求方卖「更快被响应、更容易被选中」：置顶曝光、在架上限 3→10、完整信用档案、高级筛选、AI 高成本能力放开。</p></div>
+    <div><span class="st">阶段 2</span><b>供给端变现</b><p>认证徽章年费、接单曝光包、个人服务主页（做本地向导 IP）。供给端有真实收益动机，付费意愿显著高于旅行者。</p></div>
+    <div><span class="st">阶段 3</span><b>本地商家与生态</b><p>城市入驻位、内容推广位、留学生活服务 CPA 分成。收入天花板最高且完全不碰资金。</p></div>
+    <div class="off"><span class="st">阶段 4</span><b>担保交易（条件成熟才做）</b><p>需企业主体、支付资质、专职客服与风控。个人开发者阶段明确不做，但数据结构已预留升级空间。</p></div>
+  </div>
+
+  <div class="callout">
+    <h4>定价原则：不给「AI 调用次数」定价，给「结果」定价</h4>
+    <p>会员权益的对外表述是「更快被人响应、更容易被选中」，AI 额度只是实现手段，不作为卖点陈列。一旦让用户按次数计算 AI 成本，付费意愿会立刻崩塌，而且会把产品价值锚定在「AI 工具」而非「撮合服务」上。</p>
+    <p>成本侧：短文本能力完全给得起免费（日活 500 量级月 AI 成本几十元）。真正贵的是长输出和图像生成——因此小红书图文只做模板套图不做 AI 绘图，行程生成设每日限额。<b>月运营成本可控制在 200 元以内</b>，达到阶段 1 后单城即可覆盖成本。</p>
+  </div>
+</section>
+
+<section class="section" id="tech">
+  <div class="sec-head">
+    <span class="sec-num">07</span>
+    <h2>技术架构：这是一个真实的全栈小程序</h2>
+    <p>你现在看的是 HTML 演示版。喊呗本体是微信原生小程序 + 微信云开发，有服务端边界、有数据库、有事务、有真实模型调用。</p>
+  </div>
+
+  <div class="arch">
+    <div class="arch-layer">
+      <span class="al">端</span>
+      <div class="arch-items">
+        <span>微信小程序原生</span><span>五 Tab + 自定义 tabBar</span><span>端侧枚举与字段校验</span><span>图片上传前压缩</span>
+      </div>
+      <p>不用 Taro / uni-app：只有一个交付端，跨端能力用不上。</p>
+    </div>
+    <div class="arch-layer">
+      <span class="al">云函数（7）</span>
+      <div class="arch-items">
+        <span class="fn">login</span><span class="fn">requestFlow</span><span class="fn">responseFlow</span><span class="fn">aiGateway</span><span class="fn">moderation</span><span class="fn">track</span><span class="fn">cron</span>
+      </div>
+      <p>登录建档 / 发布与完成 / 响应与选定 / 全项目唯一模型出口 / 三层内容安全 / 埋点 / 定时任务。状态变更一律走事务，状态与审计日志同生共死。</p>
+    </div>
+    <div class="arch-layer">
+      <span class="al">数据（10 集合）</span>
+      <div class="arch-items">
+        <span>users</span><span>requests</span><span>responses</span><span>events</span><span>configs</span><span>auditLogs</span><span>aiLogs</span><span>aiCache</span><span>knowledge</span><span>invites</span>
+      </div>
+      <p><b>数据库权限收为「所有用户不可读写」</b>——端侧读写全部被拒，一切数据访问只能走云函数。10 条索引覆盖广场分页与过期扫描。</p>
+    </div>
+    <div class="arch-layer">
+      <span class="al">模型</span>
+      <div class="arch-items">
+        <span>OpenAI 兼容协议</span><span>三个环境变量换供应商</span><span>AI_EXTRA_BODY 承载厂商专有字段</span><span>响应 Schema 校验 + 重试一次 + 降级</span>
+      </div>
+      <p>代码不绑任何一家厂商。额度、缓存、成本记账统一在 <code>aiGateway</code> 内完成。</p>
+    </div>
+  </div>
+
+  <h3 class="sub">明确的技术不可行项（写进文档避免返工）</h3>
+  <div class="cards-3">
+    <div class="card dim"><h4>小红书内容同步</h4><p>无开放发布 API，只能生成内容 + 复制 + 引导手动发布。</p></div>
+    <div class="card dim"><h4>跳转外部 App</h4><p>小程序无法一键打开小红书，只能复制到剪贴板。</p></div>
+    <div class="card dim"><h4>无授权主动推送</h4><p>只能依赖订阅消息，<b>一次授权对应一条推送</b>，因此 L2 分发的触达率上限受授权率约束。</p></div>
+    <div class="card dim"><h4>境外精准定位</h4><p>精度与授权率均低于国内，城市采用「自动定位 + 手动选择」双轨，且所有逻辑以手动选择为准。</p></div>
+    <div class="card dim"><h4>向量库</h4><p>冷启动期语料只有几百条，向量检索的质量提升观察不到，却多一个必须维护同步的组件。起步用关键词 + 标签过滤，升级条件：单城语料 &gt;2000 条或兜底采纳率 &lt;50%。</p></div>
+    <div class="card dim"><h4>独立 Web 后台</h4><p>运营后台做成小程序内的管理员页面（openid 白名单 + 云函数二次校验），只做四件事：待审、举报、用户、看板。</p></div>
+  </div>
+
+  <div class="callout warn">
+    <h4>最大的落地障碍：个人主体拿不到 UGC 类目</h4>
+    <p>小程序涉及发帖、评论、私聊等 UGC 功能需要「社交-社区/论坛」类目，而该类目<b>不向个人主体开放</b>，后台入口为灰态。这个优先级高于任何功能设计。</p>
+    <p>解法是 <b>A + B 双 Demo</b>：<b>Demo A</b> 完整前后端 + 数据库，以<b>微信小程序体验版</b>发布——体验版无需提交审核即可分享给受邀成员，不受类目限制，是零成本、零合规风险又能拿到真实用户数据的唯一路径，且天然适配「伦敦单城小范围运营」；<b>Demo B</b> 是升级路径原型，演示具备主体与资质后的形态（担保交易、商家入驻、多城联动），明确标注为 Roadmap 演示。</p>
+    <p>升级触发条件：伦敦跑到阶段 1 的收入验证，再启动主体注册 → ICP 备案 → 类目申请 → 正式发布。届时 Demo A 的代码与数据可直接迁移。</p>
+  </div>
+
+  <h3 class="sub">进度</h3>
+  <div class="milestones">
+    <div class="ms done"><b>M1</b><span>主干闭环（不含 AI）</span><i>19 / 19</i></div>
+    <div class="ms done"><b>M2</b><span>AI 主干与小螺</span><i>16 / 16</i></div>
+    <div class="ms doing"><b>M3</b><span>机审 · 城市社区 · 信任分 · 约定单 · 私信 · 双向评价</span><i>1 / 16</i></div>
+    <div class="ms"><b>M4</b><span>安全体系 · 管理员四件事 · 订阅消息 · 语料播种</span><i>未开始</i></div>
+    <div class="ms"><b>M5</b><span>L2 分发 · 行程清单 · 小红书图文 · 应急卡 · 会员 · A/B</span><i>未开始</i></div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div>
+    <p class="f-brand">喊呗 <em>HeyBay</em> · 小螺</p>
+    <p>在国外，喊一声就有人。<span class="en">Holler once, someone's already there.</span></p>
+  </div>
+  <p class="f-note">本页面为 HTML 演示版，用于呈现产品的理想完整形态，含尚在排期中的 P1 / P2 功能；页面内数据均为演示样例。产品本体为微信小程序 + 微信云开发全栈应用。</p>
+</footer>
+
+<script>
+/* 喊呗 HeyBay · HTML 演示原型
+   纯前端演示：真实产品的这些列表来自云数据库，动作经云函数事务写入。 */
+
+const S = { screen: 'home', picked: false, parsed: false, lad: 'L1', stars: 0, tags: [], chat: [], filter: '全部', noteIdx: 0 };
+
+const el = id => document.getElementById(id);
+const screenBox = el('screen');
+
+/* ---------------- 演示数据 ---------------- */
+const REQS = [
+  { id: 'r1', cat: '搭子同行', k: '', title: '9/12 上午想找人一起逛大英博物馆', detail: '中文交流，女生优先。逛完可以一起吃个午饭，费用各付。',
+    timing: '预约型 · 9/12 10:00', plan: true, area: '大英博物馆 / 罗素广场一带', pay: '免费互助', free: true,
+    who: '林悦', av: 'p', badge: 'b2', badgeTx: '靠谱', resp: 3, safe: '仅同性响应' },
+  { id: 'r2', cat: '打听咨询', k: 'b', title: '现在在国王十字，附近哪里能买到电话卡？', detail: '刚落地，需要能打电话的实体卡，不要 eSIM。',
+    timing: '即时型 · 剩 42 分钟', plan: false, area: '国王十字车站', pay: '免费互助', free: true,
+    who: '周航', av: '', badge: 'b1', badgeTx: '新面孔', resp: 0, ai: true },
+  { id: 'r3', cat: '付费地陪', k: 'c', title: '9/13 伦敦一日游地陪，需要会拍照', detail: '两个人，想去塔桥、格林威治，希望能帮拍出片的照片。',
+    timing: '预约型 · 9/13 全天', plan: true, area: '市中心 + 格林威治', pay: '£80', free: false,
+    who: '林悦', av: 'p', badge: 'b2', badgeTx: '靠谱', resp: 2 },
+  { id: 'r4', cat: '借物易物', k: '', title: '借个英标转换插头，用两天', detail: '住在国王十字附近，可以请杯咖啡或者用国标插头换。',
+    timing: '即时型 · 今天内', plan: false, area: '国王十字 / 卡姆登', pay: '请一顿', free: true,
+    who: '苏眠', av: 't', badge: 'b3', badgeTx: '老手', resp: 1 },
+  { id: 'r5', cat: '搭子同行', k: '', title: '今晚拼车去希思罗 T5', detail: '20:30 从帕丁顿出发，两个人两个箱子，车费平摊。',
+    timing: '即时型 · 剩 3 小时', plan: false, area: '帕丁顿 → 希思罗', pay: '免费互助', free: true,
+    who: '陈默', av: 't', badge: 'b2', badgeTx: '靠谱', resp: 1 },
+  { id: 'r6', cat: '代购跑腿', k: 'd', title: '帮带一盒 Boots 维生素回国', detail: '9/20 前从伦敦飞北京的朋友，代购费好商量。',
+    timing: '预约型 · 9/20 前', plan: true, area: '不限', pay: '£10', free: false,
+    who: '苏眠', av: 't', badge: 'b3', badgeTx: '老手', resp: 4 }
+];
+
+const RESPONDERS = [
+  { name: '陈默', av: 't', badge: 'b2', badgeTx: '靠谱', say: '我 UCL 研二，博物馆去过五六次，可以带你走重点馆藏，中文讲解。周五上午没课。',
+    evi: ['已完成 12 单', '好评率 100%', '平均 18 分钟响应', 'UCL 邮箱已验证'], quote: '免费互助',
+    reason: '同城伦敦 · 能力标签含「带路 / 讲解」· 完成 12 单且好评率 100% · 平均响应 18 分钟，是当前候选里最快的' },
+  { name: '苏眠', av: 'p', badge: 'b3', badgeTx: '老手', say: '在伦敦第四年，做过 30 多次陪同，可以顺便帮你拍照。',
+    evi: ['已完成 31 单', '好评率 97%', '平均 41 分钟响应', 'KCL 邮箱已验证', '社媒已绑定'], quote: '免费互助',
+    reason: '同城伦敦 · 完成单数最多（31 单）· 能力标签含「拍照」，与你详情里提到的需求相关' },
+  { name: '阿哲', av: '', badge: 'b1', badgeTx: '新面孔', say: '刚来伦敦，也想去博物馆，可以一起。',
+    evi: ['已完成 0 单', '资料完整度 60%'], quote: '免费互助',
+    reason: '同城伦敦 · 尚无履约记录，排在最后；平台不会因为「新」而隐藏他，但会如实标注证据不足' }
+];
+
+/* 笔记广场 · 本地内容流：每条都是一篇笔记，可能来自真人，也可能是别人与小螺协作后分享的结果。
+   笔记本身不是小螺——但在笔记里可以「问小螺」衍生追问。这是内容飞轮的落点。 */
+const DISCOVER = [
+  { emoji: '🧋', title: '伦敦必囤：5 家华人超市 + 到店小贴士', by: 'Mia', likes: 328, tag: '问本地',
+    body: '龙凤行、荣业行、泗和行最全；中超多在 Chinatown 与 Colindale。<br>小贴士：带环保袋、周中去人少、很多店只收卡。生鲜周四到货最新鲜。',
+    follow: '照这篇，帮我找个人周末一起去趟华人超市采购，可以分摊打车' },
+  { emoji: '🚑', title: '留学生第一次看 GP 全流程（附预约话术）', by: '阿焦', likes: 512, tag: '问本地',
+    body: '① 先用住址在 NHS 官网找就近 GP 诊所 → ② 带护照 + 地址证明去注册 → ③ 等信/短信拿 NHS 号 → ④ 预约时说 "I\'d like to book a routine appointment"。<br>急症不走 GP，打 111 或去 A&E。',
+    follow: '帮我约个会英语的人，陪我去诊所办 GP 注册' }
+];
+
+/* ---------------- 工具 ---------------- */
+const reqCard = r => `
+  <div class="rq" onclick="go('detail')">
+    <div class="rq-top">
+      <span class="cat ${r.k}">${r.cat}</span>
+      <span class="timer ${r.plan ? 'plan' : ''}">${r.timing}</span>
+      ${r.safe ? `<span class="badge b3">${r.safe}</span>` : ''}
+    </div>
+    <h4>${r.title}</h4>
+    <p>${r.detail}</p>
+    <div class="rq-meta"><span>📍 ${r.area}</span><span>👀 ${r.resp} 人响应</span></div>
+    <div class="rq-foot">
+      <span class="who-mini"><i class="av ${r.av}">${r.who[0]}</i>${r.who}<span class="badge ${r.badge}">${r.badgeTx}</span></span>
+      <span class="pay ${r.free ? 'free' : ''}">${r.pay}</span>
+    </div>
+  </div>`;
+
+function toast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  el('screen').parentElement.appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+function closeModal() { document.querySelectorAll('.modal').forEach(m => m.remove()); }
+
+function modal(html) {
+  closeModal();
+  const m = document.createElement('div');
+  m.className = 'modal';
+  m.innerHTML = `<div class="modal-in">${html}</div>`;
+  m.addEventListener('click', e => { if (e.target === m) closeModal(); });
+  el('screen').parentElement.appendChild(m);
+}
+
+/* ---------------- 屏幕 ---------------- */
+const SCREENS = {};
+
+SCREENS.publish = {
+  title: '喊一声', tab: 'publish', chip: '喊一声 · AI 解析',
+  notes: [
+    ['key', '首屏只有一个输入框，不是表单', '表单是解析后的<b>结果</b>，不是输入的起点。V2.0 把需求方的门槛压到「一句话」，因为需求方是流动的、不会为填表付出耐心。'],
+    ['warn', '四类字段 AI 一律不代填', '金额、见面时间、见面地点、联系方式——即使模型有推测也留空高亮，提示「这几项请你自己确认」。这四项是对现实世界的承诺，代价由用户承担。Schema、规范化层、发布校验三道防线。'],
+    ['', '解析失败不阻断', '最多追问 2 轮，之后降级为普通表单。AI 是加速器不是关卡。'],
+    ['key', '把不可见的分发过程可视化', '底部实时展示「发出后将推送给伦敦 23 位可能帮上你的人」。这是提升发布意愿的关键——用户最担心的是「发了没人看」。'],
+    ['', '归不进 8 类就留空', '品类是白名单。曾经 Schema 把 category 设成必填，结果擦边交友被硬塞进「搭子同行」，正撞产品红线。离线评测的两条擦边用例把它抓了出来。']
+  ],
+  render: () => S.parsed ? parsedView() : `
+    <div class="s-pad">
+      <div class="s-t">想找人做什么？<span>一句话说清就行</span></div>
+      <textarea class="s-input" id="pubText" rows="4" placeholder="例如：明天上午想找个人一起逛大英博物馆，中文，女生优先"></textarea>
+      <div class="chips-ex">
+        <button onclick="fillEx(0)">逛大英博物馆找个搭子</button>
+        <button onclick="fillEx(1)">现在要买电话卡</button>
+        <button onclick="fillEx(2)">找地陪带一天还要拍照</button>
+        <button onclick="fillEx(3)">想找个异性一起玩</button>
+      </div>
+      <button class="s-btn" onclick="doParse()">🐚 帮我整理</button>
+      <button class="s-btn ghost sm" style="margin-top:9px" onclick="toast('已切换到普通表单：AI 是加速器，不是关卡')">跳过 AI，我自己填表</button>
+      <div class="s-t">小螺能帮上的</div>
+      <p class="s-hint">把口语整理成结构化需求单 · 生成 ≤20 字标题 · 判断预约型还是即时型 · 提示可能缺的关键信息。<br><br>不会帮你做的：定价、定时间、定地点、留联系方式。</p>
+    </div>`
+};
+
+function fillEx(i) {
+  const ex = [
+    '明天上午想找个人一起逛大英博物馆，中文交流，女生优先，逛完可以一起吃个午饭',
+    '刚落地国王十字，现在急着买张能打电话的实体卡，哪里有',
+    '9 月 13 号想找个地陪带我们两个人玩一天，最好会拍照，预算 80 镑左右',
+    '想找个异性小姐姐一起在伦敦玩几天，长期关系也可以'
+  ][i];
+  el('pubText').value = ex;
+  S.exIdx = i;
+}
+
+function doParse() {
+  const v = (el('pubText') || {}).value || '';
+  if (!v.trim()) return toast('先说一句话吧');
+  if (S.exIdx === 3 || /异性|长期关系|颜值|有偿陪伴/.test(v)) {
+    return modal(`
+      <h4 style="color:#C33B36">这条需求无法发布</h4>
+      <p style="font-size:13px;color:#4E5C6E;line-height:1.8">它归不进 8 个品类里的任何一个，且命中了「擦边交友」的语义规则。</p>
+      <p style="font-size:12.5px;color:#7E8B9B;line-height:1.8;margin-top:10px">喊呗解决的是「办事」，不是「处对象」。品类白名单里没有交友、同城、聊天选项，性别偏好只能用于「仅同性响应」这一个安全用途。</p>
+      <button class="s-btn ghost sm" style="margin-top:14px" onclick="closeModal()">我改一下</button>`);
+  }
+  screenBox.innerHTML = `<div class="s-pad"><div class="thinking"><i></i>小螺正在整理你的需求…</div>
+    <p class="s-hint">调用 <code>aiGateway</code> → 能力 <code>parseRequest</code> → 额度检查 → 缓存 → 组 Prompt → 调模型 → Schema 校验</p></div>`;
+  setTimeout(() => { S.parsed = true; renderScreen(); }, 1100);
+}
+
+
+SCREENS.home = {
+  title: '喊呗', tab: 'home', chip: '首页 · 需求广场',
+  notes: [
+    ['key', '从「内容推荐流」改成「需求流」', 'V1.0 的首页是帖子推荐流，用户刷完不知道该做什么。V2.0 首屏陈列的全是<b>还有效的事</b>——每张卡片都带时效倒计时，过期即自动下架。'],
+    ['', '卡片信息就是响应决策所需的全部', '品类、时效、地点范围、报酬、发布者信任徽章、已有多少人响应。让响应者在列表页就能判断值不值得点进去，避免无效投入。'],
+    ['', '地点只到街区级', '不允许精确到门牌，系统对疑似详细地址做提示拦截。这是安全设计，不是数据缺失。'],
+    ['warn', '不显示 DAU / 发帖量', '这两个指标能靠「看内容」刷出来，与撮合成功无因果关系。产品内外都只看每周成功撮合数与首响率。']
+  ],
+  render: () => `
+    <div class="s-pad">
+      <div class="s-city">
+        <span class="cty" onclick="pickCity()">伦敦 ▾ <small>自动定位 + 手动选择，逻辑以手动为准</small></span>
+      </div>
+      <div class="s-filters">
+        ${['全部', '搭子同行', '付费地陪', '打听咨询', '借物易物', '住宿', '代购跑腿', '翻译陪同', '应急求助']
+          .map(c => `<span class="${S.filter === c ? 'on' : ''}" onclick="setFilter('${c}')">${c}</span>`).join('')}
+      </div>
+      <div class="s-banner">🐚 <span><b>小螺</b>已把 3 条今天到期的需求推给了 23 位本地响应者</span></div>
+      ${REQS.filter(r => S.filter === '全部' || r.cat === S.filter).map(reqCard).join('')
+        || '<p class="s-hint" style="text-align:center;padding:26px 10px">「' + S.filter + '」暂时没有在架需求 —— 要不要你来喊第一条？</p>'}
+      <p class="s-hint" style="text-align:center;margin-top:14px">已到底 · 过期需求单已自动归档进城市知识库</p>
+    </div>`
+};
+
+function parsedView() {
+  return `
+    <div class="s-pad">
+      <div class="parsed">
+        <div class="parsed-h">🐚 <b>我理解成这样，对吗？</b>每一项都可以点开改</div>
+        <div class="f-row"><span class="k">品类</span><span class="v">搭子同行</span><span class="ed">修改</span></div>
+        <div class="f-row"><span class="k">城市</span><span class="v">伦敦</span><span class="ed">修改</span></div>
+        <div class="f-row"><span class="k">标题</span><span class="v">找人一起逛大英博物馆</span><span class="ed">修改</span></div>
+        <div class="f-row"><span class="k">时效</span><span class="v">预约型</span><span class="ed">修改</span></div>
+        <div class="f-row"><span class="k">人数</span><span class="v">1 人</span><span class="ed">修改</span></div>
+        <div class="f-row"><span class="k">报酬</span><span class="v">免费互助</span><span class="ed">修改</span></div>
+        <div class="f-row"><span class="k">偏好</span><span class="v">中文 · 仅同性响应</span><span class="ed">修改</span></div>
+        <div class="f-row blank"><span class="k">期望时间</span><span class="v">请你自己确认</span><span class="ed">填写</span></div>
+        <div class="f-row blank"><span class="k">见面地点</span><span class="v">请你自己确认（街区级）</span><span class="ed">填写</span></div>
+        <div class="f-row blank"><span class="k">参考金额</span><span class="v">免费单无需填写</span><span class="ed">—</span></div>
+        <div class="parsed-f">⚠️ 时间、地点、金额、联系方式四类字段小螺一律不代填。这些是对现实世界的承诺，必须由你确认。</div>
+      </div>
+      <div class="reach">📣 <span>发出后将推送给伦敦 <b>23 位</b>可能帮上你的人 · 并进入「找搭子」官方分区</span></div>
+      <p class="s-hint" style="margin:12px 0">你的信任分 62，属于「机审通过即可见」档位，无需等人工复核。</p>
+      <button class="s-btn" onclick="doPublish()">发布</button>
+      <button class="s-btn ghost sm" style="margin-top:9px" onclick="S.parsed=false;renderScreen()">重新说一次</button>
+    </div>`;
+}
+
+function doPublish() {
+  toast('已发布 · 机审通过（毫秒级），已开始分发');
+  S.parsed = false;
+  setTimeout(() => go('detail'), 700);
+}
+
+SCREENS.detail = {
+  title: '需求单详情', tab: 'home', back: 'home', chip: '需求单详情 · 响应与选定',
+  notes: [
+    ['key', '响应列表 = 昵称 + 徽章 + 证据摘要 + 报价 + 自荐 + AI 推荐理由', '默认按「信任分 + 响应速度」综合排序，可切按报价。<b>不显示裸分数</b>，只显示四档徽章加可展开的证据清单——让用户看到「他凭什么可信」，而不是一个不可解释的数字。'],
+    ['', 'AI 推荐理由必须可追溯', '名单由代码排序，理由由模型写，但理由里的每个数字都必须能追溯回依据字段，否则换成模板拼接。不允许「猜你喜欢」式无理由推荐。'],
+    ['warn', '选定后才互相下发联系方式', '全站只有这一个下发点。广场、列表、卡片一律不含联系方式——挂在需求单上等于向全城公开个人账号。'],
+    ['', '选定可撤销，但要说实话', '可以退回「待选定」重新挑人，原有响应全部保留；<b>但已交换的联系方式收不回</b>，确认弹窗必须明示这一点。'],
+    ['key', '取消与撤销不重罚', '都会留痕作为风控信号，但信任分主要看双方真实互评。按次数扣分是在惩罚正常行为，还会诱导用户把单子挂到过期——那更坏。']
+  ],
+  render: () => S.picked ? matchedView() : `
+    <div class="det-h">
+      <div class="rq-top">
+        <span class="cat">搭子同行</span><span class="timer plan">预约型 · 9/12 10:00</span><span class="badge b3">仅同性响应</span>
+      </div>
+      <h3>9/12 上午想找人一起逛大英博物馆</h3>
+      <p class="s-hint">中文交流，女生优先。逛完可以一起吃个午饭，费用各付。</p>
+      <div class="det-grid">
+        <div><span class="k">地点范围</span><span class="v">大英博物馆 / 罗素广场一带</span></div>
+        <div><span class="k">报酬</span><span class="v">免费互助</span></div>
+        <div><span class="k">人数</span><span class="v">1 人</span></div>
+        <div><span class="k">可见范围</span><span class="v">伦敦社区公开</span></div>
+      </div>
+      <div class="rq-foot">
+        <span class="who-mini"><i class="av p">林</i>林悦<span class="badge b2">靠谱</span><span class="badge b1">已完成 4 单</span></span>
+        <span class="s-hint">2 小时前发布</span>
+      </div>
+    </div>
+    <div class="s-pad">
+      <div class="s-t">已有 3 人响应<span>按信任分 + 响应速度排序 ▾</span></div>
+      ${RESPONDERS.map((r, i) => `
+        <div class="resp">
+          <div class="resp-top">
+            <i class="av ${r.av}">${r.name[0]}</i>
+            <span class="nm"><b>${r.name} <span class="badge ${r.badge}">${r.badgeTx}</span></b><small>${r.quote}</small></span>
+          </div>
+          <p class="say">${r.say}</p>
+          <div class="evi-line">${r.evi.map(e => `<span>· ${e}</span>`).join('')}</div>
+          <div class="ai-reason"><b>🐚 为什么推荐他：</b>${r.reason}</div>
+          <div class="pick">
+            <button class="s-btn sm" onclick="askPick(${i})">选定 TA</button>
+            <button class="s-btn ghost sm" onclick="toast('已私信 ${r.name}（M3 上线站内私信）')">先聊聊</button>
+          </div>
+        </div>`).join('')}
+      <p class="s-hint" style="margin-top:10px">超时未选定将自动过期，需求单连同这些响应会归档进伦敦城市知识库，成为小螺的检索语料。</p>
+    </div>`
+};
+
+function askPick(i) {
+  const r = RESPONDERS[i];
+  modal(`
+    <h4>确认选定 ${r.name}？</h4>
+    <ul>
+      <li>选定后<b>双方互相看到联系方式</b></li>
+      <li>系统会生成一张只读的<b>约定单</b>，双方均可见、不可单方修改</li>
+      <li>约不上可以<b>撤销选定</b>重新挑人，撤销会被记录，<b>但已看到的联系方式收不回</b></li>
+    </ul>
+    <div class="warn-card"><b>见面安全提示（必读）</b>首次见面选公共场所 · 不提前转账 · 不交出证件 · 把行程告知朋友。平台不代收资金，任何要求先付押金的都属异常。</div>
+    <div class="s-row">
+      <button class="s-btn sm" onclick="confirmPick()">我已阅读，确认选定</button>
+      <button class="s-btn ghost sm" onclick="closeModal()">再想想</button>
+    </div>`);
+}
+
+function confirmPick() {
+  closeModal(); S.picked = true; renderScreen();
+  toast('已确定 · 约定单已生成，联系方式已双向下发');
+}
+
+function matchedView() {
+  return `
+    <div class="det-h">
+      <div class="rq-top"><span class="cat">搭子同行</span><span class="badge b2">已确定</span></div>
+      <h3>9/12 上午想找人一起逛大英博物馆</h3>
+      <p class="s-hint">林悦 ↔ 陈默 · 双方都点击「已完成」后进入互评</p>
+    </div>
+    <div class="s-pad">
+      <div class="ag">
+        <div class="ag-h"><span>约定单 · 只读凭证</span><span>v1</span></div>
+        <div class="f-row"><span class="k">谁</span><span class="v">林悦 ↔ 陈默</span></div>
+        <div class="f-row"><span class="k">时间</span><span class="v">9 月 12 日 10:00</span></div>
+        <div class="f-row"><span class="k">地点</span><span class="v">大英博物馆正门（街区级）</span></div>
+        <div class="f-row"><span class="k">做什么</span><span class="v">陪同参观约 3 小时，中文讲解</span></div>
+        <div class="f-row"><span class="k">报酬</span><span class="v">免费互助，午饭各付</span></div>
+        <div class="f-row"><span class="k">如何支付</span><span class="v">平台不代收，无需支付</span></div>
+        <div class="parsed-f">修改需双方重新确认并留版本记录。发生纠纷时，约定单 + 聊天记录 + 评价构成判定依据，处理结果是信任分与封禁，而非退款。</div>
+      </div>
+      <div class="contact">
+        联系方式已双向下发（仅你与陈默可见）
+        <b>微信：chenmo_ucl</b>
+        清空只对之后新达成共识的人生效，已经看到的收不回。
+      </div>
+      <div class="s-row" style="margin-bottom:11px">
+        <button class="s-btn sm" onclick="go('chat')">进入私信</button>
+        <button class="s-btn ghost sm" onclick="toast('行程卡片已生成，可经微信分享给朋友 —— 平台不存储紧急联系人')">行程报备</button>
+      </div>
+      <button class="sos" onclick="modal('<h4>一键 SOS</h4><ul><li>英国紧急电话 <b>999</b></li><li>欧盟通用 112 · 美国 911</li><li>中国驻英使馆 +44 20 7299 4049</li><li>把当前行程卡片发给此前报备的联系人</li></ul><button class=\\'s-btn ghost sm\\' onclick=\\'closeModal()\\'>关闭</button>')">🆘 紧急求助</button>
+      <div class="s-t">进行中</div>
+      <button class="s-btn dark" onclick="go('review')">我已完成，去评价</button>
+      <button class="s-btn ghost sm" style="margin-top:9px" onclick="S.picked=false;renderScreen();toast('已撤销选定，退回待选定 · 原有 3 条响应全部保留')">撤销选定，重新挑人</button>
+      <p class="s-hint" style="margin-top:12px">撤销会被记录为风控信号，但不作为信任分的主要扣分项——改变主意本身合理。</p>
+    </div>`;
+}
+
+SCREENS.assistant = {
+  title: '小螺', tab: '', back: 'home', chip: '小螺助手 · 兜底作答',
+  notes: [
+    ['key', 'AI 是供给的兜底层，不是替代层', '最致命的流失点不是「匹配不精准」，而是「发了没人理，用户当天就走了」。真人响应永远优先展示，兜底答案只在无响应或用户主动询问时出现。'],
+    ['', '兜底答案强制标注来源', '「根据伦敦小组 3 条历史回答，请自行核实」。答案只依据站内语料，不让模型自由发挥。'],
+    ['warn', '签证 / 医疗 / 法律 / 移民在服务端前置拦截', '<b>不调模型、不占额度</b>，直接给官方链接和「请咨询专业机构」。这类问题答错的代价由用户承担，不是模型能力问题而是责任边界问题。'],
+    ['', '有副作用的动作必须用户点确认', '意图识别与工具编排是纯函数规则表；建单、发邀请这类动作只能由用户点确认触发，AI 不会自己发出去。'],
+    ['', '首屏声明「我是 AI」', '一切对外内容强制带「AI 协助」标识。追问上限 2 轮，之后降级为普通表单，禁止死循环。']
+  ],
+  render: () => `
+    <div class="luo-screen">
+    <div class="bub-wrap" id="bubs">
+      <div class="bub ai"><span class="ai-tag">🐚 我是 AI 助手小螺</span>你好，想找人帮忙、打听本地的事、或者让我帮你规划行程都可以——直接打字跟我说，或点下面的例子。<br><br>时间、地点、金额、联系方式我不会替你填。</div>
+      ${S.chat.map(c => c.h).join('')}
+    </div>
+    <div class="q-chips">
+      <button onclick="ask('trip')">帮我排个伦敦两日线路</button>
+      <button onclick="ask('arrival')">刚落地，先办哪几件事？</button>
+      <button onclick="ask('sim')">机场怎么进市区最便宜？</button>
+      <button onclick="demoType('周六上午想去邱园拍照，一个人没意思，想找个也爱逛的搭子')">想找人一起逛邱园</button>
+      <button onclick="demoType('想找人陪我妈周三去医院复查，我英文不够专业')">找人陪爸妈看病翻译</button>
+      <button onclick="demoType('我周六要去趟中国超市，能顺路帮人带东西，想换顿饭或零食')">顺路帮人代购换顿饭</button>
+      <button onclick="ask('visa')">我这个签证能待多久？</button>
+    </div>
+    <div class="compose">
+      <input id="luoInput" placeholder="直接告诉小螺，比如：周六想找人一起逛邱园" onkeydown="if(event.key==='Enter')sendLuo()">
+      <button class="cbtn" onclick="sendLuo()">发送</button>
+    </div>
+    </div>`
+};
+
+const ANSWERS = {
+  sim: `<div class="bub me">从希思罗进市区，最便宜的方式是什么？</div>
+    <div class="bub ai"><span class="ai-tag">🐚 AI 协助</span>最便宜是<b>地铁 Piccadilly 线</b>，约 £5.6（Oyster/刷卡），到市中心 50~60 分钟。<br>次选 Elizabeth Line 约 £12、25 分钟。Heathrow Express 最快 15 分钟但 £25 起。<br>深夜（0:30 后）没有地铁，只能夜班巴士 N9 或打车。
+    <div class="src">来源：伦敦小组 3 条历史回答（2026-06 至 2026-08）+ 城市语料库「机场交通」条目。票价可能变动，请自行核实。</div></div>`,
+  fallback: `<div class="bub me">我那条买电话卡的单子发出去 40 分钟了，没人理</div>
+    <div class="bub ai"><span class="ai-tag">🐚 AI 协助 · 兜底作答</span>我先把答案给你，同时已经把这条单子改写文案二次投放了（第 1 / 2 次）。<br><br><b>国王十字站内</b>：WHSmith 有 EE / Vodafone 预付卡；<b>出站往 Euston Road</b> 走 3 分钟有 Three 门店，£10 起含流量。带护照，店员会帮你激活。
+    <div class="src">来源：伦敦小组 5 条历史回答 + 3 张过期需求单的真人回复。请自行核实营业时间。</div></div>
+    <div class="risk">🐚 这条兜底答案会被记入「采纳率」指标（达标线 ≥50%）。你点「有用」或不再追问都算采纳。</div>`,
+  visa: `<div class="bub me">我这个签证类型能在英国待多久？</div>
+    <div class="bub ai"><span class="ai-tag">🐚 服务端前置拦截</span>签证、医疗、法律、移民类问题我不回答——<b>这类问题答错的代价你承担不起</b>。<br><br>请查英国政府官方页面 gov.uk/check-uk-visa，或咨询持牌移民顾问（OISC 注册）。<br><br>这次提问不会调用模型，也不占用你的额度。</div>`,
+  create: `<div class="bub me">帮我发个找搭子的单</div>
+    <div class="bub ai"><span class="ai-tag">🐚 AI 协助</span>好，我需要知道：<b>哪天、想去哪、几个人</b>。<br><br>说完我整理成需求单给你确认——<b>建单这个动作要你点确认才会真的发出去</b>，我不会自己发。</div>`,
+  trip: `<div class="bub me">帮我排个伦敦两日经典线路，别太赶</div>
+    <div class="bub ai"><span class="ai-tag">🐚 AI 协助 · 行程规划</span><b>伦敦经典两日 · 轻松版</b>
+    <div style="margin:7px 0;font-size:13px;line-height:1.6"><b style="color:#C4562F;margin-right:6px">Day 1</b>上午 大英博物馆（免费）→ 午餐 Covent Garden → 下午 国家美术馆 → 傍晚 特拉法加广场</div>
+    <div style="margin:7px 0;font-size:13px;line-height:1.6"><b style="color:#C4562F;margin-right:6px">Day 2</b>上午 塔桥 + 伦敦塔 → 午餐 Borough Market → 下午 泰特现代 → 傍晚 泰晤士河畔漫步</div>
+    <div class="src">示例线路，可按你的偏好（美食 / 购物 / 亲子）继续调。更懂你的定制线路属会员能力——内容型变现的入口，不碰资金。</div>
+    <div class="s-row" style="margin-top:10px">
+      <button class="s-btn sm" onclick="shareNote('trip')">分享到笔记广场</button>
+      <button class="s-btn ghost sm" onclick="toast('定制更懂你的线路属会员能力（阶段 1）· 行程生成设每日限额以控成本')">定制这条线路</button>
+    </div></div>`,
+  arrival: `<div class="bub me">刚落地，先办哪几件事？</div>
+    <div class="bub ai"><span class="ai-tag">🐚 AI 协助 · 落地攻略</span>落地伦敦头 48 小时，建议按这个顺序：
+    <div style="margin:7px 0;font-size:13px;line-height:1.6"><b style="color:#C4562F;margin-right:6px">①</b>买实体电话卡（EE / Three，带护照激活）</div>
+    <div style="margin:7px 0;font-size:13px;line-height:1.6"><b style="color:#C4562F;margin-right:6px">②</b>办 Oyster 卡或开 Apple Pay 直接刷闸机</div>
+    <div style="margin:7px 0;font-size:13px;line-height:1.6"><b style="color:#C4562F;margin-right:6px">③</b>注册 GP（看病前必须，流程慢，早点办）</div>
+    <div style="margin:7px 0;font-size:13px;line-height:1.6"><b style="color:#C4562F;margin-right:6px">④</b>华人超市囤口粮 + 买英标转换插头</div>
+    <div class="src">来源：城市语料库「落地清单」+ 伦敦小组历史回答，请自行核实。任一条办不明白，都能一键喊人帮忙。</div>
+    <div class="s-row" style="margin-top:10px">
+      <button class="s-btn sm" onclick="shareNote('arrival')">分享到笔记广场</button>
+      <button class="s-btn ghost sm" onclick="go('publish')">这条喊人帮我办</button>
+    </div></div>`
+};
+
+function ask(k) {
+  S.chat.push({ h: ANSWERS[k] });
+  renderScreen();
+  scrollBubs();
+}
+
+function scrollBubs() { const b = el('bubs'); if (b) b.scrollTop = b.scrollHeight; }
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+
+/* 去掉某条预置回答里的「用户提问」气泡，只留小螺的回答——给自由输入复用 */
+function aiOnly(k) { return ANSWERS[k].replace(/<div class="bub me">[\s\S]*?<\/div>/, ''); }
+
+/* 擦边交友：不归类、不发布，用用户能懂的话说清楚为什么（D-09 从数据结构层面消灭） */
+const DATING_REPLY = `<div class="bub ai"><span class="ai-tag">🐚 小螺</span>这条我没法整理成需求单——它的核心是「<b>想认识某种人、找人陪着聊天</b>」，不是办成一件具体的事。喊呗只做具体的互助，<b>不做交友</b>，即使愿意付钱也一样。<br><br>如果你是想找人一起做点什么（逛展、吃饭、拍照…），换个说法告诉我要做的那件事，我就能帮你理清楚。</div>`;
+
+/* 自由输入 → 结构化需求单草稿。四类字段只留「你来定」，绝不代填 */
+function luoDraft(v) {
+  const t = v;
+  let cat = '';
+  if (/陪.*(看病|医院|复查|就医)|翻译|口译|英文不/.test(t)) cat = '翻译陪同';
+  else if (/带|代购|取|寄|超市|帮忙买|捎/.test(t)) cat = '代购跑腿';
+  else if (/逛|一起|搭子|同行|结伴|拍照|看展|演唱会/.test(t)) cat = '搭子同行';
+  else if (/借|换|闲置|转让|插头/.test(t)) cat = '借物易物';
+  else if (/住|租|合租|借住|沙发/.test(t)) cat = '住宿';
+  else if (/地陪|向导|带我玩|带我逛/.test(t)) cat = '付费地陪';
+  else if (/怎么|哪里|请问|打听|推荐/.test(t)) cat = '打听咨询';
+  else if (/急|丢了|被偷|报警|没地方|赶不上/.test(t)) cat = '应急求助';
+
+  const scheduled = /明天|后天|周[一二三四五六日天]|下周|周末|号|月初|月底/.test(t);
+  const instant = /现在|马上|今天|今晚|一会|几小时|尽快|立刻/.test(t);
+  const timing = scheduled ? '预约型 · 你来选日期' : instant ? '即时型 · 今天内' : '你来定';
+  const paid = /给钱|付费|报酬|付你|有偿|多少钱|镑|元/.test(t);
+  const barter = /换|以物换物/.test(t);
+  const meal = /请.*吃|请一顿|管饭|换顿饭|请客/.test(t);
+  const reward = paid ? '付费' : barter ? '以物换物' : meal ? '请一顿' : '待你确认';
+
+  const need = [];
+  if (scheduled) need.push(['见面时间', '你来选个日期']);
+  need.push(['见面地点', '你来定（街区级）']);
+  if (paid) need.push(['参考金额', '付费单只能你自己填']);
+  need.push(['联系方式', '选定后才双向下发']);
+
+  const row = (k, val, isNeed) => `<div class="ld-row ${isNeed ? 'need' : ''}"><span class="k">${k}</span><span class="v">${val}</span></div>`;
+  let rows = row('具体需求', esc(t)) + row('品类', cat || '暂未归类') + row('时效', timing) + row('报酬', reward);
+  need.forEach(n => rows += row(n[0], n[1], true));
+
+  return `<div class="bub ai"><span class="ai-tag">🐚 AI 协助 · 已整理</span>
+    <div class="luo-draft">
+      <div class="ld-h">需求单草稿${cat ? '' : '（这条我拿不准品类，你确认下）'}</div>
+      ${rows}
+    </div>
+    <div class="src">🔒 时间 / 地点 / 金额 / 联系方式这四项我不替你拍板，只留空等你确认。</div>
+    <div class="s-row" style="margin-top:10px">
+      <button class="s-btn sm" onclick="toast('带着这条草稿去发布页确认 · 建单动作要你点确认才真的发出');go('publish')">去确认发布</button>
+      <button class="s-btn ghost sm" onclick="toast('你继续说，我重新整理')">再改改</button>
+    </div></div>`;
+}
+
+/* 发送（自由输入入口）：擦边拦截 → 攻略/线路/护栏路由 → 否则整理成需求单草稿 */
+function sendLuo() {
+  const inp = el('luoInput');
+  const v = (inp && inp.value || '').trim();
+  if (!v) return toast('说一句你想找什么');
+  if (inp) inp.value = '';
+  const push = h => { S.chat.push({ h: `<div class="bub me">${esc(v)}</div>` + h }); renderScreen(); scrollBubs(); };
+  if (/异性|长期关系|处对象|谈恋爱|交友|颜值|有偿陪伴|找个?(女|男)(生|孩|朋友).*(陪|聊|玩|关系)/.test(v)) return push(DATING_REPLY);
+  if (/线路|行程|排个|规划|怎么玩|几日|两日|景点/.test(v)) return push(aiOnly('trip'));
+  if (/先办|落地|必办|第一次来|刚到|准备什么|要办什么/.test(v)) return push(aiOnly('arrival'));
+  if (/机场|希思罗|进市区|电话卡|地铁|退税|怎么去市区|哪里买卡/.test(v)) return push(aiOnly('sim'));
+  if (/签证|医疗|法律|移民|能待多久|吃什么药|违法/.test(v)) return push(aiOnly('visa'));
+  return push(luoDraft(v));
+}
+
+/* 预置场景：模拟用户打字后发送，复用同一条解析链路 */
+function demoType(text) {
+  const inp = el('luoInput');
+  if (inp) inp.value = text;
+  sendLuo();
+}
+
+/* 把小螺产出的内容一键沉淀成一篇「笔记」—— 内容→笔记广场→拉新→新需求的飞轮 */
+const SHARE_NOTES = {
+  trip: {
+    emoji: '🗺️', title: '小螺帮我排的伦敦经典两日 · 轻松版', tag: '问本地',
+    body: '<b>Day 1</b> 上午 大英博物馆（免费）→ 午餐 Covent Garden → 下午 国家美术馆 → 傍晚 特拉法加广场<br><b>Day 2</b> 上午 塔桥 + 伦敦塔 → 午餐 Borough Market → 下午 泰特现代 → 傍晚 泰晤士河畔漫步',
+    follow: '照这条两日线路，帮我加一天偏美食的路线'
+  },
+  arrival: {
+    emoji: '🧳', title: '落地伦敦头 48 小时要办的 4 件事', tag: '问本地',
+    body: '① 买实体电话卡（EE / Three，带护照激活）<br>② 办 Oyster 卡或开 Apple Pay 刷闸机<br>③ 注册 GP（看病前必须，流程慢，早点办）<br>④ 华人超市囤口粮 + 买英标转换插头',
+    follow: '这几件事里，帮我约个人陪我去办 GP 注册'
+  }
+};
+function shareNote(k) {
+  const n = Object.assign({ by: '我', likes: 1, fresh: true }, SHARE_NOTES[k]);
+  if (!DISCOVER[0] || !DISCOVER[0].fresh) DISCOVER.unshift(n);
+  toast('已分享到「笔记广场」· 和小螺协作出的结果沉淀成笔记 —— 内容→拉新→新需求的飞轮');
+  setTimeout(() => go('city'), 650);
+}
+
+/* 打开一篇笔记（笔记是内容，不是小螺；但可以在笔记里「问小螺」衍生追问） */
+function openNote(i) { S.noteIdx = i; go('note'); }
+function likeNote() { const n = DISCOVER[S.noteIdx]; if (n) { n.likes++; renderScreen(); toast('已点赞'); } }
+
+/* 首页分类筛选、城市切换、城市页各板块的跳转 —— 让看起来能点的都真的有反应 */
+function setFilter(c) { S.filter = c; renderScreen(); }
+function pickCity() { toast('伦敦首发 · 其他城市达到开城标准（认证响应者 ≥50 等四项）后才开放'); }
+function zoneGo(cat) { S.filter = cat; go('home'); toast('已按「' + cat + '」筛选 · 这个分区的需求都聚到首页广场'); }
+function askHot(q) { go('assistant'); demoType(q); }
+
+SCREENS.city = {
+  title: '城市', tab: 'city', chip: '城市社区 · 供给容器',
+  notes: [
+    ['key', '笔记广场：真人与小螺协作的结果沉淀成笔记', '这些攻略 / 行程都是<b>笔记</b>（不是小螺本身）——有的来自真人，有的是别人和小螺聊出满意结果后<b>一键分享</b>来的。点开任一篇可以读内容、也能<b>「问小螺」衍生追问</b>。内容→拉新→新需求的飞轮，是未来做会员与定制线路变现的底盘，这一层也不碰资金。'],
+    ['key', '城市是唯一的一级容器', 'V1.0 首页与「组圈」职责重叠，两个 Tab 做同一件事。V2.0 首页 = 需求广场，城市 Tab = 社区与<b>供给池</b>：当地先有人入驻，才有能力承接需求。'],
+    ['', '官方 5 分区与需求单品类对齐', '找搭子、问本地、跑腿代购、闲置转让、住宿。兴趣小组受健康度与数量上限约束——建组上限 = 城市周活跃用户数 ÷ 20，伦敦初期就是 0~2 个。<b>这是有意的克制</b>，冷启动期不允许提前碎片化。'],
+    ['', '热搜榜改成「本周大家在问什么」', '由真实需求单聚合而来。V1.0 的热搜榜在冷启动期只会暴露冷清。'],
+    ['key', '内容降级为供给端入驻理由 + AI 语料', '内容仍然重要，但职责从「主线」变成两件事：给本地人一个来的理由，给小螺一个知识来源。'],
+    ['', '渠道用学校，结构用城市', '旅行者只知道城市不知道学校，所以容器必须是城市；但留学生天然按学校组织，所以 BD 按 UCL / KCL / IC / LSE 推进。这两件事不矛盾。']
+  ],
+  render: () => `
+    <div class="s-pad">
+      <div class="s-city"><span class="cty" onclick="pickCity()">伦敦 ▾ <small>周活跃 412 人 · 认证响应者 68 人</small></span></div>
+      <div class="s-t">笔记广场<span>真人与小螺协作的结果 · 点开可问小螺</span></div>
+      ${DISCOVER.map((n, i) => `
+        <div class="note-card ${n.fresh ? 'fresh' : ''}" onclick="openNote(${i})">
+          <span class="emj">${n.emoji}</span>
+          <span class="nc-body">
+            <b>${n.title}</b>
+            <small>${n.by} · ♥ ${n.likes}${n.fresh ? ' · <em>刚分享</em>' : ''}</small>
+          </span>
+          <span class="nc-arrow">›</span>
+        </div>`).join('')}
+      <div class="zones">
+        <div onclick="zoneGo('搭子同行')"><i>🧑‍🤝‍🧑</i>找搭子</div><div onclick="zoneGo('打听咨询')"><i>💬</i>问本地</div><div onclick="zoneGo('代购跑腿')"><i>🛍️</i>跑腿代购</div><div onclick="zoneGo('借物易物')"><i>♻️</i>闲置转让</div><div onclick="zoneGo('住宿')"><i>🛏️</i>住宿</div>
+      </div>
+      <div class="s-t">本地响应者名录<span>按信任分排序 ▾</span></div>
+      <div class="people">
+        <div class="pc" onclick="go('trust')"><i class="av t">陈</i><b>陈默</b><small>UCL · 带路/拍照<br>12 单 · 好评 100%</small><span class="badge b2">靠谱</span></div>
+        <div class="pc" onclick="go('trust')"><i class="av p">苏</i><b>苏眠</b><small>KCL · 翻译/陪同<br>31 单 · 好评 97%</small><span class="badge b3">老手</span></div>
+        <div class="pc" onclick="go('trust')"><i class="av">李</i><b>李维</b><small>IC · 代购/跑腿<br>58 单 · 好评 99%</small><span class="badge b4">城市之光</span></div>
+        <div class="pc" onclick="go('trust')"><i class="av t">王</i><b>王甜</b><small>LSE · 带路<br>3 单 · 好评 100%</small><span class="badge b2">靠谱</span></div>
+      </div>
+      <div class="s-t">本周伦敦大家在问什么<span>由真实需求单聚合</span></div>
+      <ul class="hot">
+        <li onclick="askHot('哪里买电话卡最划算')"><em>1</em>哪里买电话卡最划算<span>23 次</span></li>
+        <li onclick="askHot('希思罗进市区怎么走')"><em>2</em>希思罗进市区怎么走<span>18 次</span></li>
+        <li onclick="askHot('周末找人一起逛博物馆')"><em>3</em>周末找人一起逛博物馆<span>15 次</span></li>
+        <li onclick="askHot('看病 GP 注册流程怎么走')"><em>4</em>看病 / GP 注册流程<span>11 次</span></li>
+        <li onclick="askHot('退税怎么办')"><em>5</em>退税怎么办<span>9 次</span></li>
+      </ul>
+      <div class="s-t">兴趣小组<span>当前可新建 2 个</span></div>
+      <div class="s-card" onclick="toast('小组详情（演示）· 健康分 72，运转正常')">
+        <div class="queue-t"><span>伦敦摄影搭子</span><em>健康分 72</em></div>
+        <p>周活跃 14 人 · 产生需求单 6 条 · 首响率 67%</p>
+        <div class="bar"><i style="width:72%"></i></div>
+      </div>
+      <div class="s-card" onclick="toast('小组详情（演示）· 健康分 41 已降权，连续 3 周低于 30 将归档')">
+        <div class="queue-t"><span>伦敦租房互助</span><em style="background:#FFF4E0;color:#B08A2E">健康分 41 · 已降权</em></div>
+        <p>连续 3 周低于 30 将进入沉寂：停止新成员进入、内容合并回官方分区、小组归档。小螺可代写话题帮组长救活。</p>
+        <div class="bar"><i style="width:41%"></i></div>
+      </div>
+      <div class="s-t">开城标准（伦敦跑通后才复制下一城）</div>
+      <div class="kpi">
+        <div><b>68</b><small>认证响应者 · 目标 ≥50</small><span class="up">✓ 达标</span></div>
+        <div><b>34</b><small>周需求单 · 目标 ≥30</small><span class="up">✓ 达标</span></div>
+        <div><b>58%</b><small>首响率 · 目标 ≥60%</small><span class="down">未达标</span></div>
+        <div><b>44%</b><small>次月留存 · 目标 ≥40%</small><span class="up">✓ 达标</span></div>
+      </div>
+      <p class="s-hint">四项必须同时达标。撮合是密度游戏，3 城试点等于把密度除以 3。</p>
+    </div>`
+};
+
+SCREENS.note = {
+  title: '笔记', tab: 'city', back: 'city', chip: '笔记详情 · 内容飞轮',
+  notes: [
+    ['key', '笔记是内容，不是小螺', '笔记可能来自真人，也可能是别人和小螺聊出满意结果后一键分享来的。它独立存在、可被阅读、可被点赞——AI 只是生产它的一种方式，不是它本身。'],
+    ['key', '在笔记里「问小螺」衍生追问', '读到一半想进一步问，可以直接从这篇笔记把上下文带给小螺继续聊。笔记是入口，小螺是能力，两者分开。'],
+    ['', '笔记可一键转成需求', '看到有用的、想找人帮忙落地的，直接从笔记转成需求单——内容到撮合的回流通道。'],
+    ['', '这就是内容飞轮', '和小螺协作出好结果 → 分享成笔记 → 吸引新人阅读 → 衍生新追问 / 新需求。内容与撮合互为燃料，是未来会员与定制线路变现的底盘。']
+  ],
+  render: () => {
+    const n = DISCOVER[S.noteIdx] || DISCOVER[0];
+    return `
+    <div class="note-detail">
+      <div class="nd-cover">${n.emoji}</div>
+      <div class="s-pad">
+        <h3 class="nd-title">${n.title}</h3>
+        <div class="nd-by"><i class="av ${n.by === '我' ? 'p' : 't'}">${n.by[0]}</i>${n.by}${n.by === '我' ? '（与小螺协作后分享）' : ' · 本地用户'} · ♥ ${n.likes}</div>
+        <div class="nd-body">${n.body || '这位用户还没补充正文。'}</div>
+        <div class="src">笔记内容由发布者提供，仅供参考，请结合实际情况自行判断。</div>
+        <div class="s-row" style="margin-top:14px">
+          <button class="s-btn sm" onclick="go('assistant');demoType('${(n.follow || '照这篇笔记，帮我接着往下安排').replace(/'/g, '')}')">🐚 就这篇问小螺</button>
+          <button class="s-btn ghost sm" onclick="toast('把这篇转成你的需求 · 到「喊一声」确认后发出');go('publish')">转成需求</button>
+        </div>
+        <button class="s-btn ghost sm" style="margin-top:9px" onclick="likeNote()">♥ 点赞这篇（${n.likes}）</button>
+      </div>
+    </div>`;
+  }
+};
+
+
+SCREENS.mine = {
+  title: '我的', tab: 'mine', chip: '我的 · 自主性阶梯',
+  notes: [
+    ['key', '自主性阶梯放在用户手里', '这是本产品 AI 设计的核心主张。全自动有风险、纯手动没价值，正确答案不是取折中点，而是把自主性<b>产品化为可解释、可调节、可回退的档位</b>，默认保守，由用户自行上调。'],
+    ['warn', 'L3 永不实现，并把理由展示给用户', '点一下 L3 看看会发生什么。写清「不做什么」和写清「做什么」同样重要。'],
+    ['', 'L0 与 L1 的差别是行为差别', '不是标签差别——L1 能发邀请，L0 不能。档位落到服务端校验，不是前端提示。'],
+    ['', '订单入口落地为「我发布的 / 我响应的」', 'V1.0 的「我的订单」只是一个预留入口。现在它是有状态分组的真实列表：招募中 / 待选定 / 进行中 / 已完成 / 已过期。'],
+    ['key', '联系方式在这里自填，且可随时清空', '发布需求时不需要、也不允许挂在需求单上。清空只对之后新达成共识的人生效，已经看到的收不回——界面如实说明。']
+  ],
+  render: () => `
+    <div class="mine-head">
+      <div class="mine-top">
+        <i class="av lg p">林</i>
+        <span class="nm"><b>林悦 <span class="badge b2">靠谱</span></b><small>需求方 · 上海 → 伦敦 · 停留 9/8–9/15</small></span>
+        <span class="trust-ring"><b>62</b><small>信任分（内部）</small></span>
+      </div>
+      <div class="mine-stats">
+        <div><b>4</b><small>已完成</small></div><div><b>100%</b><small>好评率</small></div>
+        <div><b>2</b><small>在架 / 上限 3</small></div><div><b>0</b><small>被举报</small></div>
+      </div>
+    </div>
+    <div class="s-pad">
+      <div class="s-t">小螺的自主性<span>随时可回退，立即生效</span></div>
+      <div class="lad">
+        ${['L0', 'L1', 'L2'].map(l => `<button class="${S.lad === l ? 'on' : ''}" onclick="setLad('${l}')"><b>${l}</b>${{ L0: '只读建议', L1: '一键代发', L2: '自动分发' }[l]}</button>`).join('')}
+        <button onclick="whyNoL3()"><b>L3</b>自动协商</button>
+      </div>
+      <p class="s-hint">${{ L0: '小螺只解析、只建议，不对外发送任何内容。新用户前 3 单默认在这一档。', L1: '小螺生成邀请文案和候选人名单，<b>等你勾选后统一发出</b>。这是全局默认档。', L2: '需求单发布后自动向匹配响应者推送结构化需求卡片；2 小时无响应自动改写文案二次投放（≤2 次）。不进私信、不模拟真人语气。' }[S.lad]}</p>
+      <div class="s-t">我的需求单</div>
+      <div class="menu">
+        <a onclick="go('detail')">📣 我发布的 <span class="tagm">2 招募中 · 1 已确定</span><span class="ar">›</span></a>
+        <a onclick="toast('我响应的：1 条已确定，3 条待选定')">✋ 我响应的 <span class="ar">›</span></a>
+        <a onclick="go('review')">⭐ 待我评价 <span class="tagm">1</span><span class="ar">›</span></a>
+      </div>
+      <div class="s-t">信任与安全</div>
+      <div class="menu">
+        <a onclick="go('trust')">🛡️ 信任档案与增信任务 <span class="tagm">+18 分可拿</span><span class="ar">›</span></a>
+        <a onclick="toast('联系方式：微信 linyue_0912 · 可随时清空，已看到的收不回')">📇 我的联系方式 <span class="ar">›</span></a>
+        <a onclick="toast('仅同性响应默认关闭，女性用户首次发单时会主动提示')">👥 安全开关 <span class="ar">›</span></a>
+        <a onclick="toast('已拉黑 0 人 · 拉黑后互相不可见需求单、不可响应、不可私信')">🚫 黑名单 <span class="ar">›</span></a>
+      </div>
+      <div class="s-t">其他</div>
+      <div class="menu">
+        <a onclick="toast('会员：更快被响应、更容易被选中 · ¥18/月（阶段 1 才上线）')">💎 会员 <span class="tagm">阶段 1</span><span class="ar">›</span></a>
+        <a onclick="go('admin')">📊 运营后台（管理员可见） <span class="ar">›</span></a>
+        <a onclick="toast('隐私政策 / 用户协议 / 社区规范 —— UGC 基础四件套之三')">📄 协议与社区规范 <span class="ar">›</span></a>
+        <a onclick="toast('账号与数据删除入口 —— GDPR 要求，独立可访问')">🗑️ 删除我的数据 <span class="ar">›</span></a>
+      </div>
+    </div>`
+};
+
+function setLad(l) {
+  S.lad = l; renderScreen();
+  toast(l === 'L2' ? 'L2 已开启 · 对外触达只会是系统卡片，强制带「由小螺代为分发」标识' : l + ' 已生效');
+}
+
+function whyNoL3() {
+  modal(`
+    <h4 style="color:#C33B36">L3 自动协商：本产品永不实现</h4>
+    <ul>
+      <li><b>责任无法归属</b>——AI 谈定的见面时间地点若发生人身安全事件，责任链条不清</li>
+      <li><b>AI 承诺会造成真实损失</b>——谈价、谈时间是对现实世界的承诺，模型出错的代价由你承担</li>
+      <li><b>伦理与合规</b>——AI 以真人语气与人协商却不明示身份，在多数地区已属需要披露的行为</li>
+      <li><b>能力边界诚实</b>——个人开发者无力承担由此产生的纠纷处理与客服成本</li>
+    </ul>
+    <p style="font-size:12.5px;color:#7E8B9B">把「不做」的理由摆在用户面前，比留一个灰掉的开关更可信。</p>
+    <button class="s-btn ghost sm" style="margin-top:13px" onclick="closeModal()">明白了</button>`);
+}
+
+SCREENS.message = {
+  title: '消息', tab: 'message', chip: '消息 · 状态通知',
+  notes: [
+    ['key', '新增「需求单状态通知」类型', 'V1.0 只有互动通知。需求单的每一次状态变更（被响应、被选定、即将过期、对方确认完成、待评价）都要有触达，否则撮合会断在「用户不知道发生了什么」。'],
+    ['warn', '订阅消息：一次授权对应一条推送', '这是微信的硬约束，不是设计选择。因此产品必须在「发布需求单」「收到响应」这些时刻<b>顺势请求授权</b>——L2 自动分发的触达率上限受授权率约束。'],
+    ['', '响应者的打扰被严格控制', '同一响应者每日被 Agent 触达 ≤3 次，被静默或拒绝 2 次后进 7 天冷却。产品对两侧的容忍度<b>故意不对称</b>：需求方门槛要极低，响应者的打扰要严格控制——他们被无效需求打扰两三次就会永久关闭通知。']
+  ],
+  render: () => `
+    <div>
+      <div class="notif" onclick="go('chat')">
+        <span class="ic o">🐚</span>
+        <span class="tx"><b>小螺 <span class="badge ai">AI</span></b><p>你那条电话卡的需求还没人响应，我先给了你一个答案</p></span>
+        <span class="tm">2 分钟前<br><span class="unread"></span></span>
+      </div>
+      <div class="notif" onclick="go('detail')">
+        <span class="ic g">✅</span>
+        <span class="tx"><b>陈默 接受了你的选定 <span class="unread"></span></b><p>约定单已生成，联系方式已双向下发</p></span>
+        <span class="tm">14 分钟前</span>
+      </div>
+      <div class="notif" onclick="go('detail')">
+        <span class="ic b">👀</span>
+        <span class="tx"><b>3 人响应了你的需求单</b><p>9/12 上午想找人一起逛大英博物馆</p></span>
+        <span class="tm">1 小时前</span>
+      </div>
+      <div class="notif" onclick="go('chat')">
+        <span class="ic p">💬</span>
+        <span class="tx"><b>陈默</b><p>那我们 9:50 在正门左边的台阶等？</p></span>
+        <span class="tm">昨天</span>
+      </div>
+      <div class="notif">
+        <span class="ic o">⏳</span>
+        <span class="tx"><b>需求单即将过期</b><p>「今晚拼车去希思罗 T5」还有 40 分钟到期，要不要让小螺改写文案再投一次？</p></span>
+        <span class="tm">昨天</span>
+      </div>
+      <div class="notif" onclick="go('review')">
+        <span class="ic g">⭐</span>
+        <span class="tx"><b>待评价</b><p>与苏眠的「借转换插头」已完成，7 天内未评视为默认好评但不计入好评率</p></span>
+        <span class="tm">2 天前</span>
+      </div>
+      <div class="s-pad"><p class="s-hint">私信为云数据库轮询 + 实时数据推送实现，秒级即可，<b>不自建 WebSocket</b>——运维成本换不来对应的体验收益。</p></div>
+    </div>`
+};
+
+SCREENS.chat = {
+  title: '陈默', tab: 'message', back: 'message', chip: '私信 · 反诈提示',
+  notes: [
+    ['warn', '反诈提示同时提示双方', '出现「先转账」「押金」「发身份证照片」「加微信私下聊」「退出平台交易」等模式时向<b>双方</b>弹提示，而不是只警告一方——只提示一方会误伤正常沟通，也会让被提示者觉得平台在怀疑他。'],
+    ['', '平台不代收资金，所以「先付押金」一定异常', '这条规则能成立，恰恰是因为产品明确不碰资金。任何要求线上先付的行为都不属于正常流程。'],
+    ['key', '私信是唯一的协商场所，AI 不进来', 'L2 自动分发只能发系统需求卡片，不进 1v1 私信、不模拟真人语气、不代答追问。L3 自动协商永不实现——AI 谈定的见面时间地点若出事，责任链条不清。']
+  ],
+  render: () => `
+    <div class="bub-wrap">
+      <div class="bub you">你好，我看到你选定我了 🙌</div>
+      <div class="bub me">是的！9/12 上午 10 点在博物馆正门可以吗</div>
+      <div class="bub you">可以。我建议 9:50 到，10 点开门会排队</div>
+      <div class="bub me">好，那就这样定了</div>
+      <div class="bub you">对了，能不能先转 20 镑押金？我这边要提前订讲解耳机</div>
+      <div class="risk">⚠️ <b>风险提示（双方均可见）</b><br>喊呗<b>不代收任何资金</b>，也不存在需要平台外先付押金的流程。请勿在见面前转账、勿提供证件照片。如对方坚持，请举报——「诈骗」类举报会优先处理。</div>
+      <div class="bub me">平台提示了，我们见面再结算吧</div>
+      <div class="bub you">抱歉，是我不了解规则，见面再说 👌</div>
+      <div class="s-pad" style="padding-top:4px">
+        <div class="s-row">
+          <button class="s-btn ghost sm" onclick="toast('已复制英文破冰话术（translate 能力）')">🐚 帮我翻译</button>
+          <button class="s-btn ghost sm" onclick="toast('已提交「诈骗」类举报 · 处理优先级仅次于人身安全')">举报</button>
+        </div>
+      </div>
+    </div>`
+};
+
+SCREENS.trust = {
+  title: '信任档案', tab: 'mine', back: 'mine', chip: '信任档案 · 四层信任',
+  notes: [
+    ['key', '不显示裸分数，显示证据清单', '分数不可解释会同时打击被评者的积极性和求助者的信心。对外只有四档徽章 + 「已完成 12 单｜好评率 100%｜平均 18 分钟响应｜UCL 邮箱已验证」这样的证据。'],
+    ['warn', '完全不采集证件影像', '护照、签证、学生证属身份证件类敏感个人信息，GDPR 下处理它需要合规能力，个人开发者不具备——一次泄露的后果远大于产品收益。四层信任全部零资质门槛。'],
+    ['', '不采集手机号', '微信手机号快速验证接口对个人主体不开放；云函数拿到的 openid 本身就是微信校验过的可信身份，手机号不额外提供可信度。去掉它同时符合数据最小化。'],
+    ['key', '用收益框架而不是恐惧框架', '文案是「补全后被选中的概率高 2.6 倍」，不是「为了安全请认证」——后者在暗示危险。让增信的动机来自竞争而非恐惧。'],
+    ['', '强制校验只在三处发生', '接付费地陪 / 翻译类单、发或接住宿类单、首次发起线下见面确认。其余全程不拦，注册零门槛。']
+  ],
+  render: () => `
+    <div class="s-pad">
+      <div class="s-card" style="text-align:center">
+        <span class="badge b2" style="font-size:13px;padding:5px 14px">靠谱</span>
+        <p class="s-hint" style="margin-top:10px">四档徽章：新面孔 → <b>靠谱</b> → 老手 → 城市之光</p>
+      </div>
+      <div class="s-t">你凭什么可信<span>对外展示的证据清单</span></div>
+      <div class="evi">
+        <div><span class="ok">✓</span>已完成 4 单</div>
+        <div><span class="ok">✓</span>好评率 100%（4 / 4）</div>
+        <div><span class="ok">✓</span>平均响应时长 23 分钟</div>
+        <div><span class="ok">✓</span>被举报 0 次</div>
+        <div><span class="ok">✓</span>微信授权登录 · 常驻城市已填</div>
+      </div>
+      <div class="s-t">增信任务<span>补全后被选中的概率高 2.6 倍</span></div>
+      <div class="evi">
+        <div><span>📧</span>学校邮箱验证<span class="todo">+8 分 · 只存「已验证 + 学校名」</span></div>
+        <div><span>🔗</span>社媒绑定<span class="todo">+6 分 · 只存 URL 与校验时间</span></div>
+        <div><span>📝</span>自我介绍完整度<span class="todo">+4 分</span></div>
+      </div>
+      <p class="s-hint" style="margin-top:10px">社媒绑定的做法：你提交小红书 / Instagram 主页链接，平台给一串一次性口令，你临时加进个人简介，平台校验后<b>只存「已绑定 + 主页 URL + 校验时间」</b>，不抓取、不存储对方平台内容，可随时解绑。</p>
+      <div class="s-t">四层信任的构成</div>
+      <div class="evi">
+        <div><b style="color:#C4562F">L1</b>基础身份 · 微信登录 + 城市 + 性别自填<span class="todo">10 分</span></div>
+        <div><b style="color:#C4562F">L2</b>自证 · 邮箱 / 社媒 / 介绍<span class="todo">≤20 分</span></div>
+        <div><b style="color:#C4562F">L3</b>履约 · <b>主要看双方真实互评</b><span class="todo">≤60 分</span></div>
+        <div><b style="color:#C4562F">L4</b>社区背书 · 组长或老用户背书<span class="todo">≤10 分</span></div>
+      </div>
+      <p class="s-hint" style="margin-top:10px">性别字段的用途只有一个：支撑「仅同性响应」开关。自填、可留空、不校验，除此之外不参与任何排序、推荐或筛选，<b>也不提供任何异性偏好选项</b>。</p>
+    </div>`
+};
+
+SCREENS.review = {
+  title: '双向评价', tab: 'home', back: 'detail', chip: '双向评价 · 闭环',
+  notes: [
+    ['key', '互评前互不可见', '避免报复性打分与互相试探。7 天内未评视为默认好评，<b>但不计入好评率</b>——沉默不该被当成赞美。'],
+    ['', '互评是信任分的主要输入', 'L3 履约 60 分里，主要输入是双方交易后的真实互评，其次是真实完成单数。取消率、撤销次数只作为风控信号参与小幅调整。'],
+    ['key', '评价会被聚合成信任标签', '<code>summarizeReviews</code> 把散落的文字评价聚合成个人主页上的标签（如「讲解清楚」「守时」），让证据清单更易读。'],
+    ['', '完成 → 评价 → 复用', '完成率目标 ≥70%，评价率 ≥60%，30 天内二次发单率 ≥20%。评价率低意味着闭环没跑完，信任分就长不起来。']
+  ],
+  render: () => `
+    <div class="s-pad">
+      <div class="s-card" style="text-align:center">
+        <i class="av lg t" style="margin:0 auto 9px">陈</i>
+        <b>和陈默的这次「逛大英博物馆」怎么样？</b>
+        <div class="stars">${[1, 2, 3, 4, 5].map(i => `<span class="${S.stars >= i ? 'on' : ''}" onclick="setStars(${i})">★</span>`).join('')}</div>
+        <p class="s-hint">${S.stars ? ['', '很不满意', '不太满意', '一般', '满意', '非常满意'][S.stars] : '点星星打分'}</p>
+      </div>
+      <div class="s-t">加几个标签（可多选）</div>
+      <div class="tagpick">
+        ${['守时', '讲解清楚', '沟通顺畅', '很热情', '路线熟', '会拍照', '有耐心'].map(t => `<button class="${S.tags.includes(t) ? 'on' : ''}" onclick="tapTag('${t}')">${t}</button>`).join('')}
+      </div>
+      <textarea class="s-input" rows="3" placeholder="说点具体的，会帮到下一个人（选填）"></textarea>
+      <button class="s-btn" style="margin-top:12px" onclick="submitReview()">提交评价</button>
+      <p class="s-hint" style="margin-top:12px">你的评价在对方也评完之后才会互相可见。评价会更新对方的履约分与信任标签。</p>
+    </div>`
+};
+
+function setStars(n) { S.stars = n; renderScreen(); }
+function tapTag(t) {
+  S.tags.includes(t) ? S.tags.splice(S.tags.indexOf(t), 1) : S.tags.push(t);
+  renderScreen();
+}
+function submitReview() {
+  if (!S.stars) return toast('先打个分吧');
+  toast('已提交 · 对方评完后互相可见，履约分已排队更新');
+  S.stars = 0; S.tags = []; S.picked = false;
+  setTimeout(() => go('mine'), 900);
+}
+
+SCREENS.admin = {
+  title: '运营后台', tab: 'mine', back: 'mine', chip: '运营后台 · 四件事',
+  notes: [
+    ['key', '后台就是小程序里的管理员页面', 'openid 白名单 + 云函数二次校验管理员身份，<b>不做独立 Web 后台</b>。只做四件事：待审队列、举报队列、用户管理、数据看板。个人开发者的运维带宽只够这么多。'],
+    ['', '人工复核目标 <20 分钟/天', '机审毫秒级由 AI 承担，人工只处理机审转来的部分，配合「待审队列 + 一键通过/驳回模板」。这个数字决定了分级审核的策略能不能长期跑下去。'],
+    ['warn', '看板上没有 DAU', '只有每周成功撮合数、首响率、响应者留存，加上 AI 效果四项。看板放什么，就等于团队每天关心什么。'],
+    ['', 'AI 效果看板是可展示材料', '字段抽取准确率、字段修改率、兜底采纳率、单次撮合 AI 成本——AI 功能必须可度量，否则无法判断该不该继续投入。']
+  ],
+  render: () => `
+    <div class="s-pad">
+      <div class="s-t">本周伦敦<span>2026-08-29 → 09-04</span></div>
+      <div class="kpi">
+        <div><b>11</b><small>成功撮合数（北极星）</small><span class="up">↑ 3</span></div>
+        <div><b>58%</b><small>首响率 · 目标 ≥60%</small><span class="down">↓ 4pt</span></div>
+        <div><b>44%</b><small>响应者次月留存</small><span class="up">✓ 达标</span></div>
+        <div><b>34</b><small>本周需求单</small><span class="up">↑ 6</span></div>
+      </div>
+      <div class="s-t">AI 效果</div>
+      <div class="kpi">
+        <div><b>89.2%</b><small>字段抽取准确率 · 线 85%</small><span class="up">✓</span></div>
+        <div><b>0</b><small>四类字段误填（红线）</small><span class="up">✓</span></div>
+        <div><b>61%</b><small>兜底采纳率 · 线 50%</small><span class="up">✓</span></div>
+        <div><b>¥0.04</b><small>单次撮合 AI 成本 · 线 0.10</small><span class="up">✓</span></div>
+      </div>
+      <div class="s-t">待审队列<span>目标 30 分钟内处理</span></div>
+      <div class="queue">
+        <div class="queue-t"><span>新用户前 3 条内容</span><em>4 条待审</em></div>
+        <p>机审已通过，等人工复核。信任分 ≥30 且无违规的用户走「先发后审」，不进这个队列。</p>
+      </div>
+      <div class="queue">
+        <div class="queue-t"><span>敏感品类抽检</span><em>2 条</em></div>
+        <p>住宿、应急求助、含金额的付费单一律机审 + 人工抽检。</p>
+      </div>
+      <div class="s-t">举报队列<span>人身安全类置顶</span></div>
+      <div class="queue">
+        <div class="queue-t"><span>擦边交友</span><em style="background:#FDE8E8;color:#C33B36">1 条 · 高优</em></div>
+        <p>处理优先级仅次于人身安全。擦边类违规跳过提示，直接禁止接单 7 天，二次永久封禁。</p>
+      </div>
+      <div class="queue">
+        <div class="queue-t"><span>未履约</span><em>3 条</em></div>
+        <p>判定依据：约定单 + 聊天记录 + 评价。处理结果是信任分与封禁，不涉及退款——平台不碰资金。</p>
+      </div>
+      <div class="s-row" style="margin-top:6px">
+        <button class="s-btn sm" onclick="toast('已通过 · 审计日志与状态同生共死')">一键通过</button>
+        <button class="s-btn ghost sm" onclick="toast('已驳回并发送可修改提示模板')">驳回</button>
+      </div>
+    </div>`
+};
+
+/* ---------------- 运行时 ---------------- */
+const ORDER = ['home', 'detail', 'publish', 'assistant', 'city', 'note', 'message', 'chat', 'mine', 'trust', 'review', 'admin'];
+const TABS = [
+  ['home', '🏠', '首页'], ['city', '🏙', '城市'], ['publish', '喊', '喊一声'],
+  ['message', '💬', '消息'], ['mine', '👤', '我的']
+];
+
+function go(id) {
+  if (!SCREENS[id]) return;
+  closeModal();
+  S.screen = id;
+  renderScreen();
+  screenBox.scrollTop = 0;
+  const box = el('prototype');
+  if (box && window.scrollY < box.offsetTop - 120) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderChips() {
+  el('chips').innerHTML = ORDER.map(id =>
+    `<button class="chip ${S.screen === id ? 'on' : ''}" onclick="go('${id}')">${SCREENS[id].chip}</button>`
+  ).join('');
+}
+
+function renderTabs() {
+  const cur = SCREENS[S.screen].tab;
+  el('tabbar').innerHTML = TABS.map(([id, ic, tx]) =>
+    `<button class="${cur === id ? 'on' : ''} ${id === 'publish' ? 'mid' : ''}" onclick="go('${id}')"><i>${ic}</i>${tx}</button>`
+  ).join('');
+}
+
+function renderNotes() {
+  const s = SCREENS[S.screen];
+  el('notes').innerHTML = `
+    <h3>${s.chip}</h3>
+    <p class="n-sub">这一屏为什么这么设计</p>
+    ${s.notes.map(([k, t, b]) => `<div class="note ${k}"><b>${t}</b><p>${b}</p></div>`).join('')}
+    <p class="note-tip">旁注来自产品的 PRD 与决策记录，不是事后补写的说明。每条设计都能追溯到 V1.0 复盘里的某个具体问题。</p>`;
+}
+
+function renderScreen() {
+  const s = SCREENS[S.screen];
+  el('phoneTitle').textContent = s.title;
+  const back = el('phoneBack');
+  back.className = 'phone-back' + (s.back ? ' show' : '');
+  back.onclick = () => go(s.back);
+  screenBox.innerHTML = s.render();
+  renderChips();
+  renderTabs();
+  renderNotes();
+  // 小螺页自己底部已有输入条，悬浮球在这页多余且会压住输入框，隐藏它
+  const fab = el('fab');
+  if (fab) fab.style.display = S.screen === 'assistant' ? 'none' : '';
+}
+
+/* 悬浮球：小螺入口不占底部 Tab */
+(function mountFab() {
+  const fab = document.createElement('button');
+  fab.id = 'fab';
+  fab.textContent = '🐚';
+  fab.title = '小螺';
+  fab.style.cssText = 'position:absolute;right:14px;bottom:88px;width:48px;height:48px;border-radius:50%;border:0;' +
+    'background:linear-gradient(135deg,#FF7A59,#FFC24D);font-size:22px;cursor:pointer;z-index:15;' +
+    'box-shadow:0 10px 24px -8px rgba(255,122,89,.85)';
+  fab.onclick = () => go('assistant');
+  document.querySelector('.phone').appendChild(fab);
+})();
+
+renderScreen();
+
+
+
+
+
+
+
+
+
+
+</script>
+</body>
+</html>

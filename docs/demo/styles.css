@@ -346,6 +346,32 @@ code{
   display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:#6D4BC9;
   background:#F3EEFF;padding:2px 7px;border-radius:5px;margin-bottom:7px;font-weight:600;
 }
+/* 全局 b,strong 被设成白色，白底气泡里要覆盖回深色，否则加粗字看不见 */
+.bub.ai b,.bub.you b{color:#1B2430}
+.bub.me b{color:#fff}
+/* 发现 · 本地内容卡 */
+.note-card{display:flex;gap:11px;align-items:center;background:#fff;border-radius:16px;padding:13px 14px;margin-bottom:11px;border:1px solid rgba(0,0,0,.05)}
+.note-card.fresh{border-color:#FF9A7E;box-shadow:0 6px 18px -8px rgba(255,122,89,.5)}
+.note-card .emj{font-size:28px;flex-shrink:0}
+.note-card .nc-body{flex:1;min-width:0}
+.note-card .nc-body b{display:block;color:#1B2430;font-size:13.5px;line-height:1.4}
+.note-card .nc-body small{display:block;color:#8C98A9;font-size:11.5px;margin-top:4px}
+.note-card .nc-body small em{font-style:normal;color:#C4562F}
+.note-card .nc-go{flex-shrink:0;border:1px solid rgba(0,0,0,.12);background:#fff;color:#4E5C6E;border-radius:999px;padding:7px 13px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap}
+/* 小螺输入条 */
+.compose{display:flex;gap:9px;padding:10px 16px 18px;align-items:center}
+.compose input{flex:1;min-width:0;border:1px solid rgba(0,0,0,.12);border-radius:999px;padding:11px 15px;font-size:13.5px;font-family:inherit;color:#1B2430;outline:none}
+.compose input:focus{border-color:#FF9A7E;box-shadow:0 0 0 3px rgba(255,122,89,.12)}
+.compose .cbtn{flex-shrink:0;border:0;border-radius:999px;padding:11px 17px;font-size:13.5px;font-weight:600;background:var(--grad);color:#fff;cursor:pointer;font-family:inherit}
+/* 小螺内联需求单草稿 */
+.luo-draft{margin-top:4px}
+.luo-draft .ld-h{font-weight:700;color:#1B2430;margin-bottom:7px;font-size:13px}
+.luo-draft .ld-row{display:flex;gap:8px;padding:5px 0;font-size:12.5px;border-top:1px dashed rgba(0,0,0,.08)}
+.luo-draft .ld-row:first-of-type{border-top:0}
+.luo-draft .ld-row .k{color:#8C98A9;flex:0 0 58px}
+.luo-draft .ld-row .v{color:#1B2430;flex:1}
+.luo-draft .ld-row.need{background:#FFF7EC;margin:3px 0;padding:5px 7px;border-radius:7px}
+.luo-draft .ld-row.need .k,.luo-draft .ld-row.need .v{color:#C98A2E;font-weight:600}
 .src{margin-top:9px;padding-top:8px;border-top:1px dashed rgba(0,0,0,.1);font-size:11px;color:#93A0B0;line-height:1.6}
 .risk{
   align-self:center;background:#FFF1EF;border:1px solid #F6CFC9;color:#A33F38;
@@ -669,3 +695,19 @@ code{
   .arch-items,.arch-layer p{grid-column:1}
   .hero-stats{gap:22px}
 }
+
+/* ===== 交互补丁：小螺输入条固定底部 + 可点元素给出手型 ===== */
+.luo-screen{display:flex;flex-direction:column;height:100%}
+.luo-screen .bub-wrap{flex:1 1 auto;overflow-y:auto;min-height:0}
+.luo-screen .q-chips{flex:0 0 auto}
+.luo-screen .compose{flex:0 0 auto;border-top:1px solid rgba(0,0,0,.06);background:#fff}
+.s-filters span,.zones div,.hot li,.pc,.s-city .cty,.city-click,.note-card{cursor:pointer}
+.hot li:active,.zones div:active,.pc:active,.note-card:active{opacity:.6}
+/* 笔记卡右侧的小箭头 */
+.note-card .nc-arrow{flex-shrink:0;color:#C3CBD6;font-size:20px}
+/* 笔记详情 */
+.note-detail .nd-cover{height:132px;background:linear-gradient(135deg,#FFE1D6,#FFF1EC);display:flex;align-items:center;justify-content:center;font-size:52px}
+.note-detail .nd-title{font-size:17px;font-weight:800;margin:14px 0 10px;line-height:1.4;color:#1B2430}
+.note-detail .nd-by{display:flex;align-items:center;gap:7px;font-size:12px;color:#8C98A9;margin-bottom:12px}
+.note-detail .nd-by .av{width:22px;height:22px;font-size:11px}
+.note-detail .nd-body{font-size:13.5px;line-height:1.8;color:#3A4757}

@@ -1,7 +1,7 @@
 /* 喊呗 HeyBay · HTML 演示原型
    纯前端演示：真实产品的这些列表来自云数据库，动作经云函数事务写入。 */
 
-const S = { screen: 'home', picked: false, parsed: false, lad: 'L1', stars: 0, tags: [], chat: [] };
+const S = { screen: 'home', picked: false, parsed: false, lad: 'L1', stars: 0, tags: [], chat: [], filter: '全部', noteIdx: 0 };
 
 const el = id => document.getElementById(id);
 const screenBox = el('screen');
@@ -38,6 +38,17 @@ const RESPONDERS = [
   { name: '阿哲', av: '', badge: 'b1', badgeTx: '新面孔', say: '刚来伦敦，也想去博物馆，可以一起。',
     evi: ['已完成 0 单', '资料完整度 60%'], quote: '免费互助',
     reason: '同城伦敦 · 尚无履约记录，排在最后；平台不会因为「新」而隐藏他，但会如实标注证据不足' }
+];
+
+/* 笔记广场 · 本地内容流：每条都是一篇笔记，可能来自真人，也可能是别人与小螺协作后分享的结果。
+   笔记本身不是小螺——但在笔记里可以「问小螺」衍生追问。这是内容飞轮的落点。 */
+const DISCOVER = [
+  { emoji: '🧋', title: '伦敦必囤：5 家华人超市 + 到店小贴士', by: 'Mia', likes: 328, tag: '问本地',
+    body: '龙凤行、荣业行、泗和行最全；中超多在 Chinatown 与 Colindale。<br>小贴士：带环保袋、周中去人少、很多店只收卡。生鲜周四到货最新鲜。',
+    follow: '照这篇，帮我找个人周末一起去趟华人超市采购，可以分摊打车' },
+  { emoji: '🚑', title: '留学生第一次看 GP 全流程（附预约话术）', by: '阿焦', likes: 512, tag: '问本地',
+    body: '① 先用住址在 NHS 官网找就近 GP 诊所 → ② 带护照 + 地址证明去注册 → ③ 等信/短信拿 NHS 号 → ④ 预约时说 "I\'d like to book a routine appointment"。<br>急症不走 GP，打 111 或去 A&E。',
+    follow: '帮我约个会英语的人，陪我去诊所办 GP 注册' }
 ];
 
 /* ---------------- 工具 ---------------- */
@@ -143,14 +154,15 @@ SCREENS.home = {
   render: () => `
     <div class="s-pad">
       <div class="s-city">
-        <span class="cty">伦敦 ▾ <small>自动定位 + 手动选择，逻辑以手动为准</small></span>
+        <span class="cty" onclick="pickCity()">伦敦 ▾ <small>自动定位 + 手动选择，逻辑以手动为准</small></span>
       </div>
       <div class="s-filters">
-        <span class="on">全部</span><span>搭子同行</span><span>付费地陪</span><span>打听咨询</span>
-        <span>借物易物</span><span>住宿</span><span>代购跑腿</span><span>翻译陪同</span><span>应急求助</span>
+        ${['全部', '搭子同行', '付费地陪', '打听咨询', '借物易物', '住宿', '代购跑腿', '翻译陪同', '应急求助']
+          .map(c => `<span class="${S.filter === c ? 'on' : ''}" onclick="setFilter('${c}')">${c}</span>`).join('')}
       </div>
       <div class="s-banner">🐚 <span><b>小螺</b>已把 3 条今天到期的需求推给了 23 位本地响应者</span></div>
-      ${REQS.map(reqCard).join('')}
+      ${REQS.filter(r => S.filter === '全部' || r.cat === S.filter).map(reqCard).join('')
+        || '<p class="s-hint" style="text-align:center;padding:26px 10px">「' + S.filter + '」暂时没有在架需求 —— 要不要你来喊第一条？</p>'}
       <p class="s-hint" style="text-align:center;margin-top:14px">已到底 · 过期需求单已自动归档进城市知识库</p>
     </div>`
 };
@@ -289,7 +301,7 @@ function matchedView() {
 }
 
 SCREENS.assistant = {
-  title: '小螺', tab: 'home', back: 'home', chip: '小螺助手 · 兜底作答',
+  title: '小螺', tab: '', back: 'home', chip: '小螺助手 · 兜底作答',
   notes: [
     ['key', 'AI 是供给的兜底层，不是替代层', '最致命的流失点不是「匹配不精准」，而是「发了没人理，用户当天就走了」。真人响应永远优先展示，兜底答案只在无响应或用户主动询问时出现。'],
     ['', '兜底答案强制标注来源', '「根据伦敦小组 3 条历史回答，请自行核实」。答案只依据站内语料，不让模型自由发挥。'],
@@ -298,15 +310,24 @@ SCREENS.assistant = {
     ['', '首屏声明「我是 AI」', '一切对外内容强制带「AI 协助」标识。追问上限 2 轮，之后降级为普通表单，禁止死循环。']
   ],
   render: () => `
+    <div class="luo-screen">
     <div class="bub-wrap" id="bubs">
-      <div class="bub ai"><span class="ai-tag">🐚 我是 AI 助手小螺</span>我可以帮你把想法整理成需求单、查伦敦本地的事、或者在没人响应时先给你一个能用的答案。<br><br>时间、地点、金额、联系方式我不会替你填。</div>
+      <div class="bub ai"><span class="ai-tag">🐚 我是 AI 助手小螺</span>你好，想找人帮忙、打听本地的事、或者让我帮你规划行程都可以——直接打字跟我说，或点下面的例子。<br><br>时间、地点、金额、联系方式我不会替你填。</div>
       ${S.chat.map(c => c.h).join('')}
     </div>
     <div class="q-chips">
+      <button onclick="ask('trip')">帮我排个伦敦两日线路</button>
+      <button onclick="ask('arrival')">刚落地，先办哪几件事？</button>
       <button onclick="ask('sim')">机场怎么进市区最便宜？</button>
-      <button onclick="ask('fallback')">我那条电话卡的单子没人理</button>
+      <button onclick="demoType('周六上午想去邱园拍照，一个人没意思，想找个也爱逛的搭子')">想找人一起逛邱园</button>
+      <button onclick="demoType('想找人陪我妈周三去医院复查，我英文不够专业')">找人陪爸妈看病翻译</button>
+      <button onclick="demoType('我周六要去趟中国超市，能顺路帮人带东西，想换顿饭或零食')">顺路帮人代购换顿饭</button>
       <button onclick="ask('visa')">我这个签证能待多久？</button>
-      <button onclick="ask('create')">帮我发个找搭子的单</button>
+    </div>
+    <div class="compose">
+      <input id="luoInput" placeholder="直接告诉小螺，比如：周六想找人一起逛邱园" onkeydown="if(event.key==='Enter')sendLuo()">
+      <button class="cbtn" onclick="sendLuo()">发送</button>
+    </div>
     </div>`
 };
 
@@ -321,18 +342,143 @@ const ANSWERS = {
   visa: `<div class="bub me">我这个签证类型能在英国待多久？</div>
     <div class="bub ai"><span class="ai-tag">🐚 服务端前置拦截</span>签证、医疗、法律、移民类问题我不回答——<b>这类问题答错的代价你承担不起</b>。<br><br>请查英国政府官方页面 gov.uk/check-uk-visa，或咨询持牌移民顾问（OISC 注册）。<br><br>这次提问不会调用模型，也不占用你的额度。</div>`,
   create: `<div class="bub me">帮我发个找搭子的单</div>
-    <div class="bub ai"><span class="ai-tag">🐚 AI 协助</span>好，我需要知道：<b>哪天、想去哪、几个人</b>。<br><br>说完我整理成需求单给你确认——<b>建单这个动作要你点确认才会真的发出去</b>，我不会自己发。</div>`
+    <div class="bub ai"><span class="ai-tag">🐚 AI 协助</span>好，我需要知道：<b>哪天、想去哪、几个人</b>。<br><br>说完我整理成需求单给你确认——<b>建单这个动作要你点确认才会真的发出去</b>，我不会自己发。</div>`,
+  trip: `<div class="bub me">帮我排个伦敦两日经典线路，别太赶</div>
+    <div class="bub ai"><span class="ai-tag">🐚 AI 协助 · 行程规划</span><b>伦敦经典两日 · 轻松版</b>
+    <div style="margin:7px 0;font-size:13px;line-height:1.6"><b style="color:#C4562F;margin-right:6px">Day 1</b>上午 大英博物馆（免费）→ 午餐 Covent Garden → 下午 国家美术馆 → 傍晚 特拉法加广场</div>
+    <div style="margin:7px 0;font-size:13px;line-height:1.6"><b style="color:#C4562F;margin-right:6px">Day 2</b>上午 塔桥 + 伦敦塔 → 午餐 Borough Market → 下午 泰特现代 → 傍晚 泰晤士河畔漫步</div>
+    <div class="src">示例线路，可按你的偏好（美食 / 购物 / 亲子）继续调。更懂你的定制线路属会员能力——内容型变现的入口，不碰资金。</div>
+    <div class="s-row" style="margin-top:10px">
+      <button class="s-btn sm" onclick="shareNote('trip')">分享到笔记广场</button>
+      <button class="s-btn ghost sm" onclick="toast('定制更懂你的线路属会员能力（阶段 1）· 行程生成设每日限额以控成本')">定制这条线路</button>
+    </div></div>`,
+  arrival: `<div class="bub me">刚落地，先办哪几件事？</div>
+    <div class="bub ai"><span class="ai-tag">🐚 AI 协助 · 落地攻略</span>落地伦敦头 48 小时，建议按这个顺序：
+    <div style="margin:7px 0;font-size:13px;line-height:1.6"><b style="color:#C4562F;margin-right:6px">①</b>买实体电话卡（EE / Three，带护照激活）</div>
+    <div style="margin:7px 0;font-size:13px;line-height:1.6"><b style="color:#C4562F;margin-right:6px">②</b>办 Oyster 卡或开 Apple Pay 直接刷闸机</div>
+    <div style="margin:7px 0;font-size:13px;line-height:1.6"><b style="color:#C4562F;margin-right:6px">③</b>注册 GP（看病前必须，流程慢，早点办）</div>
+    <div style="margin:7px 0;font-size:13px;line-height:1.6"><b style="color:#C4562F;margin-right:6px">④</b>华人超市囤口粮 + 买英标转换插头</div>
+    <div class="src">来源：城市语料库「落地清单」+ 伦敦小组历史回答，请自行核实。任一条办不明白，都能一键喊人帮忙。</div>
+    <div class="s-row" style="margin-top:10px">
+      <button class="s-btn sm" onclick="shareNote('arrival')">分享到笔记广场</button>
+      <button class="s-btn ghost sm" onclick="go('publish')">这条喊人帮我办</button>
+    </div></div>`
 };
 
 function ask(k) {
   S.chat.push({ h: ANSWERS[k] });
   renderScreen();
-  const b = el('bubs'); if (b) b.parentElement.scrollTop = b.scrollHeight;
+  scrollBubs();
 }
+
+function scrollBubs() { const b = el('bubs'); if (b) b.scrollTop = b.scrollHeight; }
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+
+/* 去掉某条预置回答里的「用户提问」气泡，只留小螺的回答——给自由输入复用 */
+function aiOnly(k) { return ANSWERS[k].replace(/<div class="bub me">[\s\S]*?<\/div>/, ''); }
+
+/* 擦边交友：不归类、不发布，用用户能懂的话说清楚为什么（D-09 从数据结构层面消灭） */
+const DATING_REPLY = `<div class="bub ai"><span class="ai-tag">🐚 小螺</span>这条我没法整理成需求单——它的核心是「<b>想认识某种人、找人陪着聊天</b>」，不是办成一件具体的事。喊呗只做具体的互助，<b>不做交友</b>，即使愿意付钱也一样。<br><br>如果你是想找人一起做点什么（逛展、吃饭、拍照…），换个说法告诉我要做的那件事，我就能帮你理清楚。</div>`;
+
+/* 自由输入 → 结构化需求单草稿。四类字段只留「你来定」，绝不代填 */
+function luoDraft(v) {
+  const t = v;
+  let cat = '';
+  if (/陪.*(看病|医院|复查|就医)|翻译|口译|英文不/.test(t)) cat = '翻译陪同';
+  else if (/带|代购|取|寄|超市|帮忙买|捎/.test(t)) cat = '代购跑腿';
+  else if (/逛|一起|搭子|同行|结伴|拍照|看展|演唱会/.test(t)) cat = '搭子同行';
+  else if (/借|换|闲置|转让|插头/.test(t)) cat = '借物易物';
+  else if (/住|租|合租|借住|沙发/.test(t)) cat = '住宿';
+  else if (/地陪|向导|带我玩|带我逛/.test(t)) cat = '付费地陪';
+  else if (/怎么|哪里|请问|打听|推荐/.test(t)) cat = '打听咨询';
+  else if (/急|丢了|被偷|报警|没地方|赶不上/.test(t)) cat = '应急求助';
+
+  const scheduled = /明天|后天|周[一二三四五六日天]|下周|周末|号|月初|月底/.test(t);
+  const instant = /现在|马上|今天|今晚|一会|几小时|尽快|立刻/.test(t);
+  const timing = scheduled ? '预约型 · 你来选日期' : instant ? '即时型 · 今天内' : '你来定';
+  const paid = /给钱|付费|报酬|付你|有偿|多少钱|镑|元/.test(t);
+  const barter = /换|以物换物/.test(t);
+  const meal = /请.*吃|请一顿|管饭|换顿饭|请客/.test(t);
+  const reward = paid ? '付费' : barter ? '以物换物' : meal ? '请一顿' : '待你确认';
+
+  const need = [];
+  if (scheduled) need.push(['见面时间', '你来选个日期']);
+  need.push(['见面地点', '你来定（街区级）']);
+  if (paid) need.push(['参考金额', '付费单只能你自己填']);
+  need.push(['联系方式', '选定后才双向下发']);
+
+  const row = (k, val, isNeed) => `<div class="ld-row ${isNeed ? 'need' : ''}"><span class="k">${k}</span><span class="v">${val}</span></div>`;
+  let rows = row('具体需求', esc(t)) + row('品类', cat || '暂未归类') + row('时效', timing) + row('报酬', reward);
+  need.forEach(n => rows += row(n[0], n[1], true));
+
+  return `<div class="bub ai"><span class="ai-tag">🐚 AI 协助 · 已整理</span>
+    <div class="luo-draft">
+      <div class="ld-h">需求单草稿${cat ? '' : '（这条我拿不准品类，你确认下）'}</div>
+      ${rows}
+    </div>
+    <div class="src">🔒 时间 / 地点 / 金额 / 联系方式这四项我不替你拍板，只留空等你确认。</div>
+    <div class="s-row" style="margin-top:10px">
+      <button class="s-btn sm" onclick="toast('带着这条草稿去发布页确认 · 建单动作要你点确认才真的发出');go('publish')">去确认发布</button>
+      <button class="s-btn ghost sm" onclick="toast('你继续说，我重新整理')">再改改</button>
+    </div></div>`;
+}
+
+/* 发送（自由输入入口）：擦边拦截 → 攻略/线路/护栏路由 → 否则整理成需求单草稿 */
+function sendLuo() {
+  const inp = el('luoInput');
+  const v = (inp && inp.value || '').trim();
+  if (!v) return toast('说一句你想找什么');
+  if (inp) inp.value = '';
+  const push = h => { S.chat.push({ h: `<div class="bub me">${esc(v)}</div>` + h }); renderScreen(); scrollBubs(); };
+  if (/异性|长期关系|处对象|谈恋爱|交友|颜值|有偿陪伴|找个?(女|男)(生|孩|朋友).*(陪|聊|玩|关系)/.test(v)) return push(DATING_REPLY);
+  if (/线路|行程|排个|规划|怎么玩|几日|两日|景点/.test(v)) return push(aiOnly('trip'));
+  if (/先办|落地|必办|第一次来|刚到|准备什么|要办什么/.test(v)) return push(aiOnly('arrival'));
+  if (/机场|希思罗|进市区|电话卡|地铁|退税|怎么去市区|哪里买卡/.test(v)) return push(aiOnly('sim'));
+  if (/签证|医疗|法律|移民|能待多久|吃什么药|违法/.test(v)) return push(aiOnly('visa'));
+  return push(luoDraft(v));
+}
+
+/* 预置场景：模拟用户打字后发送，复用同一条解析链路 */
+function demoType(text) {
+  const inp = el('luoInput');
+  if (inp) inp.value = text;
+  sendLuo();
+}
+
+/* 把小螺产出的内容一键沉淀成一篇「笔记」—— 内容→笔记广场→拉新→新需求的飞轮 */
+const SHARE_NOTES = {
+  trip: {
+    emoji: '🗺️', title: '小螺帮我排的伦敦经典两日 · 轻松版', tag: '问本地',
+    body: '<b>Day 1</b> 上午 大英博物馆（免费）→ 午餐 Covent Garden → 下午 国家美术馆 → 傍晚 特拉法加广场<br><b>Day 2</b> 上午 塔桥 + 伦敦塔 → 午餐 Borough Market → 下午 泰特现代 → 傍晚 泰晤士河畔漫步',
+    follow: '照这条两日线路，帮我加一天偏美食的路线'
+  },
+  arrival: {
+    emoji: '🧳', title: '落地伦敦头 48 小时要办的 4 件事', tag: '问本地',
+    body: '① 买实体电话卡（EE / Three，带护照激活）<br>② 办 Oyster 卡或开 Apple Pay 刷闸机<br>③ 注册 GP（看病前必须，流程慢，早点办）<br>④ 华人超市囤口粮 + 买英标转换插头',
+    follow: '这几件事里，帮我约个人陪我去办 GP 注册'
+  }
+};
+function shareNote(k) {
+  const n = Object.assign({ by: '我', likes: 1, fresh: true }, SHARE_NOTES[k]);
+  if (!DISCOVER[0] || !DISCOVER[0].fresh) DISCOVER.unshift(n);
+  toast('已分享到「笔记广场」· 和小螺协作出的结果沉淀成笔记 —— 内容→拉新→新需求的飞轮');
+  setTimeout(() => go('city'), 650);
+}
+
+/* 打开一篇笔记（笔记是内容，不是小螺；但可以在笔记里「问小螺」衍生追问） */
+function openNote(i) { S.noteIdx = i; go('note'); }
+function likeNote() { const n = DISCOVER[S.noteIdx]; if (n) { n.likes++; renderScreen(); toast('已点赞'); } }
+
+/* 首页分类筛选、城市切换、城市页各板块的跳转 —— 让看起来能点的都真的有反应 */
+function setFilter(c) { S.filter = c; renderScreen(); }
+function pickCity() { toast('伦敦首发 · 其他城市达到开城标准（认证响应者 ≥50 等四项）后才开放'); }
+function zoneGo(cat) { S.filter = cat; go('home'); toast('已按「' + cat + '」筛选 · 这个分区的需求都聚到首页广场'); }
+function askHot(q) { go('assistant'); demoType(q); }
 
 SCREENS.city = {
   title: '城市', tab: 'city', chip: '城市社区 · 供给容器',
   notes: [
+    ['key', '笔记广场：真人与小螺协作的结果沉淀成笔记', '这些攻略 / 行程都是<b>笔记</b>（不是小螺本身）——有的来自真人，有的是别人和小螺聊出满意结果后<b>一键分享</b>来的。点开任一篇可以读内容、也能<b>「问小螺」衍生追问</b>。内容→拉新→新需求的飞轮，是未来做会员与定制线路变现的底盘，这一层也不碰资金。'],
     ['key', '城市是唯一的一级容器', 'V1.0 首页与「组圈」职责重叠，两个 Tab 做同一件事。V2.0 首页 = 需求广场，城市 Tab = 社区与<b>供给池</b>：当地先有人入驻，才有能力承接需求。'],
     ['', '官方 5 分区与需求单品类对齐', '找搭子、问本地、跑腿代购、闲置转让、住宿。兴趣小组受健康度与数量上限约束——建组上限 = 城市周活跃用户数 ÷ 20，伦敦初期就是 0~2 个。<b>这是有意的克制</b>，冷启动期不允许提前碎片化。'],
     ['', '热搜榜改成「本周大家在问什么」', '由真实需求单聚合而来。V1.0 的热搜榜在冷启动期只会暴露冷清。'],
@@ -341,32 +487,42 @@ SCREENS.city = {
   ],
   render: () => `
     <div class="s-pad">
-      <div class="s-city"><span class="cty">伦敦 ▾ <small>周活跃 412 人 · 认证响应者 68 人</small></span></div>
+      <div class="s-city"><span class="cty" onclick="pickCity()">伦敦 ▾ <small>周活跃 412 人 · 认证响应者 68 人</small></span></div>
+      <div class="s-t">笔记广场<span>真人与小螺协作的结果 · 点开可问小螺</span></div>
+      ${DISCOVER.map((n, i) => `
+        <div class="note-card ${n.fresh ? 'fresh' : ''}" onclick="openNote(${i})">
+          <span class="emj">${n.emoji}</span>
+          <span class="nc-body">
+            <b>${n.title}</b>
+            <small>${n.by} · ♥ ${n.likes}${n.fresh ? ' · <em>刚分享</em>' : ''}</small>
+          </span>
+          <span class="nc-arrow">›</span>
+        </div>`).join('')}
       <div class="zones">
-        <div><i>🧑‍🤝‍🧑</i>找搭子</div><div><i>💬</i>问本地</div><div><i>🛍️</i>跑腿代购</div><div><i>♻️</i>闲置转让</div><div><i>🛏️</i>住宿</div>
+        <div onclick="zoneGo('搭子同行')"><i>🧑‍🤝‍🧑</i>找搭子</div><div onclick="zoneGo('打听咨询')"><i>💬</i>问本地</div><div onclick="zoneGo('代购跑腿')"><i>🛍️</i>跑腿代购</div><div onclick="zoneGo('借物易物')"><i>♻️</i>闲置转让</div><div onclick="zoneGo('住宿')"><i>🛏️</i>住宿</div>
       </div>
       <div class="s-t">本地响应者名录<span>按信任分排序 ▾</span></div>
       <div class="people">
-        <div class="pc"><i class="av t">陈</i><b>陈默</b><small>UCL · 带路/拍照<br>12 单 · 好评 100%</small><span class="badge b2">靠谱</span></div>
-        <div class="pc"><i class="av p">苏</i><b>苏眠</b><small>KCL · 翻译/陪同<br>31 单 · 好评 97%</small><span class="badge b3">老手</span></div>
-        <div class="pc"><i class="av">李</i><b>李维</b><small>IC · 代购/跑腿<br>58 单 · 好评 99%</small><span class="badge b4">城市之光</span></div>
-        <div class="pc"><i class="av t">王</i><b>王甜</b><small>LSE · 带路<br>3 单 · 好评 100%</small><span class="badge b2">靠谱</span></div>
+        <div class="pc" onclick="go('trust')"><i class="av t">陈</i><b>陈默</b><small>UCL · 带路/拍照<br>12 单 · 好评 100%</small><span class="badge b2">靠谱</span></div>
+        <div class="pc" onclick="go('trust')"><i class="av p">苏</i><b>苏眠</b><small>KCL · 翻译/陪同<br>31 单 · 好评 97%</small><span class="badge b3">老手</span></div>
+        <div class="pc" onclick="go('trust')"><i class="av">李</i><b>李维</b><small>IC · 代购/跑腿<br>58 单 · 好评 99%</small><span class="badge b4">城市之光</span></div>
+        <div class="pc" onclick="go('trust')"><i class="av t">王</i><b>王甜</b><small>LSE · 带路<br>3 单 · 好评 100%</small><span class="badge b2">靠谱</span></div>
       </div>
       <div class="s-t">本周伦敦大家在问什么<span>由真实需求单聚合</span></div>
       <ul class="hot">
-        <li><em>1</em>哪里买电话卡最划算<span>23 次</span></li>
-        <li><em>2</em>希思罗进市区怎么走<span>18 次</span></li>
-        <li><em>3</em>周末找人一起逛博物馆<span>15 次</span></li>
-        <li><em>4</em>看病 / GP 注册流程<span>11 次</span></li>
-        <li><em>5</em>退税怎么办<span>9 次</span></li>
+        <li onclick="askHot('哪里买电话卡最划算')"><em>1</em>哪里买电话卡最划算<span>23 次</span></li>
+        <li onclick="askHot('希思罗进市区怎么走')"><em>2</em>希思罗进市区怎么走<span>18 次</span></li>
+        <li onclick="askHot('周末找人一起逛博物馆')"><em>3</em>周末找人一起逛博物馆<span>15 次</span></li>
+        <li onclick="askHot('看病 GP 注册流程怎么走')"><em>4</em>看病 / GP 注册流程<span>11 次</span></li>
+        <li onclick="askHot('退税怎么办')"><em>5</em>退税怎么办<span>9 次</span></li>
       </ul>
       <div class="s-t">兴趣小组<span>当前可新建 2 个</span></div>
-      <div class="s-card">
+      <div class="s-card" onclick="toast('小组详情（演示）· 健康分 72，运转正常')">
         <div class="queue-t"><span>伦敦摄影搭子</span><em>健康分 72</em></div>
         <p>周活跃 14 人 · 产生需求单 6 条 · 首响率 67%</p>
         <div class="bar"><i style="width:72%"></i></div>
       </div>
-      <div class="s-card">
+      <div class="s-card" onclick="toast('小组详情（演示）· 健康分 41 已降权，连续 3 周低于 30 将归档')">
         <div class="queue-t"><span>伦敦租房互助</span><em style="background:#FFF4E0;color:#B08A2E">健康分 41 · 已降权</em></div>
         <p>连续 3 周低于 30 将进入沉寂：停止新成员进入、内容合并回官方分区、小组归档。小螺可代写话题帮组长救活。</p>
         <div class="bar"><i style="width:41%"></i></div>
@@ -381,6 +537,35 @@ SCREENS.city = {
       <p class="s-hint">四项必须同时达标。撮合是密度游戏，3 城试点等于把密度除以 3。</p>
     </div>`
 };
+
+SCREENS.note = {
+  title: '笔记', tab: 'city', back: 'city', chip: '笔记详情 · 内容飞轮',
+  notes: [
+    ['key', '笔记是内容，不是小螺', '笔记可能来自真人，也可能是别人和小螺聊出满意结果后一键分享来的。它独立存在、可被阅读、可被点赞——AI 只是生产它的一种方式，不是它本身。'],
+    ['key', '在笔记里「问小螺」衍生追问', '读到一半想进一步问，可以直接从这篇笔记把上下文带给小螺继续聊。笔记是入口，小螺是能力，两者分开。'],
+    ['', '笔记可一键转成需求', '看到有用的、想找人帮忙落地的，直接从笔记转成需求单——内容到撮合的回流通道。'],
+    ['', '这就是内容飞轮', '和小螺协作出好结果 → 分享成笔记 → 吸引新人阅读 → 衍生新追问 / 新需求。内容与撮合互为燃料，是未来会员与定制线路变现的底盘。']
+  ],
+  render: () => {
+    const n = DISCOVER[S.noteIdx] || DISCOVER[0];
+    return `
+    <div class="note-detail">
+      <div class="nd-cover">${n.emoji}</div>
+      <div class="s-pad">
+        <h3 class="nd-title">${n.title}</h3>
+        <div class="nd-by"><i class="av ${n.by === '我' ? 'p' : 't'}">${n.by[0]}</i>${n.by}${n.by === '我' ? '（与小螺协作后分享）' : ' · 本地用户'} · ♥ ${n.likes}</div>
+        <div class="nd-body">${n.body || '这位用户还没补充正文。'}</div>
+        <div class="src">笔记内容由发布者提供，仅供参考，请结合实际情况自行判断。</div>
+        <div class="s-row" style="margin-top:14px">
+          <button class="s-btn sm" onclick="go('assistant');demoType('${(n.follow || '照这篇笔记，帮我接着往下安排').replace(/'/g, '')}')">🐚 就这篇问小螺</button>
+          <button class="s-btn ghost sm" onclick="toast('把这篇转成你的需求 · 到「喊一声」确认后发出');go('publish')">转成需求</button>
+        </div>
+        <button class="s-btn ghost sm" style="margin-top:9px" onclick="likeNote()">♥ 点赞这篇（${n.likes}）</button>
+      </div>
+    </div>`;
+  }
+};
+
 
 SCREENS.mine = {
   title: '我的', tab: 'mine', chip: '我的 · 自主性阶梯',
@@ -649,7 +834,7 @@ SCREENS.admin = {
 };
 
 /* ---------------- 运行时 ---------------- */
-const ORDER = ['home', 'detail', 'publish', 'assistant', 'city', 'message', 'chat', 'mine', 'trust', 'review', 'admin'];
+const ORDER = ['home', 'detail', 'publish', 'assistant', 'city', 'note', 'message', 'chat', 'mine', 'trust', 'review', 'admin'];
 const TABS = [
   ['home', '🏠', '首页'], ['city', '🏙', '城市'], ['publish', '喊', '喊一声'],
   ['message', '💬', '消息'], ['mine', '👤', '我的']
@@ -697,11 +882,15 @@ function renderScreen() {
   renderChips();
   renderTabs();
   renderNotes();
+  // 小螺页自己底部已有输入条，悬浮球在这页多余且会压住输入框，隐藏它
+  const fab = el('fab');
+  if (fab) fab.style.display = S.screen === 'assistant' ? 'none' : '';
 }
 
 /* 悬浮球：小螺入口不占底部 Tab */
 (function mountFab() {
   const fab = document.createElement('button');
+  fab.id = 'fab';
   fab.textContent = '🐚';
   fab.title = '小螺';
   fab.style.cssText = 'position:absolute;right:14px;bottom:88px;width:48px;height:48px;border-radius:50%;border:0;' +
